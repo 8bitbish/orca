@@ -17,6 +17,7 @@ import {
   mergeWaitingSessionPending,
   removeWaitingSessionPending,
   type MobileNativeChatPendingMessage,
+  type MobileNativeChatAcceptSend,
   type MobileNativeChatSendOrigin
 } from './mobile-native-chat-pending-echo'
 import { mobileNativeChatScopeKey } from './mobile-native-chat-scope-key'
@@ -70,7 +71,7 @@ export function useMobileNativeChatDrafts(args: {
   clearDraftForSend: (origin: MobileNativeChatSendOrigin, text: string) => void
   /** Put the text back after a definite rejection, unless newer edits exist. */
   restoreRejectedDraft: (origin: MobileNativeChatSendOrigin, text: string) => void
-  acceptSend: (origin: MobileNativeChatSendOrigin, text: string, images?: string[]) => void
+  acceptSend: MobileNativeChatAcceptSend
   holdUnconfirmedSend: (
     origin: MobileNativeChatSendOrigin,
     text: string,
@@ -179,23 +180,20 @@ export function useMobileNativeChatDrafts(args: {
     )
   }, [])
 
-  const acceptSend = useCallback(
-    (origin: MobileNativeChatSendOrigin, text: string, images?: string[]) => {
+  const acceptSend = useCallback<MobileNativeChatAcceptSend>(
+    (origin, text, images, queuedWhileWorking) => {
       if (!origin.pendingKey && !images?.length) {
         return
       }
       pendingCounterRef.current += 1
       const id = `pending-${pendingCounterRef.current}`
-      const key = origin.pendingKey
-      if (key) {
-        setPendingBySession((previous) =>
-          appendMobileNativeChatPending(previous, key, id, origin, text, images)
-        )
-      } else {
-        setPendingWaitingForSession((previous) =>
-          appendMobileNativeChatPending(previous, origin.draftKey, id, origin, text, images)
-        )
-      }
+      // A send with no session yet parks under the draft key and migrates on the
+      // first authoritative read; both queues hold the same shape.
+      const setQueue = origin.pendingKey ? setPendingBySession : setPendingWaitingForSession
+      const key = origin.pendingKey ?? origin.draftKey
+      setQueue((previous) =>
+        appendMobileNativeChatPending(previous, key, id, origin, text, images, queuedWhileWorking)
+      )
     },
     []
   )

@@ -56,6 +56,7 @@ import { useNativeChatFileLinkContext } from './use-native-chat-file-link-contex
 import { matchNativeChatSplitShortcut } from './native-chat-split-shortcut'
 import { getShortcutPlatform } from '@/lib/shortcut-platform'
 import { formatShortcutLabel } from '@/hooks/useShortcutLabel'
+import { isQueuedPendingMessageId } from './native-chat-synthetic-message-ids'
 
 /** Renders the bridge UI after NativeChatSessionGate resolves its agent session. */
 export function NativeChatResolvedView({
@@ -206,12 +207,15 @@ export function NativeChatResolvedView({
         sentAt,
         afterMessageId: boundary?.id ?? null,
         afterMessageTimestamp: boundary?.timestamp ?? null,
-        ...(imagePaths ? { imagePaths } : {})
+        ...(imagePaths ? { imagePaths } : {}),
+        // Sending into an already-working agent queues this prompt behind the
+        // in-flight reply; sending while idle means that reply answers it.
+        ...(liveWorking ? { queuedWhileWorking: true } : {})
       }
       setPending(appendPendingSendCache(pendingScope, entry))
       return entry.id
     },
-    [pendingScope, session.messages]
+    [pendingScope, session.messages, liveWorking]
   )
   const onOptimisticSendCanceled = useCallback(
     (pendingId: string) => {
@@ -254,21 +258,18 @@ export function NativeChatResolvedView({
     return new Set([id])
   }, [paneLaunchPrompt?.failed, launchPromptMessage?.id, sessionAfterCommandBoundaries.messages])
 
-  // The streaming preview bubble (if any) sits after the transcript but before
-  // the optimistic user echoes — same order mobile uses.
+  // The list sorts the streaming bubble below idle-send echoes and above queued ones.
   const pendingMessages = useMemo(
     () => pendingSendsAsMessages(pending, sessionAfterCommandBoundaries.messages),
     [pending, sessionAfterCommandBoundaries.messages]
   )
   const streamingText = useMemo(() => {
     return deriveNativeChatStreamingText({
-      messages:
-        pendingMessages.length > 0
-          ? [...sessionAfterCommandBoundaries.messages, ...pendingMessages]
-          : sessionAfterCommandBoundaries.messages,
+      messages: sessionAfterCommandBoundaries.messages,
       previewText: hookPreview,
       working: liveWorking,
-      previewIsToolOutput: hookPreviewIsToolOutput
+      previewIsToolOutput: hookPreviewIsToolOutput,
+      hasOpenIdleSend: pendingMessages.some((message) => !isQueuedPendingMessageId(message.id))
     })
   }, [
     sessionAfterCommandBoundaries.messages,

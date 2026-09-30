@@ -132,6 +132,10 @@ export function useMobileNativeChatController(args: {
     : activeTabAgentWorking
   const nativeChatAgentWorking =
     nativeChatStreamLive && (activeChatStructured || activeChatResolution != null)
+  // Read at send time (not render time) so an echo can be tiered against the
+  // streaming bubble without re-creating the send callback on every status tick.
+  const nativeChatAgentWorkingRef = useRef(nativeChatAgentWorking)
+  nativeChatAgentWorkingRef.current = nativeChatAgentWorking
   // Throttle the streaming bubble: OpenCode emits a status frame per streamed
   // part, and each one re-renders and re-parses the whole accumulated markdown.
   const nativeChatStreamingText = useThrottledLatestValue(
@@ -211,6 +215,7 @@ export function useMobileNativeChatController(args: {
     deviceTokenRef,
     agentRef: activeChatAgentRef,
     commandSendRef: recordSessionOptionCommandRef,
+    agentWorkingRef: nativeChatAgentWorkingRef,
     captureSendOrigin,
     readSeededLaunchDraftSeed,
     clearDraftForSend,

@@ -49,6 +49,9 @@ export type MobileNativeChatPendingItem = {
    *  that row, so a send whose row never arrives stays where it was sent instead
    *  of trailing every turn that lands afterwards. */
   baselineTailMessageId?: string | null
+  /** True when the agent was already replying at send time, so this prompt is
+   *  queued behind the in-flight turn and belongs after the streaming bubble. */
+  queuedWhileWorking?: boolean
 }
 
 export function foldMobileNativeChatMessages(messages: NativeChatMessage[]): NativeChatMessage[] {
@@ -101,7 +104,11 @@ export function buildMobileNativeChatTransientData({
   // at worst a duplicate in the right position instead of a scrambled one.
   const anchoredPending = new Map<string, NativeChatMessage[]>()
   const leadingPending: NativeChatMessage[] = []
-  const trailingPending: NativeChatMessage[] = []
+  // Split around the streaming bubble: an idle send is what the reply answers, so the
+  // reply renders BELOW it; only a prompt queued mid-reply belongs after the bubble.
+  const trailingIdlePending: NativeChatMessage[] = []
+  const trailingQueuedPending: NativeChatMessage[] = []
+  const tailFoldedId = renderedFolded.at(-1)?.id
   const foldedIds = new Set(renderedFolded.map((message) => message.id))
   const missingBaselineIds = new Set<string>()
   for (const item of pending) {
@@ -159,8 +166,12 @@ export function buildMobileNativeChatTransientData({
         ? baselineId
         : foldedAnchorByRawId.get(baselineId)
       : undefined
+    if (item.queuedWhileWorking && streaming && (!anchor || anchor === tailFoldedId)) {
+      trailingQueuedPending.push(bubble)
+      continue
+    }
     if (!anchor || !foldedIds.has(anchor)) {
-      trailingPending.push(bubble)
+      trailingIdlePending.push(bubble)
       continue
     }
     const siblings = anchoredPending.get(anchor)
@@ -179,6 +190,7 @@ export function buildMobileNativeChatTransientData({
       data.push(...attached)
     }
   }
+  data.push(...trailingIdlePending)
   if (streaming) {
     data.push({
       id: 'streaming',
@@ -188,6 +200,6 @@ export function buildMobileNativeChatTransientData({
       source: 'hook'
     })
   }
-  data.push(...trailingPending)
+  data.push(...trailingQueuedPending)
   return { folded: renderedFolded, streaming, data }
 }
