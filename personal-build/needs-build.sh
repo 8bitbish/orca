@@ -10,7 +10,8 @@ if [ -f .git/MERGE_HEAD ]; then
   exit 0
 fi
 
-git fetch -q upstream --tags
+# Tags only: upstream has branches differing only in case, which this filesystem can't store.
+git fetch -q --no-tags upstream '+refs/tags/v*:refs/tags/v*'
 latest=$(personal_build_latest_upstream_tag)
 if ! git merge-base --is-ancestor "$latest" personal; then
   echo "Upstream $latest is not merged into personal yet."
