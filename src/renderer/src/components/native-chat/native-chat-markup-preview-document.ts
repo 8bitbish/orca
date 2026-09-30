@@ -52,11 +52,42 @@ const FORBIDDEN_TAGS = [
 ]
 
 const LINK_ATTRIBUTES = ['href', 'xlink:href']
+const MEDIA_SELECTOR = 'img, image, video, audio, source, track, input[type="image"]'
+const MEDIA_SOURCE_ATTRIBUTES = ['src', 'href', 'xlink:href', 'poster']
+
+function isInlineData(value: string): boolean {
+  return value.trim().toLowerCase().startsWith('data:')
+}
+
+/** Drops what the CSP would only block: outbound link targets, and media whose
+ *  source is not inline data, which would otherwise paint as a broken image. */
+export function stripNativeChatMarkupNetworkRefs(root: Element): void {
+  for (const anchor of root.querySelectorAll('a')) {
+    for (const attribute of LINK_ATTRIBUTES) {
+      const value = anchor.getAttribute(attribute)
+      if (value !== null && !value.trim().startsWith('#')) {
+        anchor.removeAttribute(attribute)
+      }
+    }
+  }
+  for (const element of root.querySelectorAll('[srcset]')) {
+    element.removeAttribute('srcset')
+  }
+  for (const media of Array.from(root.querySelectorAll(MEDIA_SELECTOR))) {
+    const sources = MEDIA_SOURCE_ATTRIBUTES.map((attribute) =>
+      media.getAttribute(attribute)
+    ).filter((value): value is string => value !== null)
+    const external = sources.some((value) => !isInlineData(value))
+    const sourceless = media.localName === 'img' && sources.length === 0
+    if (external || sourceless) {
+      media.remove()
+    }
+  }
+}
 
 /** Agent markup reduced to an inert body, whether it arrived as a whole document
  *  or a fragment: a document's head styles move into the body, where they still
- *  apply. Links lose their targets: a click must not navigate the frame to the
- *  network. */
+ *  apply. Nothing left in it can reach the network. */
 export function sanitizeNativeChatMarkup(source: string): string {
   // DOMParser documents are inert: nothing in them runs or loads.
   const parsed = new DOMParser().parseFromString(source, 'text/html')
@@ -71,14 +102,7 @@ export function sanitizeNativeChatMarkup(source: string): string {
   if (!(body instanceof Element)) {
     return ''
   }
-  for (const anchor of body.querySelectorAll('a')) {
-    for (const attribute of LINK_ATTRIBUTES) {
-      const value = anchor.getAttribute(attribute)
-      if (value !== null && !value.trim().startsWith('#')) {
-        anchor.removeAttribute(attribute)
-      }
-    }
-  }
+  stripNativeChatMarkupNetworkRefs(body)
   return body.innerHTML
 }
 

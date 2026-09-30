@@ -158,6 +158,10 @@ describe('MessageRow reasoning', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Weighing the parser options.')).toBeNull()
     expect(screen.queryByRole('time')).toBeNull()
+    // Folded, the chevron is the row's only sign that it opens, so it never hides.
+    const chevron = toggle.querySelector('svg')
+    expect(chevron).not.toBeNull()
+    expect(chevron?.getAttribute('class')).not.toMatch(/opacity-0/)
 
     fireEvent.click(toggle)
     expect(toggle).toHaveAttribute('aria-expanded', 'true')

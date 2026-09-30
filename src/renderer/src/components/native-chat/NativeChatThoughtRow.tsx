@@ -65,11 +65,10 @@ export function NativeChatThoughtRow({
         </span>
         <ChevronRight
           aria-hidden
+          // Always shown: a folded thought has no other sign it opens.
           className={cn(
-            'size-3.5 shrink-0 text-muted-foreground transition-all',
-            open
-              ? 'rotate-90'
-              : 'can-hover:opacity-0 group-hover/thought:opacity-100 group-focus-visible/thought:opacity-100'
+            'size-3.5 shrink-0 text-muted-foreground transition-transform',
+            open && 'rotate-90'
           )}
         />
       </button>
