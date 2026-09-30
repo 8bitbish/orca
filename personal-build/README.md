@@ -29,3 +29,11 @@ and rebuilds. To build immediately: `orca automations run <id>` or run `sync.sh`
 - `gh` logged in as `8bitbish`.
 - The first switch from the official Orca is manual: install the build's DMG from the fork's
   release once. Updates after that go through the in-app prompt.
+
+## Recreating the signing certificate
+
+If the Keychain loses **Orca Personal Build**, make a new one: a self-signed certificate with
+`extendedKeyUsage = critical, codeSigning`, imported into the login Keychain with
+`security import <p12> -k ~/Library/Keychains/login.keychain-db -T /usr/bin/codesign`, then in
+Keychain Access set its **Trust → Code Signing** to **Always Trust**. The new signature differs,
+so install the next build from its release DMG once; updates work again after that.
