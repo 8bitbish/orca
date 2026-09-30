@@ -3,6 +3,7 @@
 `personal` = the newest stable upstream Orca release + Jake's fixes, rebuilt and published
 to [8bitbish/orca releases](https://github.com/8bitbish/orca/releases). This build's in-app
 updater reads that feed, so each rebuild arrives as Orca's normal "Update available" prompt.
+Why it is built this way: [DECISIONS.md](DECISIONS.md).
 
 ## How an update flows
 
