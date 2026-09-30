@@ -147,9 +147,9 @@ export const MessageRow = memo(function MessageRow({
   if (isUser) {
     return (
       <div ref={rowRef} className="group relative flex flex-col items-end gap-0.5">
-        {/* User turns get a distinct muted fill (not the card/canvas color) so
-            the prompt reads apart from the assistant's body copy. */}
-        <div className="max-w-[85%] rounded-lg rounded-tr-sm bg-muted px-3.5 py-2.5 text-sm text-foreground">
+        {/* The reader's own turn is a soft muted bubble, right-aligned, so it reads
+            apart from the assistant's unboxed prose. No border or shadow. */}
+        <div className="max-w-[85%] rounded-xl bg-muted px-4 py-2.5 text-sm text-foreground">
           {markdown ? (
             <>
               <NativeChatImageAttachments

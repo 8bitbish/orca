@@ -178,7 +178,7 @@ export function NativeChatBackgroundTasksStatus(props: {
       className="group/tasks shrink-0 bg-background px-3 pt-2 sm:px-4"
     >
       {/* When the goal tab is the next sibling, take its width and share its top edge. */}
-      <div className="mx-auto w-full max-w-4xl group-has-[+[data-native-chat-thread-goal]]/tasks:px-2">
+      <div className="mx-auto w-full max-w-3xl group-has-[+[data-native-chat-thread-goal]]/tasks:px-2">
         <div
           ref={stripRef}
           className="overflow-hidden rounded-lg border border-border bg-muted/50 text-xs text-muted-foreground shadow-xs group-has-[+[data-native-chat-thread-goal]]/tasks:rounded-b-none group-has-[+[data-native-chat-thread-goal]]/tasks:shadow-none"

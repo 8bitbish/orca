@@ -26,7 +26,7 @@ export function NativeChatLaunchRetry({
           'Chat connection could not be confirmed.'
         )
   return (
-    <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-3 px-4 py-1 text-xs text-destructive">
+    <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-1 text-xs text-destructive">
       <span className="min-w-0 break-words">
         {message}
         {lifecycle === 'failed' && failureReason ? ` ${failureReason}` : null}

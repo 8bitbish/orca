@@ -50,7 +50,7 @@ export function NativeChatApprovalCard({
 
   return (
     <div className="min-h-0 shrink overflow-hidden bg-background">
-      <div className="mx-auto flex h-full min-h-0 max-h-full w-full max-w-4xl px-3 pt-2 pb-1 sm:px-4">
+      <div className="mx-auto flex h-full min-h-0 max-h-full w-full max-w-3xl px-3 pt-2 pb-1 sm:px-4">
         <div
           ref={cardRef}
           data-native-chat-approval-card="true"

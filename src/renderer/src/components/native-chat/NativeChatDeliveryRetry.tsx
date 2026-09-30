@@ -23,7 +23,7 @@ export function NativeChatDeliveryRetry({
     return null
   }
   return (
-    <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-3 px-4 py-1 text-xs text-muted-foreground">
+    <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-1 text-xs text-muted-foreground">
       <span>
         {retryable.state === 'unconfirmed'
           ? translate(

@@ -60,7 +60,7 @@ export function NativeChatStructuredSessionStatus(props: {
   return (
     <>
       {props.startupPhase === 'starting' ? (
-        <p className="mx-auto w-full max-w-4xl px-4 py-1 text-xs text-muted-foreground">
+        <p className="mx-auto w-full max-w-3xl px-4 py-1 text-xs text-muted-foreground">
           {translate(
             'auto.components.native.chat.NativeChatStructuredSessionStatus.starting',
             '{{value0}} is still starting. Messages wait until it is ready; close this chat to give up on it.',
@@ -69,7 +69,7 @@ export function NativeChatStructuredSessionStatus(props: {
         </p>
       ) : null}
       {props.error || props.composerError ? (
-        <p className="mx-auto w-full max-w-4xl px-4 py-1 text-xs text-destructive">
+        <p className="mx-auto w-full max-w-3xl px-4 py-1 text-xs text-destructive">
           {props.error ?? props.composerError}
         </p>
       ) : null}
