@@ -281,3 +281,27 @@ describe('normalizeNativeChatUserText control bytes', () => {
     expect(normalizeNativeChatUserText('run\tthe\r\ntests')).toBe('run the tests')
   })
 })
+
+describe('normalizeNativeChatUserText pasted_content wrapper', () => {
+  it("drops Claude Code's large-paste wrapper so the turn keys like the sent draft", () => {
+    expect(
+      normalizeNativeChatUserText(
+        '\n\n<pasted_content id="74c5">\n\n\nCommand\nclean up\n</pasted_content id="74c5">\n'
+      )
+    ).toBe(normalizeNativeChatUserText('Command\nclean up'))
+  })
+
+  it('keeps typed text around the wrapper', () => {
+    expect(
+      normalizeNativeChatUserText(
+        'see below\n\n<pasted_content id="1">\nlog\n</pasted_content id="1">\nthanks'
+      )
+    ).toBe('see below log thanks')
+  })
+
+  it('leaves unrelated angle-bracket text alone', () => {
+    expect(normalizeNativeChatUserText('<pasted_content>raw</pasted_content>')).toBe(
+      '<pasted_content>raw</pasted_content>'
+    )
+  })
+})

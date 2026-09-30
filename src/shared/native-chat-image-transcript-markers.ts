@@ -11,6 +11,10 @@ const IMAGE_PROMPT_MARKER_AT_START = /^[^\S\r\n]*\[Image #\d+\]/
 const IMAGE_PROMPT_MARKER_AT_END = /\[Image #\d+\][^\S\r\n]*$/
 const HORIZONTAL_WHITESPACE_START = /^[^\S\r\n]+/
 const HORIZONTAL_WHITESPACE_END = /[^\S\r\n]+$/
+// Why: Claude Code records a large paste as `<pasted_content id="x">…</pasted_content id="x">`,
+// so the journaled turn never equals the sent draft and its echo would stay pinned at the tail.
+const CLAUDE_PASTED_CONTENT_WRAPPER =
+  /<pasted_content id="([^"\s]{1,32})">([\s\S]*?)<\/pasted_content id="\1">/g
 
 export function imageSourcePathFromText(text: string): string | null {
   return text.match(IMAGE_SOURCE_MARKER)?.[1]?.trim() ?? null
@@ -63,7 +67,9 @@ export function stripImagePromptMarker(text: string): string {
 export function normalizeNativeChatUserText(text: string): string {
   // Strip sequences first so their printable tails cannot survive a lone-control pass.
   return stripImagePromptMarker(
-    stripAnsiEscapeSequences(text).replace(TERMINAL_CONTROL_CHARACTER_PATTERN, '')
+    stripAnsiEscapeSequences(text)
+      .replace(TERMINAL_CONTROL_CHARACTER_PATTERN, '')
+      .replace(CLAUDE_PASTED_CONTENT_WRAPPER, ' $2 ')
   )
     .trim()
     .replace(/\s+/g, ' ')

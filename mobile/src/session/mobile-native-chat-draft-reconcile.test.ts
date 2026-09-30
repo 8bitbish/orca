@@ -4,6 +4,7 @@ import {
   findLandedImagePreviewEchoes,
   findLandedUnconfirmedSends,
   migrateImagePreviewMessageIds,
+  normalizeReconcileText,
   type PendingImagePreviewEcho,
   type UnconfirmedSend
 } from './mobile-native-chat-draft-reconcile'
@@ -202,5 +203,25 @@ describe('mobile native chat image preview reconciliation', () => {
         prompt
       ])
     ).toEqual({ [sessionKey]: { prompt: ['file:///a.jpg'] } })
+  })
+})
+
+describe('mobile native chat large-paste reconciliation', () => {
+  it('lands a send whose turn Claude Code wrapped in <pasted_content>', () => {
+    const text = 'Command\nPlease clean up my old checkout.'
+    const unconfirmed: UnconfirmedSend = {
+      draftKey: 'draft',
+      pendingKey: 'pending-key',
+      text,
+      normalizedText: normalizeReconcileText(text),
+      baselineTailMessageId: null,
+      deadline: null
+    }
+    const wrapped = userText(
+      'prompt',
+      `\n\n<pasted_content id="74c5">\n${text}\n</pasted_content id="74c5">\n`
+    )
+
+    expect(findLandedUnconfirmedSends([wrapped], [unconfirmed])).toEqual([unconfirmed])
   })
 })

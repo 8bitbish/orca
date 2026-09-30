@@ -180,6 +180,18 @@ describe('prunePendingSends', () => {
     ).toEqual([pendingOf('p2', 'repeat')])
   })
 
+  it('drops a large paste once its <pasted_content>-wrapped turn advances', () => {
+    // Shape recorded by Claude Code 2.1.285 for a multi-line draft sent as one bracketed paste.
+    const draft =
+      '\n\n\n\nCommand\nPlease clean up my old checkout.\n\nAt the end, show me what is left.'
+    const pending = [pendingOf('p1', draft)]
+    const next = prunePendingSends(pending, [
+      userMessage('m1', `\n\n<pasted_content id="74c5">\n${draft}\n</pasted_content id="74c5">\n`),
+      assistantMessage('m2', 'checking')
+    ])
+    expect(next).toEqual([])
+  })
+
   it('does not treat an unrelated longer user turn as a glued match', () => {
     const pending = [pendingOf('p1', 'hi')]
     expect(
@@ -457,6 +469,14 @@ describe('pendingSendsAsMessages', () => {
 
     expect(pendingSendsAsMessages(pending, [userMessage('u1', 'first prompt')])).toEqual([])
     expect(pendingSendsAsMessages(pending, [])).toHaveLength(1)
+  })
+
+  it('hides a large paste while its <pasted_content>-wrapped turn is visible', () => {
+    const pending = [pendingOf('p1', 'line one\nline two')]
+    const wrapped =
+      '\n\n<pasted_content id="82ea">\nline one\nline two\n</pasted_content id="82ea">\n'
+
+    expect(pendingSendsAsMessages(pending, [userMessage('u1', wrapped)])).toEqual([])
   })
 
   it('keeps a repeated prompt visible when its only match predates the send boundary', () => {
