@@ -38,6 +38,7 @@ import type {
 } from './native-chat-message-rail-items'
 import { useNativeChatRailHistoryJump } from './use-native-chat-rail-history-jump'
 import { nativeChatReaderScrollInputHandlers } from './native-chat-reader-scroll-input'
+import { nativeChatThoughtSeconds } from './native-chat-thought-duration'
 
 import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
 import { isStructuredAgentSessionThinking } from '../../../../shared/structured-agent-session-live-turn'
@@ -187,6 +188,10 @@ export function NativeChatMessageList({
     thinking
   })
   const lifecycleWorking = session.transcriptLifecycle?.state === 'working'
+  const thoughtSeconds = useMemo(
+    () => nativeChatThoughtSeconds(session.agent, journalItems),
+    [journalItems, session.agent]
+  )
   const slots = useMemo(
     () =>
       buildNativeChatTranscriptSlots({
@@ -200,7 +205,8 @@ export function NativeChatMessageList({
         showTurnStatus,
         expandedTurnKeys: expandedTurnIds,
         isWorking,
-        lifecycleWorking
+        lifecycleWorking,
+        thoughtSeconds
       }),
     [
       currentTurnKey,
@@ -211,11 +217,17 @@ export function NativeChatMessageList({
       messages,
       receipts,
       showTurnStatus,
+      thoughtSeconds,
       turnDiffs,
       turnKeys,
       turnStatuses
     ]
   )
+  // A live thought row already reads "Thinking…"; the turn's one indicator keeps its clock.
+  const activeTurnStatus =
+    turnStatuses.active?.thinking === true && slots.at(-1)?.thoughtLive === true
+      ? { ...turnStatuses.active, thinking: false }
+      : turnStatuses.active
   const transcriptWindow = useNativeChatTranscriptWindow({
     scrollRef,
     slots,
@@ -392,10 +404,7 @@ export function NativeChatMessageList({
                   window={transcriptWindow}
                 />
                 {showTurnStatus && showLiveTurnActivity && isWorking ? (
-                  <NativeChatTurnActivityLine
-                    activity={turnActivity}
-                    status={turnStatuses.active}
-                  />
+                  <NativeChatTurnActivityLine activity={turnActivity} status={activeTurnStatus} />
                 ) : null}
                 {!showTurnStatus && showTypingIndicator ? <NativeChatTypingIndicatorRow /> : null}
               </div>

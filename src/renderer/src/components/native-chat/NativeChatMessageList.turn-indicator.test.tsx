@@ -424,6 +424,46 @@ describe('NativeChatMessageList turn indicator', () => {
     expect(container.querySelector('.animate-bounce')).toBeNull()
   })
 
+  it('lets a live thought row carry "Thinking…" while the indicator keeps its clock', () => {
+    const now = Date.now()
+    render(
+      <NativeChatMessageList
+        session={{
+          ...session,
+          agent: 'claude',
+          status: 'working',
+          messages: [
+            {
+              id: 'user-thinking',
+              role: 'user',
+              blocks: [{ type: 'text', text: 'Start the task' }],
+              timestamp: now,
+              source: 'transcript'
+            },
+            {
+              id: 'item-2',
+              role: 'reasoning',
+              blocks: [{ type: 'text', text: 'Considering the layout.' }],
+              timestamp: now + 1,
+              source: 'transcript'
+            }
+          ]
+        }}
+        journalItems={[journalItem(1, turnItem), journalItem(2, reasoningRow)]}
+        isWorking
+        expandSignal={false}
+        fontScale={1}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Thinking…' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    )
+    expect(screen.queryByText('Thinking')).toBeNull()
+    expect(screen.getByText(/^Working for/)).toBeInTheDocument()
+  })
+
   it('does not reuse completed-turn reasoning while the next dispatch is pending', () => {
     render(
       <NativeChatMessageList

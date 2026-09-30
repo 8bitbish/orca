@@ -15,6 +15,7 @@ import { NativeChatCodeBlock } from './NativeChatCodeBlock'
 import { NativeChatNoticeRow } from './NativeChatNoticeRow'
 import { NativeChatCopyButton } from './NativeChatCopyButton'
 import { NativeChatMessageTimestamp } from './NativeChatMessageTimestamp'
+import { NativeChatThoughtRow } from './NativeChatThoughtRow'
 import {
   NativeChatAgentControls,
   NativeChatImageAttachments,
@@ -25,7 +26,7 @@ import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client'
 
 /** One message: its prose first, then a collapsible run folding all of the
  *  turn's tool activity. Monochrome per STYLEGUIDE: user prompts read as a
- *  lifted card, assistant prose as body copy, reasoning de-emphasized.
+ *  lifted card, assistant prose as body copy, reasoning folded to one line.
  *  Memoized: a stream frame republishes the whole transcript, but settled rows
  *  keep their block identity, so only the changed row re-renders. */
 export const MessageRow = memo(function MessageRow({
@@ -42,6 +43,8 @@ export const MessageRow = memo(function MessageRow({
   deliveryFailed = false,
   structuredActivityUi = true,
   folded = false,
+  thoughtSeconds = null,
+  thoughtLive = false,
   runtimeContext
 }: {
   message: NativeChatMessage
@@ -60,6 +63,10 @@ export const MessageRow = memo(function MessageRow({
   structuredActivityUi?: boolean
   /** Behind a folded turn: the row keeps only what outlives the turn. */
   folded?: boolean
+  /** Reasoning rows: derived duration, or null when none can be derived honestly. */
+  thoughtSeconds?: number | null
+  /** Reasoning rows: still the newest output of the working turn. */
+  thoughtLive?: boolean
   runtimeContext?: RuntimeFileOperationArgs | null
 }): React.JSX.Element | null {
   const rowRef = useRef<HTMLDivElement | null>(null)
@@ -175,6 +182,21 @@ export const MessageRow = memo(function MessageRow({
             )}
           </div>
         ) : null}
+      </div>
+    )
+  }
+
+  if (isReasoning && markdown && tools.length === 0 && !hasImages) {
+    return (
+      <div ref={rowRef} className="max-w-full select-text">
+        <NativeChatThoughtRow
+          messageId={message.id}
+          markdown={markdown}
+          live={thoughtLive}
+          seconds={thoughtSeconds}
+          onLinkClick={onLinkClick}
+          allowFileUriLinks={allowFileUriLinks}
+        />
       </div>
     )
   }

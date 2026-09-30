@@ -41,6 +41,8 @@ const SUBAGENT_ROW_PX = 32
 const STATUS_ROW_PX = 28
 const TURN_DIFF_PX = 28
 const RECEIPT_PX = 56
+/** A reasoning row folds to its one "Thought for Ns" line until the reader opens it. */
+const THOUGHT_ROW_PX = 24
 const ROW_MIN_PX = 24
 /** `gap-5` between the parts stacked inside one row's wrapper. The identical gap
  *  BETWEEN rows is the virtualizer's `gap` option and must never be added here:
@@ -104,6 +106,14 @@ export function estimateNativeChatRowHeight(
   } else if (chrome.folded === true) {
     height = content.subagentGroupCount * SUBAGENT_ROW_PX
     partCount = height > 0 ? 1 : 0
+  } else if (
+    content.role === 'reasoning' &&
+    content.textLines > 0 &&
+    content.toolCount === 0 &&
+    content.imageCount === 0
+  ) {
+    height = THOUGHT_ROW_PX
+    partCount = 1
   } else {
     height = content.textLines * LINE_HEIGHT_PX
     if (content.role === 'user' && content.textLines > 0) {

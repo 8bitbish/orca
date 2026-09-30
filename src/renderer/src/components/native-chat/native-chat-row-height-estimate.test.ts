@@ -42,6 +42,18 @@ describe('transcript row height estimate', () => {
     expect(long).toBeGreaterThan(short)
   })
 
+  // A thought is one folded line until opened; its text must not reserve a screen.
+  it('estimates a reasoning row as its folded line, whatever its length', () => {
+    const long = Array.from({ length: 40 }, () => 'line').join('\n')
+    const thought = estimateNativeChatRowHeight(
+      nativeChatRowContentMetrics(message(long, 'reasoning')),
+      NO_CHROME
+    )
+    const reply = estimateNativeChatRowHeight(nativeChatRowContentMetrics(message(long)), NO_CHROME)
+    expect(thought).toBe(24)
+    expect(reply).toBeGreaterThan(thought)
+  })
+
   it('bounds the estimate at both ends', () => {
     const empty = estimateNativeChatRowHeight(nativeChatRowContentMetrics(message('')), NO_CHROME)
     const enormous = estimateNativeChatRowHeight(

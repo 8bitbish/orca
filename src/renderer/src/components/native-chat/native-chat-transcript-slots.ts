@@ -48,6 +48,10 @@ export type NativeChatTranscriptSlot = {
   /** Whether this row's turn hides anything, so its status row offers a caret. */
   turnFolds: boolean
   turnDiff: NativeChatTurnDiff | undefined
+  /** Reasoning row: whole seconds the thought took, when the journal can say. */
+  thoughtSeconds: number | null
+  /** Reasoning row that is still the newest thing its working turn produced. */
+  thoughtLive: boolean
   /** Height to reserve before the row has ever been measured. */
   estimatedHeight: number
 }
@@ -69,6 +73,8 @@ export type NativeChatTranscriptSlotsInput = {
   isWorking: boolean
   /** Session-level lifecycle, which outlives a transcript that never said "done". */
   lifecycleWorking: boolean
+  /** Reasoning durations by message id; see `nativeChatThoughtSeconds`. */
+  thoughtSeconds?: ReadonlyMap<string, number>
 }
 
 export function buildNativeChatTranscriptSlots(
@@ -85,7 +91,8 @@ export function buildNativeChatTranscriptSlots(
     showTurnStatus,
     expandedTurnKeys,
     isWorking,
-    lifecycleWorking
+    lifecycleWorking,
+    thoughtSeconds
   } = input
   // One pass to decide what each row draws, then the fold over those readings —
   // so "is this the answer" and "does this row render prose" cannot disagree.
@@ -113,6 +120,10 @@ export function buildNativeChatTranscriptSlots(
       receipts.get(messages[index].id)?.kind !== 'approval' &&
       (row.rendersProse || messages[index].blocks.some(isToolCallBlock))
   )
+  // The transcript's newest content, reasoning included: a thought is live only there.
+  const newestContentIndex = foldRows.findLastIndex(
+    (row, index) => row.rendersProse || messages[index].blocks.some(isToolCallBlock)
+  )
   const settledTurnKeys = new Set(
     showTurnStatus
       ? Object.entries(turnStatuses.completedByTurn)
@@ -139,6 +150,10 @@ export function buildNativeChatTranscriptSlots(
       showTurnStatus && candidateStatus?.workedSeconds != null ? candidateStatus : undefined
     const turnDiff = turnKey && turnKeys[index + 1] !== turnKey ? turnDiffs.get(turnKey) : undefined
     const folded = foldedRows.has(index)
+    const isThought = message.role === 'reasoning'
+    const activeTurnIsWorking =
+      (currentTurnKey ? turnKey === currentTurnKey : turnKey === undefined) &&
+      (isWorking || lifecycleWorking)
     // Skipping a folded row entirely is what keeps windowing honest: a counted
     // index the row declines to draw reserves estimated height for nothing and
     // opens a gap in the transcript.
@@ -150,15 +165,15 @@ export function buildNativeChatTranscriptSlots(
     slots.push({
       message,
       turnKey,
-      activeTurnIsWorking:
-        (currentTurnKey ? turnKey === currentTurnKey : turnKey === undefined) &&
-        (isWorking || lifecycleWorking),
+      activeTurnIsWorking,
       trailingRun: index === trailingRunIndex,
       receipt,
       status: status ?? undefined,
       folded,
       turnFolds: turnKey !== undefined && foldableTurnKeys.has(turnKey),
       turnDiff,
+      thoughtSeconds: isThought ? (thoughtSeconds?.get(message.id) ?? null) : null,
+      thoughtLive: isThought && activeTurnIsWorking && index === newestContentIndex,
       estimatedHeight: estimateNativeChatRowHeight(nativeChatRowContentMetrics(message), {
         hasReceipt: receipt !== undefined,
         hasStatus: status !== undefined,

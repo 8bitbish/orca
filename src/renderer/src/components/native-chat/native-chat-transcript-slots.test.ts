@@ -78,6 +78,32 @@ describe('transcript slots', () => {
     expect(trailing([toolRun('a'), text('u', 'again', 'user')])).toEqual(['a'])
   })
 
+  // A thought reads "Thinking…" only while it is the working turn's newest output.
+  it("marks only the working turn's newest thought live and carries its duration", () => {
+    const messages = [text('u', 'go', 'user'), text('r1', 'plan', 'reasoning')]
+    const working = build(messages, {
+      currentTurnKey: 'u',
+      isWorking: true,
+      thoughtSeconds: new Map([['r1', 7]])
+    })
+    expect(working.find((slot) => slot.message.id === 'r1')).toMatchObject({
+      thoughtLive: true,
+      thoughtSeconds: 7
+    })
+
+    const answered = build([...messages, text('a', 'Done.')], {
+      currentTurnKey: 'u',
+      isWorking: true
+    })
+    expect(answered.find((slot) => slot.message.id === 'r1')).toMatchObject({
+      thoughtLive: false,
+      thoughtSeconds: null
+    })
+
+    const idle = build(messages, { currentTurnKey: 'u', isWorking: false })
+    expect(idle.find((slot) => slot.message.id === 'r1')?.thoughtLive).toBe(false)
+  })
+
   // Approving a call lets that call run, and it sits in the run above the
   // receipt. A question's receipt blocks the agent on the reader, so it does not.
   it('keeps the run above an approval receipt trailing, but not above a question', () => {

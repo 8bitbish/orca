@@ -58,6 +58,8 @@ function slot(id: string): NativeChatTranscriptSlot {
     folded: false,
     turnFolds: false,
     turnDiff: undefined,
+    thoughtSeconds: null,
+    thoughtLive: false,
     estimatedHeight: 48
   }
 }
