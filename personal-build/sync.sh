@@ -40,7 +40,7 @@ echo "Newest stable upstream release: $upstream_tag"
 stage "Merge"
 if [ -f .git/MERGE_HEAD ]; then
   [ -z "$(unmerged)" ] || stop "Unresolved conflicts: $(unmerged | tr '\n' ' ')" 10
-  if git diff --cached | command grep -qE '^\+(<<<<<<<|>>>>>>>) '; then
+  if command grep -qE '^\+(<<<<<<<|>>>>>>>) ' <<<"$(git diff --cached)"; then
     stop "Conflict markers are still staged." 10
   fi
   git commit -q --no-edit
@@ -86,14 +86,17 @@ git checkout -q -- "$feed_constant"
 [ "$updater_tests_status" -eq 0 ] || stop "Updater tests failed." 11
 
 stage "Build"
-security find-identity -v -p codesigning | command grep -qF "\"$PERSONAL_BUILD_SIGNING_IDENTITY\"" ||
+# Capture before grepping: under pipefail, grep -q exiting early fails the whole pipeline.
+identities=$(security find-identity -v -p codesigning)
+command grep -qF "\"$PERSONAL_BUILD_SIGNING_IDENTITY\"" <<<"$identities" ||
   stop "Signing identity \"$PERSONAL_BUILD_SIGNING_IDENTITY\" is missing or untrusted in the login Keychain." 12
 rm -rf dist
 CSC_NAME="$PERSONAL_BUILD_SIGNING_IDENTITY" pnpm build:mac || stop "pnpm build:mac failed." 12
 manifest=dist/latest-mac.yml
 [ -f "$manifest" ] || stop "Build produced no $manifest." 12
 app=$(ls -d dist/mac-arm64/*.app | head -1)
-codesign -dv --verbose=2 "$app" 2>&1 | command grep -qxF "Authority=$PERSONAL_BUILD_SIGNING_IDENTITY" ||
+signature=$(codesign -dv --verbose=2 "$app" 2>&1)
+command grep -qxF "Authority=$PERSONAL_BUILD_SIGNING_IDENTITY" <<<"$signature" ||
   stop "$app is not signed by $PERSONAL_BUILD_SIGNING_IDENTITY." 12
 codesign --verify --deep --strict "$app" || stop "$app fails signature verification." 12
 
