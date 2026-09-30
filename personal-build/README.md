@@ -23,8 +23,9 @@ and rebuilds. To build immediately: `orca automations run <id>` or run `sync.sh`
 
 ## Requirements
 
-- The `Developer ID Application: 3 Sided Cube (UK) Ltd (25H7BM6YWK)` certificate in the
-  login Keychain. Every build must carry the same signature or the updater refuses it.
+- The self-signed **Orca Personal Build** certificate in the login Keychain, trusted for code
+  signing only. Every build must carry the same signature or the updater refuses it; a new
+  certificate means one manual reinstall.
 - `gh` logged in as `8bitbish`.
 - The first switch from the official Orca is manual: install the build's DMG from the fork's
   release once. Updates after that go through the in-app prompt.

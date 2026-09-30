@@ -3,8 +3,9 @@
 # npx installs them fully.
 
 PERSONAL_BUILD_FORK=8bitbish/orca
-PERSONAL_BUILD_SIGNING_IDENTITY='3 Sided Cube (UK) Ltd (25H7BM6YWK)'
-PERSONAL_BUILD_SIGNING_TEAM=25H7BM6YWK
+# Self-signed, login Keychain, trusted for code signing only. Every build must carry the same
+# identity or the updater refuses it, so replacing it means one manual reinstall.
+PERSONAL_BUILD_SIGNING_IDENTITY='Orca Personal Build'
 
 personal_build_use_pinned_pnpm() {
   local version bin
