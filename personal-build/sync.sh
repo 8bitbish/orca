@@ -33,7 +33,6 @@ stage "Preflight"
 [ "$(git branch --show-current)" = personal ] || stop "Not on the personal branch." 1
 personal_build_use_pinned_pnpm
 git fetch -q upstream --tags
-git fetch -q origin
 upstream_tag=$(personal_build_latest_upstream_tag)
 echo "Newest stable upstream release: $upstream_tag"
 
