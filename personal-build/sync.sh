@@ -106,7 +106,6 @@ done < <(awk '/^ *- url:/ { print $3 }' "$manifest")
 for asset in "${assets[@]}"; do
   [ -f "$asset" ] || stop "Missing release asset $asset." 13
 done
-assets+=(dist/*.dmg)
 git push -q origin personal || stop "Pushing personal to the fork failed." 13
 notes="Upstream $upstream_tag plus the personal commits:
 $(git log --no-merges --format='- %s' "$upstream_tag"..HEAD)"

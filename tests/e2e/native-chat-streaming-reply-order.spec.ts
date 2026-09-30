@@ -22,7 +22,9 @@ const STREAMING_REPLY = 'Starting the integration tests for you right now.'
 
 async function enableNativeChatSetting(page: Page): Promise<void> {
   await page.evaluate(async () => {
-    const nextSettings = await window.api.settings.set({ experimentalNativeChat: true })
+    const nextSettings = await window.api.settings.set({
+      experimentalNativeChat: true
+    })
     window.__store?.setState({ settings: nextSettings as GlobalSettings })
   })
 }
@@ -52,7 +54,9 @@ async function seedWorkingSessionWithPreview(
       'Claude',
       undefined,
       { worktreeId },
-      { providerSession: { key: 'session_id', id: sessionId, transcriptPath } }
+      {
+        providerSession: { key: 'session_id', id: sessionId, transcriptPath }
+      }
     )
   }, args)
 }
@@ -114,7 +118,10 @@ function claudeTranscriptLines(sessionId: string): string {
       uuid: `${sessionId}-assistant`,
       timestamp: assistantTime.toISOString(),
       type: 'assistant',
-      message: { model: 'claude-opus-4', content: [{ type: 'text', text: PRIOR_REPLY }] }
+      message: {
+        model: 'claude-opus-4',
+        content: [{ type: 'text', text: PRIOR_REPLY }]
+      }
     }
   ]
   return `${lines.map((line) => JSON.stringify(line)).join('\n')}\n`
@@ -127,9 +134,12 @@ function claudeTranscriptLines(sessionId: string): string {
 async function chatRowTexts(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const root = document.querySelector('[data-native-chat-root="true"]')
-    const scroller = root?.querySelector('.overflow-y-auto')
-    const content = scroller?.firstElementChild
-    return Array.from(content?.children ?? []).map((row) => (row.textContent ?? '').trim())
+    // Virtualized rows are absolutely positioned, so list order is data-index, not DOM order.
+    return Array.from(
+      root?.querySelectorAll<HTMLElement>('[data-native-chat-window] > [data-index]') ?? []
+    )
+      .sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index))
+      .map((row) => (row.textContent ?? '').trim())
   })
 }
 
@@ -169,17 +179,26 @@ test.describe('Native chat streaming reply order', () => {
         transcriptPath,
         preview: STREAMING_REPLY
       })
-      await toggleTerminalTabToChatView(orcaPage, { tabId, worktreeId: descriptor.worktreeId })
+      await toggleTerminalTabToChatView(orcaPage, {
+        tabId,
+        worktreeId: descriptor.worktreeId
+      })
 
       await expect(orcaPage.locator('[data-native-chat-root="true"]')).toBeVisible({
         timeout: 15_000
       })
-      await expect(orcaPage.getByText(PRIOR_REPLY)).toBeVisible({ timeout: 30_000 })
+      await expect(orcaPage.getByText(PRIOR_REPLY)).toBeVisible({
+        timeout: 30_000
+      })
 
       await seedOptimisticPrompt(orcaPage, { tabId, text: OPTIMISTIC_PROMPT })
 
-      await expect(orcaPage.getByText(OPTIMISTIC_PROMPT)).toBeVisible({ timeout: 15_000 })
-      await expect(orcaPage.getByText(STREAMING_REPLY).first()).toBeVisible({ timeout: 15_000 })
+      await expect(orcaPage.getByText(OPTIMISTIC_PROMPT)).toBeVisible({
+        timeout: 15_000
+      })
+      await expect(orcaPage.getByText(STREAMING_REPLY).first()).toBeVisible({
+        timeout: 15_000
+      })
 
       // Screenshot BEFORE asserting so the captured frame shows whatever the build
       // actually rendered — including the wrong order on a pre-fix build.
