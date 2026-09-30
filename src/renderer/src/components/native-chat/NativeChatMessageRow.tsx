@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef } from 'react'
+import { memo, useCallback, useMemo, useRef } from 'react'
 import { Goal } from 'lucide-react'
 import CommentMarkdown, {
   type CommentMarkdownLinkClickHandler
@@ -16,6 +16,11 @@ import { NativeChatNoticeRow } from './NativeChatNoticeRow'
 import { NativeChatCopyButton } from './NativeChatCopyButton'
 import { NativeChatMessageTimestamp } from './NativeChatMessageTimestamp'
 import { NativeChatThoughtRow } from './NativeChatThoughtRow'
+import {
+  NativeChatFencePreviewContext,
+  nativeChatOpenFenceBody,
+  type NativeChatFencePreviewScope
+} from './native-chat-fence-preview'
 import {
   NativeChatAgentControls,
   NativeChatImageAttachments,
@@ -78,6 +83,15 @@ export const MessageRow = memo(function MessageRow({
   const isReasoning = message.role === 'reasoning'
   const isSystem = message.role === 'system'
   const providerFrame = message.blocks.find((block) => block.type === 'text' && block.providerFrame)
+
+  // Replies preview html/svg fences; every row holds back a fence still streaming.
+  const fenceScope = useMemo<NativeChatFencePreviewScope>(
+    () => ({
+      markupPreviews: message.role === 'assistant',
+      openFenceBody: nativeChatOpenFenceBody(markdown)
+    }),
+    [markdown, message.role]
+  )
 
   const scrollToTop = useCallback(() => {
     if (rowRef.current) {
@@ -143,14 +157,16 @@ export const MessageRow = memo(function MessageRow({
                 runtimeContext={runtimeContext}
                 enablePreview={runtimeContext !== undefined}
               />
-              <CommentMarkdown
-                content={markdown}
-                variant="document"
-                className="text-sm"
-                renderCodeBlock={NativeChatCodeBlock}
-                onLinkClick={onLinkClick}
-                allowFileUriLinks={allowFileUriLinks}
-              />
+              <NativeChatFencePreviewContext.Provider value={fenceScope}>
+                <CommentMarkdown
+                  content={markdown}
+                  variant="document"
+                  className="text-sm"
+                  renderCodeBlock={NativeChatCodeBlock}
+                  onLinkClick={onLinkClick}
+                  allowFileUriLinks={allowFileUriLinks}
+                />
+              </NativeChatFencePreviewContext.Provider>
             </>
           ) : (
             <NativeChatImageAttachments
@@ -221,15 +237,17 @@ export const MessageRow = memo(function MessageRow({
         enablePreview={runtimeContext !== undefined}
       />
       {markdown ? (
-        <CommentMarkdown
-          content={markdown}
-          variant="document"
-          className="text-sm"
-          renderCodeBlock={NativeChatCodeBlock}
-          onLinkClick={onLinkClick}
-          allowFileUriLinks={allowFileUriLinks}
-          linkifyFilePaths={onLinkClick !== undefined}
-        />
+        <NativeChatFencePreviewContext.Provider value={fenceScope}>
+          <CommentMarkdown
+            content={markdown}
+            variant="document"
+            className="text-sm"
+            renderCodeBlock={NativeChatCodeBlock}
+            onLinkClick={onLinkClick}
+            allowFileUriLinks={allowFileUriLinks}
+            linkifyFilePaths={onLinkClick !== undefined}
+          />
+        </NativeChatFencePreviewContext.Provider>
       ) : null}
       {tools.length > 0 || subagentGroups.length > 0 || backgroundTasks.length > 0 ? (
         <NativeChatToolRun

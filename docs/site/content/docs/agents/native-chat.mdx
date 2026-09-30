@@ -25,6 +25,11 @@ Toggle Chat UI ↔ terminal from the agent pane once enabled.
 
 When Claude shows an **AskUserQuestion** (or similar structured permission/question card), Chat UI should render the question card in the transcript so you can answer from the composer path instead of treating it as a collapsed tool call. Confirm with **Submit** on the card. That includes agents running on a paired [Remote Orca Server](/docs/remote-servers) / headless host — not only local panes.
 
+## Replies
+
+- The agent's reasoning folds to one line: **Thinking…** while it is the turn's newest output, then **Thought for 12s** (or **Thought** when no duration can be derived from the session's timestamps). Click it, or focus it and press Enter or Space, to read the full reasoning.
+- A reply can include diagrams as fenced blocks. A `mermaid` fence renders as a diagram in the app's colors. `html` and `svg` fences render as a live preview in a sandboxed frame, which has no network access and cannot run the reply's scripts. Each diagram has a **Code** toggle to show its source and a copy button. A fence renders once it is complete; while it is still streaming it shows as code.
+
 ## Availability
 
 Chat UI ships on desktop for supported local and remote (paired server) agent sessions. The [mobile companion](/docs/mobile) reuses chat-style transcript patterns for the same paired sessions.

@@ -17809,6 +17809,11 @@
         "thinking": "Thinking…",
         "thought": "Thought",
         "thoughtFor": "Thought for {{value0}}"
+      },
+      "diagram": {
+        "showSource": "Code",
+        "svgPreviewTitle": "SVG preview",
+        "htmlPreviewTitle": "HTML preview"
       }
     },
     "tab": {

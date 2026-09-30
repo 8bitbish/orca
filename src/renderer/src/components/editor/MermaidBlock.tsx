@@ -22,6 +22,8 @@ type MermaidBlockProps = {
   content: string
   isDark: boolean
   htmlLabels?: boolean
+  /** Palette for Mermaid's `base` theme; keep its identity stable across renders. */
+  themeVariables?: Record<string, string | boolean>
 }
 
 // Why: mermaid.render() manipulates global DOM state (element IDs, internal
@@ -50,7 +52,8 @@ function enqueueRender(fn: () => Promise<void>): void {
 export default function MermaidBlock({
   content,
   isDark,
-  htmlLabels = false
+  htmlLabels = false,
+  themeVariables
 }: MermaidBlockProps): React.JSX.Element {
   const id = useId().replace(/:/g, '_')
   const containerRef = useRef<HTMLDivElement>(null)
@@ -70,7 +73,7 @@ export default function MermaidBlock({
         // MermaidBlock cannot overwrite htmlLabels/theme between initialize()
         // and render(), which would make markdown preview fall back to the
         // broken foreignObject label path again.
-        mermaid.initialize(getMermaidConfig(isDark, htmlLabels))
+        mermaid.initialize(getMermaidConfig(isDark, htmlLabels, themeVariables))
         const { svg } = await mermaid.render(`mermaid-${id}`, content)
         if (!cancelled && containerRef.current) {
           // Why: although mermaid uses DOMPurify internally, we add an explicit
@@ -97,7 +100,7 @@ export default function MermaidBlock({
     return () => {
       cancelled = true
     }
-  }, [content, htmlLabels, isDark, id])
+  }, [content, htmlLabels, isDark, id, themeVariables])
 
   if (error) {
     return (

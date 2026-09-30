@@ -15,6 +15,8 @@ export type CommentMarkdownLinkClickHandler = (
   href: string | undefined
 ) => void
 
+/** Receives every fenced block, mermaid included; its `children` is the fence's
+ *  <code> element, which renders a mermaid fence as a diagram if mounted. */
 export type DocumentCodeBlockRenderer = (props: {
   children?: React.ReactNode
   language?: string
@@ -269,12 +271,13 @@ export function createDocumentCommentMarkdownComponents(
           {children}
         </code>
       ),
-    // Mermaid fences render a <div>, which is invalid inside <pre>, so unwrap them.
+    // A caller's renderer owns every fence, mermaid included. Otherwise mermaid
+    // fences render a <div>, which is invalid inside <pre>, so unwrap them.
     pre: ({ children }) =>
-      isMermaidPre(children) ? (
-        <>{children}</>
-      ) : renderCodeBlock ? (
+      renderCodeBlock ? (
         renderCodeBlock({ children, language: extractCodeFenceLanguage(children) })
+      ) : isMermaidPre(children) ? (
+        <>{children}</>
       ) : (
         <pre className="my-3 max-h-80 max-w-full overflow-x-auto rounded-md bg-accent p-3 font-mono text-[12px]">
           {children}

@@ -1,11 +1,16 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { Code2 } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import { getCodeBlockLanguageLabel } from '@/components/editor/rich-markdown-code-block-languages'
 import { NativeChatCopyButton } from './NativeChatCopyButton'
+import { NativeChatDiagramCard } from './NativeChatDiagramCard'
+import { NativeChatMarkupPreview } from './NativeChatMarkupPreview'
+import { NativeChatMermaidDiagram } from './NativeChatMermaidDiagram'
+import { NativeChatFencePreviewContext, nativeChatFenceRoute } from './native-chat-fence-preview'
 
-/** Code fences need their own copy target rather than the whole chat message. */
+/** Code fences need their own copy target rather than the whole chat message.
+ *  Finished mermaid fences, and html/svg fences in a reply, render as diagrams. */
 export function NativeChatCodeBlock({
   children,
   language
@@ -14,7 +19,31 @@ export function NativeChatCodeBlock({
   language?: string
 }): React.JSX.Element {
   const code = extractCodeText(children)
+  const scope = useContext(NativeChatFencePreviewContext)
+  const route = nativeChatFenceRoute({ language, code, scope })
 
+  if (route === 'mermaid') {
+    return (
+      <NativeChatDiagramCard kind="mermaid" label={getCodeBlockLanguageLabel(route)} source={code}>
+        <NativeChatMermaidDiagram source={code.trimEnd()} />
+      </NativeChatDiagramCard>
+    )
+  }
+  if (route === 'html' || route === 'svg') {
+    return (
+      <NativeChatDiagramCard
+        kind={route}
+        // No catalog entry for svg; the format name reads the same in every locale.
+        label={route === 'html' ? getCodeBlockLanguageLabel(route) : route.toUpperCase()}
+        source={code}
+      >
+        <NativeChatMarkupPreview source={code} kind={route} />
+      </NativeChatDiagramCard>
+    )
+  }
+
+  // A mermaid fence still streaming shows its text: its <code> child would render the diagram.
+  const body = language?.toLowerCase() === 'mermaid' ? <code>{code}</code> : children
   return (
     <div className="group/code relative my-3 min-w-0 max-w-full overflow-hidden rounded-md bg-accent">
       {language ? (
@@ -41,7 +70,7 @@ export function NativeChatCodeBlock({
           !language && 'pr-10'
         )}
       >
-        {children}
+        {body}
       </pre>
       {code && !language ? (
         <NativeChatCopyButton
