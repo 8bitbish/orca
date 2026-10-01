@@ -29,6 +29,10 @@ import { structuredAgentSessionReadFailureNotice } from './structured-agent-sess
 import { useStructuredAgentSessionStartFailureFacts } from './use-structured-agent-session-start-failure-facts'
 import { structuredAgentSessionDeliveryNotices } from './structured-agent-session-delivery-notices'
 import type { AgentJournalSubmission } from '../../../../shared/agent-session-journal-types'
+import {
+  NativeChatProjectReplyContext,
+  useNativeChatProjectReplyChannel
+} from './native-chat-project-reply-context'
 
 const NO_SUBMISSIONS: readonly AgentJournalSubmission[] = []
 
@@ -186,6 +190,12 @@ export function NativeChatStructuredSession(
     isFocusedGroup: props.isFocusedGroup,
     composerReady: prompt === null
   })
+  // Card actions answer through the composer, which a pending prompt card replaces.
+  const projectReplies = useNativeChatProjectReplyChannel(
+    composerRef,
+    prompt === null,
+    controller.messages
+  )
   const questionBody = prompt?.body.kind === 'question' ? prompt.body : null
   const questions = questionBody ? agentSessionPromptQuestions(questionBody) : []
   const structuredTransport = useMemo(() => {
@@ -270,25 +280,27 @@ export function NativeChatStructuredSession(
         ) : viewState.kind === 'empty' ? (
           <NativeChatEmptyState kind="empty" agent={props.agent} />
         ) : (
-          <NativeChatMessageList
-            session={session}
-            journalItems={controller.journalItems}
-            railOutline={controller.railOutline}
-            isVisible={props.isVisible}
-            isWorking={controller.isWorking}
-            expandSignal={false}
-            fontScale={fontScale.scale}
-            workingStartedAt={controller.workingStartedAt}
-            settledTurns={controller.settledTurns}
-            activeTurnOpenedBy={controller.activeTurnOpenedBy}
-            turnKeysByItemId={controller.turnKeysByItemId}
-            awaitingInput={prompt === null ? null : 'shown'}
-            turnActivity={controller.turnActivity}
-            onLinkClick={onLinkClick}
-            allowFileUriLinks={onLinkClick !== undefined}
-            runtimeContext={imageRuntimeContext}
-            deliveryNotices={deliveryNotices}
-          />
+          <NativeChatProjectReplyContext.Provider value={projectReplies}>
+            <NativeChatMessageList
+              session={session}
+              journalItems={controller.journalItems}
+              railOutline={controller.railOutline}
+              isVisible={props.isVisible}
+              isWorking={controller.isWorking}
+              expandSignal={false}
+              fontScale={fontScale.scale}
+              workingStartedAt={controller.workingStartedAt}
+              settledTurns={controller.settledTurns}
+              activeTurnOpenedBy={controller.activeTurnOpenedBy}
+              turnKeysByItemId={controller.turnKeysByItemId}
+              awaitingInput={prompt === null ? null : 'shown'}
+              turnActivity={controller.turnActivity}
+              onLinkClick={onLinkClick}
+              allowFileUriLinks={onLinkClick !== undefined}
+              runtimeContext={imageRuntimeContext}
+              deliveryNotices={deliveryNotices}
+            />
+          </NativeChatProjectReplyContext.Provider>
         )}
       </div>
       <NativeChatLaunchRetry

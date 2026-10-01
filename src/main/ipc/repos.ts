@@ -12,6 +12,7 @@ import { registerSparsePresetHandlers } from './repos/sparse-preset-handlers'
 import { registerRepoFolderPickerHandlers } from './repos/repo-folder-picker-handlers'
 import { registerRepoCloneHandlers } from './repos/repo-clone-lifecycle'
 import { registerRepoGitUsernameHandler } from './repos/repo-git-username-handler'
+import { registerRepoAppIconHandler } from './repos/repo-app-icon-handler'
 import { registerBaseRefQueryHandlers } from './repos/base-ref-query-handlers'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 
@@ -58,6 +59,7 @@ export function registerRepoHandlers(
   ipcMain.removeHandler('repos:isGitAvailable')
   ipcMain.removeHandler('repos:getDefaultCreateProjectParent')
   ipcMain.removeHandler('repos:getGitUsername')
+  ipcMain.removeHandler('repos:getAppIcon')
   ipcMain.removeHandler('repos:getBaseRefDefault')
   ipcMain.removeHandler('repos:searchBaseRefs')
   ipcMain.removeHandler('repos:searchBaseRefDetails')
@@ -79,5 +81,6 @@ export function registerRepoHandlers(
   registerRepoFolderPickerHandlers(mainWindow)
   registerRepoCloneHandlers(mainWindow, store)
   registerRepoGitUsernameHandler(store)
+  registerRepoAppIconHandler(store)
   registerBaseRefQueryHandlers(store)
 }

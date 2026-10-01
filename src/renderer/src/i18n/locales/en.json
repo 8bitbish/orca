@@ -17899,6 +17899,28 @@
         "widgetPreviewTitle": "Widget preview",
         "widgetLabel": "Widget",
         "copyWidget": "Copy widget source"
+      },
+      "project": {
+        "status": {
+          "needsYou": "Needs you",
+          "working": "Working",
+          "done": "Done",
+          "idle": "Idle",
+          "unverifiable": "Unverifiable"
+        },
+        "chipLabel": "Open {{value0}}, {{value1}}",
+        "open": "Open",
+        "openLabel": "Open {{value0}}",
+        "actions": "Replies",
+        "send": "Send",
+        "sends": "Sends “{{value0}}”",
+        "sentText": "Sent “{{value0}}”",
+        "typeReply": "Type a reply to send",
+        "ago": "{{value0}} ago",
+        "for": "for {{value0}}",
+        "forUnderAMinute": "for <1m",
+        "justNow": "just now",
+        "hostUnreachable": "SSH host not connected; status unverifiable"
       }
     },
     "tab": {

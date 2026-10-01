@@ -30,6 +30,24 @@ When Claude shows an **AskUserQuestion** (or similar structured permission/quest
 - The agent's reasoning folds to one line: **Thinking…** while it is the turn's newest output, then **Thought for 12s** (or **Thought** when no duration can be derived from the session's timestamps). Click it, or focus it and press Enter or Space, to read the full reasoning. Claude Code records its thinking without the text, so for Claude the line usually has nothing to open; back-to-back thoughts share one line.
 - A reply can include diagrams as fenced blocks. A `mermaid` fence renders as a diagram in the app's colors. `html` and `svg` fences render as a live preview in a sandboxed frame, which has no network access and cannot run the reply's scripts. Each diagram has a **Code** toggle to show its source and a copy button. A fence renders once it is complete; while it is still streaming it shows as code.
 - A `widget` fence renders as a static visual, the way Claude.ai shows its inline widgets: a quiet **Widget** line whose chevron reveals the source, a copy button, and the visual on a rounded card. It uses the same sandboxed frame, so nothing in it runs or reaches the network. Every preview carries a built-in style kit that follows the app theme in light and dark: cards (with an accent for the recommended option), badges, key-value price rows, totals and deltas, legends, Gantt timelines, callouts, device frames, dashed guides and measurement arrows. The [`visualize` skill](/docs/cli/skills#visualize) teaches Claude the class names and when a visual beats prose.
+- A reply can show Orca projects live. A link with the `orca-worktree:` scheme, such as `[orca-personal](orca-worktree:orca-personal/personal)`, renders as a **project chip**: a small pill with the project's icon, its name, the workspace name (unless it is the main one) and a status dot. Click it to focus that workspace. The target is `repo/workspace` by display name, a bare `repo` for its main workspace, or a worktree id; one Orca does not know reads as plain text, and only Chat UI replies draw chips (everywhere else the link stays plain).
+- A ` ```project-card ` fence renders as a **project card**: the project's icon, name and workspace, a status pill (**Working**, **Needs you**, **Done**, **Idle**, or **Unverifiable** when Orca cannot reach the SSH host or has stopped hearing from the agent), the assistant's `note`, a live line with the agent's current tool or last message and how long ago, the assistant's `ask` highlighted, and an **Open** button. The status and live line come from the same agent status the sidebar and `orca worktree ps` read, and keep updating after the reply is sent; the note and ask stay as written. The fence holds JSON:
+
+  ```json
+  {
+    "worktree": "ImageReview/packaging",
+    "note": "Testing a fix in fixtest.py",
+    "ask": "The commit skipped the pre-commit hook. Fix pnpm first?",
+    "actions": [
+      { "label": "Fix pnpm first", "reply": "Fix pnpm in ImageReview/packaging, then re-run the hook", "style": "primary" },
+      { "label": "Reply…", "input": true }
+    ]
+  }
+  ```
+
+  Use `project-card` as the whole info string: Chat UI reads only the first word of a fence's info string, so ` ```widget project-card ` renders as a widget. Bad JSON or an unknown workspace shows the fence as a code block.
+- A card's **actions** are reply buttons, up to four. Each shows the exact text it will send; `"input": true` opens a small text box instead. Clicking one sends that text into the same chat as your next message, exactly as if you had typed it, and disables the card's actions. Nothing is clicked or run automatically. Orca does not write to the agent's transcript, so after a reload it reads which action you chose from the transcript itself (a later message of yours that matches the action's text); a typed reply is remembered locally on this device. The project icon is the card's own `icon`, else the app icon found in a local repo (an Xcode `AppIcon.appiconset`, `build/icon.png`, `resources/icon.*`, `public/favicon.*`, then Orca's usual repo icon files), else a coloured letter. SSH and remote projects always get the letter: Orca does not read remote files for an icon. The mobile app does not draw chips or cards; it shows the fence as its raw block.
+- When to use them, as the `visualize` skill tells Claude: a chip for any project mention, a card for an update about a project, and actions only when you have a decision to make.
 
 ## Availability
 

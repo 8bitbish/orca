@@ -7,13 +7,19 @@
 
 import { createContext } from 'react'
 
-export type NativeChatFenceRoute = 'mermaid' | 'html' | 'svg' | 'widget' | 'code'
+export type NativeChatFenceRoute = 'mermaid' | 'html' | 'svg' | 'widget' | 'project-card' | 'code'
+
+/** The fence language for a live project card. The pipeline drops an info
+ *  string's later words, so `widget project-card` would reach us as `widget`. */
+export const NATIVE_CHAT_PROJECT_CARD_FENCE = 'project-card'
 
 export type NativeChatFencePreviewScope = {
-  /** Live HTML/SVG/widget previews; on for assistant replies only. */
+  /** Live HTML/SVG/widget previews and project cards; on for assistant replies only. */
   markupPreviews: boolean
   /** Body of the message's trailing unclosed fence, or null when every fence closed. */
   openFenceBody: string | null
+  /** The message the fence belongs to; project cards key their reply state by it. */
+  messageId?: string
 }
 
 /** No provider: the block is not in a reply, so markup stays code. */
@@ -74,7 +80,8 @@ export function nativeChatFenceRoute({
     normalized !== 'mermaid' &&
     normalized !== 'html' &&
     normalized !== 'svg' &&
-    normalized !== 'widget'
+    normalized !== 'widget' &&
+    normalized !== NATIVE_CHAT_PROJECT_CARD_FENCE
   ) {
     return 'code'
   }

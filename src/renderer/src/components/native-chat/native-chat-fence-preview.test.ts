@@ -36,6 +36,8 @@ describe('nativeChatFenceRoute', () => {
     ['svg', 'svg'],
     ['widget', 'widget'],
     ['Widget', 'widget'],
+    ['project-card', 'project-card'],
+    ['Project-Card', 'project-card'],
     ['ts', 'code'],
     ['xml', 'code'],
     [undefined, 'code']
@@ -59,5 +61,30 @@ describe('nativeChatFenceRoute', () => {
     expect(
       nativeChatFenceRoute({ language: 'mermaid', code: 'graph TD\n  A-->', scope: mermaid })
     ).toBe('code')
+  })
+})
+
+describe('nativeChatFenceRoute: project cards', () => {
+  const card = '{"worktree":"orca/main"}\n'
+
+  it('draws a finished project-card fence only in an assistant reply', () => {
+    expect(nativeChatFenceRoute({ language: 'project-card', code: card, scope: REPLY })).toBe(
+      'project-card'
+    )
+    const userOrToolOutput = { markupPreviews: false, openFenceBody: null }
+    expect(
+      nativeChatFenceRoute({ language: 'project-card', code: card, scope: userOrToolOutput })
+    ).toBe('code')
+  })
+
+  it('keeps a project-card fence as code while it streams', () => {
+    const scope = { markupPreviews: true, openFenceBody: '{"worktree":"orca/ma' }
+    expect(
+      nativeChatFenceRoute({ language: 'project-card', code: '{"worktree":"orca/ma\n', scope })
+    ).toBe('code')
+  })
+
+  it('does not treat a widget fence as a project card: the info string after the first word is dropped', () => {
+    expect(nativeChatFenceRoute({ language: 'widget', code: card, scope: REPLY })).toBe('widget')
   })
 })

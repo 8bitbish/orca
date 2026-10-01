@@ -104,6 +104,8 @@ export function createReposApi(): NonNullable<Partial<PreloadApi>['repos']> {
     },
     onCloneProgress: () => noopUnsubscribe,
     getGitUsername: () => Promise.resolve(''),
+    // A paired web client never reads the host's files for an icon.
+    getAppIcon: () => Promise.resolve(null),
     getBaseRefDefault: async ({ repoId }) =>
       callRuntimeResult('repo.baseRefDefault', { repo: repoId }),
     searchBaseRefs: async ({ repoId, query, limit }) =>

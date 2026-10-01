@@ -60,6 +60,9 @@ export const reposApi = {
   getGitUsername: (args: { repoId: string }): Promise<string> =>
     ipcRenderer.invoke('repos:getGitUsername', args),
 
+  getAppIcon: (args: { repoId: string }): Promise<string | null> =>
+    ipcRenderer.invoke('repos:getAppIcon', args),
+
   getBaseRefDefault: (args: {
     repoId: string
     hostId?: ExecutionHostId

@@ -103,6 +103,8 @@ export type RepositoryApi = {
   getDefaultCreateProjectParent: () => Promise<string>
   onCloneProgress: (callback: (data: { phase: string; percent: number }) => void) => () => void
   getGitUsername: (args: { repoId: string }) => Promise<string>
+  /** A local repo's app icon as a data: URI; null for remote repos or when none is found. */
+  getAppIcon?: (args: { repoId: string }) => Promise<string | null>
   getBaseRefDefault: (args: {
     repoId: string
     hostId?: ExecutionHostId

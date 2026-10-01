@@ -3,9 +3,12 @@ name: visualize
 description: >-
   Draw a static inline visual in an Orca Chat UI reply with a ```widget fence:
   option cards with costs, comparisons, timelines and schedules, Gantt bars,
-  screen layouts with measurements, before/after panels, and simple flows. Use
-  when a picture would beat prose and the session is running in Orca's Chat UI
-  (ORCA_STRUCTURED_SESSION is set). Outside Orca's Chat UI, use Mermaid or prose.
+  screen layouts with measurements, before/after panels, and simple flows. Also
+  show Orca projects as live chips (an orca-worktree: link) and live project
+  cards (a ```project-card fence) with reply buttons. Use when a picture would
+  beat prose, or whenever a reply names or updates an Orca project, and the
+  session is running in Orca's Chat UI (ORCA_STRUCTURED_SESSION is set). Outside
+  Orca's Chat UI, use Mermaid or prose.
 ---
 
 # Visualize
@@ -93,6 +96,73 @@ placeholder content block; set its height or width inline); `pill` (a button) an
 line with arrowheads at both ends; put its label in a child `<span>`). For angled arrows,
 add `<svg class="overlay">` with an arrow `marker` and use the classes `measure`, `guide`,
 `arrowhead` and `measure-label` on its shapes.
+
+## Projects: chips and cards
+
+Orca's Chat UI also draws the projects and workspaces Orca manages, live from the same
+status the sidebar and `orca worktree ps` show. They follow the same "where you are running"
+check above: use them only where widgets render.
+
+When to use them:
+
+- **Chip**: every time a reply names an Orca project or workspace. Prefer a chip to a bare name
+  or a bullet list of names.
+- **Card**: when the reply is an update about a project: what it is doing, what it needs.
+- **Actions** on a card: only when the user has a decision to make. A plain status update has no
+  actions.
+
+### Chip
+
+A markdown link with the `orca-worktree:` scheme:
+
+```md
+Pushed the fix to [orca-personal](orca-worktree:orca-personal/personal) and it is building.
+```
+
+The target is `repo/workspace`, using the names `orca worktree list --json` shows (the repo's
+`displayName`, then the workspace's `displayName` or branch), or a bare `repo` for its main
+workspace, or a full worktree id (`repoId::path`). Percent-encode spaces (`My%20App/main`). The
+chip shows the project's icon, name, workspace (unless it is the main one) and a live status
+dot, and clicking it focuses that workspace. A target Orca does not know shows as plain text.
+
+### Card
+
+A fence whose language is `project-card`, holding strict JSON (no comments). Write
+`project-card` as the whole info string: the chat reads only the first word of a fence's info
+string, so ` ```widget project-card ` would render as a widget.
+
+```project-card
+{
+  "worktree": "ImageReview/packaging",
+  "note": "Testing a fix in fixtest.py",
+  "ask": "The commit skipped the pre-commit hook. Fix pnpm first?",
+  "actions": [
+    { "label": "Fix pnpm first", "reply": "Fix pnpm in ImageReview/packaging, then re-run the pre-commit hook before committing", "style": "primary" },
+    { "label": "Commit as is", "reply": "Keep the ImageReview/packaging commit without the hook; fix pnpm later" },
+    { "label": "Reply…", "input": true }
+  ]
+}
+```
+
+- `worktree` (required): the same target a chip takes.
+- `note`: your one-line summary. Shown as written.
+- `ask`: what you need from the user, highlighted. Shown as written.
+- `icon`: an emoji to use instead of the project's own icon. Usually leave it out: Orca uses the
+  repo's app icon when it finds one, else a coloured letter.
+- `actions`: up to four. Each has a `label` (40 characters at most) and either a `reply` (the
+  exact text it sends) or `"input": true` (a small text box for a free reply). `"style":
+  "primary"` marks the recommended one.
+
+The card draws its own status pill (Working, Needs you, Done, Idle, or Unverifiable when
+Orca cannot reach the host) and a live line with the agent's current tool or last message, so do
+not restate live status in `note`. The status keeps updating after the reply is sent; `note` and
+`ask` do not.
+
+Each action shows the exact text it will send. Clicking one sends that text into this chat as
+the user's next message, as if they had typed it, and disables the card's actions. Nothing runs
+on its own: you receive the message and act on it then. So write each `reply` as a complete
+instruction that makes sense on its own, naming the project. Bad JSON or an unknown workspace
+shows the fence as a code block.
 
 ## Examples
 

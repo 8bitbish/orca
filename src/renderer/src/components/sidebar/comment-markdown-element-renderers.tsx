@@ -22,6 +22,18 @@ export type DocumentCodeBlockRenderer = (props: {
   language?: string
 }) => React.JSX.Element
 
+/** Draws an `orca-worktree:` link; only native chat passes one, so only it keeps the scheme. */
+export type WorktreeLinkRenderer = (props: {
+  href: string
+  children?: React.ReactNode
+}) => React.JSX.Element
+
+const ORCA_WORKTREE_HREF = /^\s*orca-worktree:/i
+
+export function isOrcaWorktreeHref(href: string | undefined): href is string {
+  return href !== undefined && ORCA_WORKTREE_HREF.test(href)
+}
+
 function extractCodeFenceLanguage(children: React.ReactNode): string | undefined {
   const child = React.Children.toArray(children)[0]
   if (!React.isValidElement<{ className?: string }>(child)) {
@@ -239,12 +251,15 @@ export function createCompactCommentMarkdownComponents(
 
 export function createDocumentCommentMarkdownComponents(
   onLinkClick?: CommentMarkdownLinkClickHandler,
-  renderCodeBlock?: DocumentCodeBlockRenderer
+  renderCodeBlock?: DocumentCodeBlockRenderer,
+  renderWorktreeLink?: WorktreeLinkRenderer
 ): Components {
   return {
     p: ({ children }) => <p className="my-2 first:mt-0 last:mb-0">{children}</p>,
     a: ({ href, children }) =>
-      isGitHubUserAttachmentVideoLink(href, children) ? (
+      renderWorktreeLink && isOrcaWorktreeHref(href) ? (
+        renderWorktreeLink({ href, children })
+      ) : isGitHubUserAttachmentVideoLink(href, children) ? (
         // Why: GitHub's API returns uploaded videos as bare attachment links;
         // GitHub.com upgrades them to media embeds in its own renderer.
         <GitHubUserAttachmentVideo href={href}>{children}</GitHubUserAttachmentVideo>

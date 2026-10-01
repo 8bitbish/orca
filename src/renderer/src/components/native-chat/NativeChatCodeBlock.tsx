@@ -8,10 +8,12 @@ import { NativeChatDiagramCard } from './NativeChatDiagramCard'
 import { NativeChatMarkupPreview } from './NativeChatMarkupPreview'
 import { NativeChatMermaidDiagram } from './NativeChatMermaidDiagram'
 import { NativeChatWidgetCard } from './NativeChatWidgetCard'
+import { NativeChatProjectCard } from './NativeChatProjectCard'
 import { NativeChatFencePreviewContext, nativeChatFenceRoute } from './native-chat-fence-preview'
 
 /** Code fences need their own copy target rather than the whole chat message.
- *  Finished mermaid fences, and html/svg/widget fences in a reply, render as diagrams. */
+ *  Finished mermaid fences, and html/svg/widget fences in a reply, render as diagrams;
+ *  a finished project-card fence in a reply renders as a live project card. */
 export function NativeChatCodeBlock({
   children,
   language
@@ -28,6 +30,14 @@ export function NativeChatCodeBlock({
       <NativeChatDiagramCard kind="mermaid" label={getCodeBlockLanguageLabel(route)} source={code}>
         <NativeChatMermaidDiagram source={code.trimEnd()} />
       </NativeChatDiagramCard>
+    )
+  }
+  if (route === 'project-card') {
+    return (
+      <NativeChatProjectCard
+        source={code}
+        fallback={<NativeChatPlainCodeBlock language={language} code={code} body={children} />}
+      />
     )
   }
   if (route === 'widget') {
@@ -52,6 +62,19 @@ export function NativeChatCodeBlock({
 
   // A mermaid fence still streaming shows its text: its <code> child would render the diagram.
   const body = language?.toLowerCase() === 'mermaid' ? <code>{code}</code> : children
+  return <NativeChatPlainCodeBlock language={language} code={code} body={body} />
+}
+
+/** The fence as source: a language header with a copy button, then the code. */
+function NativeChatPlainCodeBlock({
+  language,
+  code,
+  body
+}: {
+  language?: string
+  code: string
+  body: React.ReactNode
+}): React.JSX.Element {
   return (
     <div className="group/code relative my-3 min-w-0 max-w-full overflow-hidden rounded-md bg-accent">
       {language ? (

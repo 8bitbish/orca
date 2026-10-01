@@ -89,4 +89,6 @@ export type NativeChatComposerHandle = {
   }) => void
   /** Pastes clipboard content when no DOM paste event is available. */
   pasteFromClipboard: () => void
+  /** Sends `text` as the user's next message without touching the draft; false if it could not. */
+  sendReply: (text: string) => boolean
 }

@@ -39,11 +39,8 @@ import {
   deriveNativeChatStreamingText,
   nativeChatStreamingMessage
 } from '../../../../shared/native-chat-streaming'
-import {
-  shouldFocusNativeChatComposerFromEditingKey,
-  shouldFocusNativeChatPaneFromPointerTarget,
-  shouldRedirectNativeChatTyping
-} from './native-chat-typing-redirect'
+import { shouldFocusNativeChatPaneFromPointerTarget } from './native-chat-typing-redirect'
+import { handleNativeChatResolvedViewKeyDown } from './native-chat-resolved-view-key-down'
 import {
   emptyNativeChatContextMenuActions,
   useNativeChatContextMenu
@@ -54,10 +51,12 @@ import { LinkActionPopover } from '@/components/link-actions/LinkActionPopover'
 import { useNativeChatLinkActions } from './use-native-chat-link-actions'
 import type { NativeChatResolvedViewProps } from './native-chat-view-types'
 import { useNativeChatFileLinkContext } from './use-native-chat-file-link-context'
-import { matchNativeChatSplitShortcut } from './native-chat-split-shortcut'
-import { getShortcutPlatform } from '@/lib/shortcut-platform'
 import { formatShortcutLabel } from '@/hooks/useShortcutLabel'
 import { isQueuedPendingMessageId } from './native-chat-synthetic-message-ids'
+import {
+  NativeChatProjectReplyContext,
+  useNativeChatProjectReplyChannel
+} from './native-chat-project-reply-context'
 
 /** Renders the bridge UI after NativeChatSessionGate resolves its agent session. */
 export function NativeChatResolvedView({
@@ -301,6 +300,12 @@ export function NativeChatResolvedView({
   const viewState = selectNativeChatViewState(sessionWithPending)
 
   const isConversation = viewState.kind === 'ready'
+  // Card actions answer through the composer, so they are live only while it can send.
+  const projectReplies = useNativeChatProjectReplyChannel(
+    composerRef,
+    canSend && !questionActive && targetPtyId !== null,
+    sessionWithPending.messages
+  )
   useEffect(() => {
     if (
       shouldClearNativeChatWorkingSuppression({
@@ -363,35 +368,13 @@ export function NativeChatResolvedView({
           rootRef.current?.focus({ preventScroll: true })
         }
       }}
-      onKeyDownCapture={(event) => {
-        const splitDirection = event.repeat
-          ? null
-          : matchNativeChatSplitShortcut(event, getShortcutPlatform(), keybindings)
-        if (splitDirection && contextMenuActions) {
-          event.preventDefault()
-          event.stopPropagation()
-          if (splitDirection === 'right') {
-            contextMenuActions.onSplitRight()
-          } else {
-            contextMenuActions.onSplitDown()
-          }
-          return
-        }
-        // Backspace/Delete outside an input focuses the composer (like typing)
-        // but inserts nothing — let the now-focused field handle the keystroke.
-        if (shouldFocusNativeChatComposerFromEditingKey(event)) {
-          composerRef.current?.focus()
-          return
-        }
-        if (!shouldRedirectNativeChatTyping(event)) {
-          return
-        }
-        if (!composerRef.current?.insertTypedText(event.key)) {
-          return
-        }
-        event.preventDefault()
-        event.stopPropagation()
-      }}
+      onKeyDownCapture={(event) =>
+        handleNativeChatResolvedViewKeyDown(event, {
+          keybindings,
+          splitActions: contextMenuActions,
+          composer: composerRef.current
+        })
+      }
       onMouseUpCapture={contextMenu.onSelectionCapture}
       onKeyUpCapture={contextMenu.onSelectionCapture}
       onContextMenuCapture={contextMenu.onContextMenuCapture}
@@ -405,18 +388,20 @@ export function NativeChatResolvedView({
         ) : viewState.kind === 'empty' ? (
           <NativeChatEmptyState kind="empty" agent={agent} />
         ) : (
-          <NativeChatMessageList
-            session={sessionWithPending}
-            isVisible={isVisible}
-            isWorking={turnActive}
-            expandSignal={false}
-            fontScale={fontScale.scale}
-            {...turnTiming}
-            awaitingInput={awaitingInput}
-            onLinkClick={onLinkClick}
-            allowFileUriLinks={fileLinkContext !== null}
-            deliveryNotices={launchPromptDeliveryNotices}
-          />
+          <NativeChatProjectReplyContext.Provider value={projectReplies}>
+            <NativeChatMessageList
+              session={sessionWithPending}
+              isVisible={isVisible}
+              isWorking={turnActive}
+              expandSignal={false}
+              fontScale={fontScale.scale}
+              {...turnTiming}
+              awaitingInput={awaitingInput}
+              onLinkClick={onLinkClick}
+              allowFileUriLinks={fileLinkContext !== null}
+              deliveryNotices={launchPromptDeliveryNotices}
+            />
+          </NativeChatProjectReplyContext.Provider>
         )}
       </div>
       {/* Live interactive prompt (question / approval) is the bottom input region

@@ -10,9 +10,11 @@ import {
   createCompactCommentMarkdownComponents,
   createDocumentCommentMarkdownComponents,
   documentCommentMarkdownComponents,
+  isOrcaWorktreeHref,
   isTrustedCompactImageSrc,
   type CommentMarkdownLinkClickHandler,
-  type DocumentCodeBlockRenderer
+  type DocumentCodeBlockRenderer,
+  type WorktreeLinkRenderer
 } from './comment-markdown-element-renderers'
 import { remarkNativeChatFileLinks } from './comment-markdown-native-chat-file-links'
 
@@ -49,6 +51,14 @@ const commentMarkdownUrlTransform: UrlTransform = (value, key, node) => {
     return value
   }
   return defaultUrlTransform(value)
+}
+
+// Why: only a surface that draws worktree chips keeps the scheme; everywhere else it is stripped.
+function withWorktreeLinks(transform: UrlTransform): UrlTransform {
+  return (value, key, node) =>
+    key === 'href' && node?.tagName === 'a' && isOrcaWorktreeHref(value)
+      ? value
+      : transform(value, key, node)
 }
 
 const commentMarkdownFileUriUrlTransform: UrlTransform = (value, key, node) => {
@@ -170,9 +180,9 @@ const commentMarkdownSanitizeSchema = {
   },
   protocols: {
     ...defaultSchema.protocols,
-    // Why: native chat opts into file URI links after sanitize; the URL
-    // transform below still strips them for all other markdown surfaces.
-    href: [...(defaultSchema.protocols?.href ?? []), 'file'],
+    // Why: native chat opts into file URI and worktree links after sanitize; the
+    // URL transform below still strips them for all other markdown surfaces.
+    href: [...(defaultSchema.protocols?.href ?? []), 'file', 'orca-worktree'],
     src: [...(defaultSchema.protocols?.src ?? []), 'data', 'blob']
   }
 }
@@ -190,6 +200,8 @@ type CommentMarkdownProps = React.ComponentPropsWithoutRef<'div'> & {
   linkifyFilePaths?: boolean
   expandImages?: boolean
   renderCodeBlock?: DocumentCodeBlockRenderer
+  /** Document variant only: keeps `orca-worktree:` links and draws them with this. */
+  renderWorktreeLink?: WorktreeLinkRenderer
 }
 
 // Why forwardRef + rest props: Radix's HoverCardTrigger asChild merges a ref
@@ -207,6 +219,7 @@ const CommentMarkdown = React.memo(
       linkifyFilePaths = false,
       expandImages = false,
       renderCodeBlock,
+      renderWorktreeLink,
       ...rest
     },
     ref
@@ -214,17 +227,27 @@ const CommentMarkdown = React.memo(
     const components = React.useMemo(() => {
       if (!onLinkClick) {
         return variant === 'document'
-          ? renderCodeBlock
-            ? createDocumentCommentMarkdownComponents(undefined, renderCodeBlock)
+          ? renderCodeBlock || renderWorktreeLink
+            ? createDocumentCommentMarkdownComponents(
+                undefined,
+                renderCodeBlock,
+                renderWorktreeLink
+              )
             : documentCommentMarkdownComponents
           : expandImages
             ? createCompactCommentMarkdownComponents(undefined, true)
             : compactCommentMarkdownComponents
       }
       return variant === 'document'
-        ? createDocumentCommentMarkdownComponents(onLinkClick, renderCodeBlock)
+        ? createDocumentCommentMarkdownComponents(onLinkClick, renderCodeBlock, renderWorktreeLink)
         : createCompactCommentMarkdownComponents(onLinkClick, expandImages)
-    }, [expandImages, renderCodeBlock, variant, onLinkClick])
+    }, [expandImages, renderCodeBlock, renderWorktreeLink, variant, onLinkClick])
+    const urlTransform = React.useMemo(() => {
+      const base = allowFileUriLinks
+        ? commentMarkdownFileUriUrlTransform
+        : commentMarkdownUrlTransform
+      return renderWorktreeLink && variant === 'document' ? withWorktreeLinks(base) : base
+    }, [allowFileUriLinks, renderWorktreeLink, variant])
     const activeRemarkPlugins = React.useMemo(() => {
       const plugins = linkifyFilePaths
         ? [...remarkPlugins, remarkNativeChatFileLinks]
@@ -249,9 +272,7 @@ const CommentMarkdown = React.memo(
           remarkPlugins={activeRemarkPlugins}
           rehypePlugins={rehypePlugins}
           components={components}
-          urlTransform={
-            allowFileUriLinks ? commentMarkdownFileUriUrlTransform : commentMarkdownUrlTransform
-          }
+          urlTransform={urlTransform}
         >
           {content}
         </Markdown>

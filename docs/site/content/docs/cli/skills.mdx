@@ -28,7 +28,7 @@ Use `npx skills add` with the public Orca repo and the skill name. Default agent
 | [`orca-emulator`](#orca-emulator)                   | `npx skills add https://github.com/stablyai/orca --skill orca-emulator --global`           | iOS Simulator control.                                        |
 | [`orca-emulator-android`](#orca-emulator-android)   | `npx skills add https://github.com/stablyai/orca --skill orca-emulator-android --global`   | Android emulator/device via adb.                              |
 | [`orca-per-workspace-env`](#orca-per-workspace-env) | `npx skills add https://github.com/stablyai/orca --skill orca-per-workspace-env --global`  | Per-workspace environment recipes (`orca.yaml`).              |
-| [`visualize`](#visualize)                           | `npx skills add https://github.com/8bitbish/orca/tree/personal --skill visualize --global` | Static `widget` visuals in Chat UI replies.                   |
+| [`visualize`](#visualize)                           | `npx skills add https://github.com/8bitbish/orca/tree/personal --skill visualize --global` | Static `widget` visuals and live project chips and cards.     |
 
 ## Hybrid stubs vs the live guide
 
@@ -167,7 +167,7 @@ Use when setting up or debugging per-workspace environment recipes in `orca.yaml
 npx skills add https://github.com/8bitbish/orca/tree/personal --skill visualize --global
 ```
 
-Teaches the agent to answer with a static `widget` fence when a visual beats prose: option cards with costs, comparisons, timelines, screen layouts with measurements. It carries the style kit's class vocabulary and worked examples, and tells the agent to draw widgets only in Chat UI (`ORCA_STRUCTURED_SESSION` is set) and use Mermaid or prose elsewhere. It ships its full guide, with no stub, because it never runs the Orca CLI. See [Chat UI replies](/docs/agents/native-chat#replies).
+Teaches the agent to answer with a static `widget` fence when a visual beats prose: option cards with costs, comparisons, timelines, screen layouts with measurements. It carries the style kit's class vocabulary and worked examples, and the syntax for live project chips (`orca-worktree:` links) and `project-card` fences with reply actions, with when to use each. It tells the agent to draw widgets only in Chat UI (`ORCA_STRUCTURED_SESSION` is set) and use Mermaid or prose elsewhere. It ships its full guide, with no stub, because it never runs the Orca CLI. See [Chat UI replies](/docs/agents/native-chat#replies).
 
 ## Discovery sources
 

@@ -37,14 +37,15 @@ export function useNativeChatStructuredComposerSend({
   setCaret
 }: UseNativeChatStructuredComposerSendArgs): (
   text: string,
-  attachments?: readonly NativeChatComposerImageAttachment[]
+  attachments?: readonly NativeChatComposerImageAttachment[],
+  options?: { keepDraft?: boolean }
 ) => void {
   const composition = useRef({ draft, imageAttachments })
   useLayoutEffect(() => {
     composition.current = { draft, imageAttachments }
   }, [draft, imageAttachments])
   return useCallback(
-    (text: string, attachments = imageAttachments): void => {
+    (text: string, attachments = imageAttachments, options?: { keepDraft?: boolean }): void => {
       if (!structuredTransport) {
         return
       }
@@ -72,9 +73,10 @@ export function useNativeChatStructuredComposerSend({
           )
           setHistory((previous) => pushHistory(previous, text))
           if (
-            hostCommand &&
-            (composition.current.draft !== submitted.draft ||
-              composition.current.imageAttachments !== submitted.imageAttachments)
+            options?.keepDraft ||
+            (hostCommand &&
+              (composition.current.draft !== submitted.draft ||
+                composition.current.imageAttachments !== submitted.imageAttachments))
           ) {
             return
           }

@@ -41,73 +41,83 @@ export function useNativeChatPtyComposerSend(args: {
   clearSkillOrigin: () => void
   clearImageAttachments: () => void
   setNotice: Dispatch<SetStateAction<string | null>>
-}): () => void {
-  return useCallback(() => {
-    const text = args.draft
-    const imagePaths = args.imageAttachments.map((attachment) => attachment.path)
-    if ((text.trim() === '' && imagePaths.length === 0) || args.disabled) {
-      return
-    }
-    // Why: keep option-command and prompt writes from interleaving on the PTY input line.
-    if (args.isDispatchingSessionOption) {
-      return
-    }
-    const target = args.resolveTarget()
-    if (!target) {
-      return
-    }
-    const classification = args.classifySend(text)
-    const { sendOptions } = resolveNativeChatLaunchDraftSend({
-      launchDraft: args.launchDraft,
-      launchDraftResolved: args.launchDraftResolved,
-      agent: args.agent,
-      readScreen: () => args.readTerminalScreen?.()
-    })
-    let pendingHandle: NativeChatSendHandle | null = null
-    // Why: slash-like text must not silently drop its attached images.
-    if (classification !== 'chat' && imagePaths.length === 0) {
-      pendingHandle =
-        args.agent === 'codex' && isSlashCommandDraft(text)
-          ? sendNativeChatTypedCommand(target.settings, target.ptyId, text)
-          : sendNativeChatMessage(target.settings, target.ptyId, text, sendOptions)
-    } else if (imagePaths.length > 0) {
-      pendingHandle = sendNativeChatMessageWithImageAttachments(
-        args.agent,
-        target.settings,
-        target.ptyId,
-        text,
-        imagePaths,
-        sendOptions
-      )
-    } else if (text.trim().length > 0) {
-      pendingHandle = sendNativeChatMessage(target.settings, target.ptyId, text, sendOptions)
-    } else {
-      submitNativeChatPrompt(target.settings, target.ptyId)
-    }
-    if (classification !== 'chat') {
-      if (pendingHandle) {
-        args.trackPendingSend(pendingHandle)
+}): (reply?: string) => boolean {
+  // A `reply` (a project card's action) is sent as typed text and leaves the draft alone.
+  return useCallback(
+    (reply?: string): boolean => {
+      const text = reply ?? args.draft
+      const imagePaths =
+        reply === undefined ? args.imageAttachments.map((attachment) => attachment.path) : []
+      if ((text.trim() === '' && imagePaths.length === 0) || args.disabled) {
+        return false
       }
-      if (classification === 'command') {
-        args.onSlashCommand?.(text.trim())
-        args.sessionOptionsSurface?.recordOutgoingCommand(text.trim())
+      // Why: keep option-command and prompt writes from interleaving on the PTY input line.
+      if (args.isDispatchingSessionOption) {
+        return false
       }
-    } else {
-      const pendingId = args.onOptimisticSend?.(text, imagePaths)
-      if (pendingHandle) {
-        args.trackPendingSend(pendingHandle, pendingId)
+      const target = args.resolveTarget()
+      if (!target) {
+        return false
       }
-    }
-    emitNativeChatMessageSent({
-      agent: args.agent,
-      runtime: nativeChatComposerTargetIsRemote(target.ptyId) ? 'remote' : 'local'
-    })
-    args.setHistory((previous) => pushHistory(previous, text))
-    args.setDraft('')
-    args.setCaret(0)
-    args.clearSkillOrigin()
-    args.clearImageAttachments()
-    args.setNotice(null)
-    useAppStore.getState().clearNativeChatLaunchDraft(args.terminalTabId)
-  }, [args])
+      const classification = args.classifySend(text)
+      const { sendOptions } = resolveNativeChatLaunchDraftSend({
+        launchDraft: args.launchDraft,
+        launchDraftResolved: args.launchDraftResolved,
+        agent: args.agent,
+        readScreen: () => args.readTerminalScreen?.()
+      })
+      let pendingHandle: NativeChatSendHandle | null = null
+      // Why: slash-like text must not silently drop its attached images.
+      if (classification !== 'chat' && imagePaths.length === 0) {
+        pendingHandle =
+          args.agent === 'codex' && isSlashCommandDraft(text)
+            ? sendNativeChatTypedCommand(target.settings, target.ptyId, text)
+            : sendNativeChatMessage(target.settings, target.ptyId, text, sendOptions)
+      } else if (imagePaths.length > 0) {
+        pendingHandle = sendNativeChatMessageWithImageAttachments(
+          args.agent,
+          target.settings,
+          target.ptyId,
+          text,
+          imagePaths,
+          sendOptions
+        )
+      } else if (text.trim().length > 0) {
+        pendingHandle = sendNativeChatMessage(target.settings, target.ptyId, text, sendOptions)
+      } else {
+        submitNativeChatPrompt(target.settings, target.ptyId)
+      }
+      if (classification !== 'chat') {
+        if (pendingHandle) {
+          args.trackPendingSend(pendingHandle)
+        }
+        if (classification === 'command') {
+          args.onSlashCommand?.(text.trim())
+          args.sessionOptionsSurface?.recordOutgoingCommand(text.trim())
+        }
+      } else {
+        const pendingId = args.onOptimisticSend?.(text, imagePaths)
+        if (pendingHandle) {
+          args.trackPendingSend(pendingHandle, pendingId)
+        }
+      }
+      emitNativeChatMessageSent({
+        agent: args.agent,
+        runtime: nativeChatComposerTargetIsRemote(target.ptyId) ? 'remote' : 'local'
+      })
+      args.setHistory((previous) => pushHistory(previous, text))
+      // The launch draft's TUI line was consumed by this write either way.
+      useAppStore.getState().clearNativeChatLaunchDraft(args.terminalTabId)
+      if (reply !== undefined) {
+        return true
+      }
+      args.setDraft('')
+      args.setCaret(0)
+      args.clearSkillOrigin()
+      args.clearImageAttachments()
+      args.setNotice(null)
+      return true
+    },
+    [args]
+  )
 }

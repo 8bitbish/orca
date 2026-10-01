@@ -20,6 +20,7 @@ import { NativeChatCopyButton } from './NativeChatCopyButton'
 import { NativeChatMessageTimestamp } from './NativeChatMessageTimestamp'
 import { isNativeChatThoughtMarker } from '../../../../shared/native-chat-thought-marker'
 import { NativeChatThoughtRow } from './NativeChatThoughtRow'
+import { renderNativeChatWorktreeLink } from './NativeChatProjectChip'
 import {
   NativeChatFencePreviewContext,
   nativeChatOpenFenceBody,
@@ -97,9 +98,10 @@ export const MessageRow = memo(function MessageRow({
   const fenceScope = useMemo<NativeChatFencePreviewScope>(
     () => ({
       markupPreviews: message.role === 'assistant',
-      openFenceBody: nativeChatOpenFenceBody(markdown)
+      openFenceBody: nativeChatOpenFenceBody(markdown),
+      messageId: message.id
     }),
-    [markdown, message.role]
+    [markdown, message.id, message.role]
   )
 
   const scrollToTop = useCallback(() => {
@@ -311,6 +313,10 @@ export const MessageRow = memo(function MessageRow({
             variant="document"
             className="text-sm"
             renderCodeBlock={NativeChatCodeBlock}
+            // Project chips belong to replies; reasoning and system asides keep plain links.
+            renderWorktreeLink={
+              message.role === 'assistant' ? renderNativeChatWorktreeLink : undefined
+            }
             onLinkClick={onLinkClick}
             allowFileUriLinks={allowFileUriLinks}
             linkifyFilePaths={onLinkClick !== undefined}

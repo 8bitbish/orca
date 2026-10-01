@@ -111,7 +111,7 @@ function repoIconFromImageBuffer(buffer: Buffer, relativePath: string): RepoIcon
   }
 }
 
-async function readLocalImageIcon(
+export async function readLocalImageIcon(
   repoPath: string,
   relativePath: string
 ): Promise<RepoIcon | null> {

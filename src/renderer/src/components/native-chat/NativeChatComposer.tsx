@@ -1,5 +1,5 @@
 import type { NativeChatComposerInput } from './native-chat-composer-input'
-import { forwardRef, useCallback, useImperativeHandle, useState } from 'react'
+import { forwardRef, useCallback, useState } from 'react'
 import { useAppStore } from '../../store'
 import { useNativeChatComposerInterrupt } from './use-native-chat-composer-interrupt'
 import { useNativeChatContextUsageSummary } from './use-native-chat-context-usage-summary'
@@ -36,6 +36,7 @@ import { useImeEnterGestureOwnership } from '@/lib/ime-composition-keyboard-even
 import { useNativeChatComposerAppMenuSelection } from './use-native-chat-composer-app-menu-selection'
 import { useNativeChatWorkspaceFileDrop } from './use-native-chat-workspace-file-drop'
 import { useNativeChatComposerSubmit } from './use-native-chat-composer-submit'
+import { useNativeChatComposerHandle } from './use-native-chat-composer-handle'
 
 export type {
   NativeChatComposerHandle,
@@ -220,12 +221,6 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       setNotice
     })
 
-    useImperativeHandle(
-      ref,
-      () => ({ focus, insertTypedText, handlePasteEvent: handlePaste, pasteFromClipboard }),
-      [focus, insertTypedText, handlePaste, pasteFromClipboard]
-    )
-
     const { pickAttachment } = useNativeChatFileAttachmentActions(paneKey, attachExternalPaths)
     const { toggleDictation, startHoldDictation, stopHoldDictation } =
       useNativeChatDictationActions({ textareaRef, setDictationPressed })
@@ -298,6 +293,16 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       setDraft,
       setCaret,
       setHistory
+    })
+    useNativeChatComposerHandle(ref, {
+      focus,
+      insertTypedText,
+      handlePasteEvent: handlePaste,
+      pasteFromClipboard,
+      disabled,
+      sendPty,
+      sendStructured,
+      structuredTransport
     })
 
     const interrupt = useNativeChatComposerInterrupt({
