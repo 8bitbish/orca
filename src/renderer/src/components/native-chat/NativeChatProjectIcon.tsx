@@ -4,8 +4,9 @@ import { RepoIconGlyph } from '@/components/repo/repo-icon'
 import { resolveRepoHeaderColor } from '@/components/sidebar/project-header-color'
 import type { NativeChatProjectIconSource } from './native-chat-project-icon'
 
-/** A project's icon at chip (`sm`, 16px) or card (`md`, 24px) size. Decorative: the
- *  name beside it carries the meaning. */
+/** A project's icon at chip (`sm`, a 14px disc concentric with the pill's end) or
+ *  card (`md`, a 24px rounded square) size. Decorative: the name beside it carries
+ *  the meaning. */
 export function NativeChatProjectIcon({
   source,
   size
@@ -15,7 +16,7 @@ export function NativeChatProjectIcon({
 }): React.JSX.Element {
   // An app icon that fails to decode falls back to the monogram, never a broken image.
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
-  const box = size === 'sm' ? 'size-4 rounded-[4px]' : 'size-6 rounded-md'
+  const box = size === 'sm' ? 'size-3.5 rounded-full' : 'size-6 rounded-md'
   if (source.kind === 'repo') {
     const { repoIcon } = source
     // The sidebar's own glyph, so a chip and the sidebar row always agree.
@@ -27,10 +28,10 @@ export function NativeChatProjectIcon({
           'shrink-0',
           box,
           repoIcon.type !== 'image' && 'bg-muted',
-          repoIcon.type === 'emoji' && (size === 'sm' ? 'text-[12px]' : 'text-[16px]')
+          repoIcon.type === 'emoji' && (size === 'sm' ? 'text-[11px]' : 'text-[16px]')
         )}
         iconClassName={
-          repoIcon.type === 'image' ? 'size-full' : size === 'sm' ? 'size-3' : 'size-4'
+          repoIcon.type === 'image' ? 'size-full' : size === 'sm' ? 'size-2.5' : 'size-4'
         }
       />
     )
@@ -43,7 +44,7 @@ export function NativeChatProjectIcon({
         aria-hidden
         draggable={false}
         onError={() => setFailedSrc(source.src)}
-        className={cn('shrink-0 object-contain', box)}
+        className={cn('shrink-0 object-cover', box)}
       />
     )
   }
@@ -54,7 +55,7 @@ export function NativeChatProjectIcon({
         className={cn(
           'inline-flex shrink-0 items-center justify-center leading-none',
           box,
-          size === 'sm' ? 'text-[12px]' : 'text-[16px]'
+          size === 'sm' ? 'text-[11px]' : 'text-[16px]'
         )}
       >
         {source.glyph}
@@ -73,7 +74,7 @@ export function NativeChatProjectIcon({
       className={cn(
         'inline-flex shrink-0 items-center justify-center font-semibold leading-none text-foreground',
         box,
-        size === 'sm' ? 'text-[10px]' : 'text-[12px]'
+        size === 'sm' ? 'text-[9px]' : 'text-[12px]'
       )}
     >
       {monogram.letter}

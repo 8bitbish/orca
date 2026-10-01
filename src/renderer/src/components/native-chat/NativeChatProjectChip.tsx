@@ -29,6 +29,8 @@ export function NativeChatProjectChip({
   }
   const statusLabel = nativeChatProjectStatusLabel(status)
   const title = project.workspace ? `${project.name} · ${project.workspace}` : project.name
+  // Exactly one 20px prose line box, top-aligned, so a chip never spreads its line
+  // and centres on the prose glyphs. Icon and dot are concentric with the pill's ends.
   return (
     <button
       type="button"
@@ -47,7 +49,7 @@ export function NativeChatProjectChip({
           value1: statusLabel
         }
       )}
-      className="mx-0.5 inline-flex max-w-full items-center gap-1 rounded-full border border-border bg-muted/60 py-px pl-0.5 pr-1.5 align-[-0.2em] text-[12px] leading-5 text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
+      className="mx-0.5 inline-flex h-5 max-w-full items-center gap-1 rounded-full border border-border bg-muted/60 pl-0.5 pr-1 align-top text-[12px] leading-4 text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
     >
       <NativeChatProjectIcon source={project.icon} size="sm" />
       <span className="min-w-0 truncate font-medium">{project.name}</span>
