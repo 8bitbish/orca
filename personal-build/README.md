@@ -7,9 +7,9 @@ Why it is built this way: [DECISIONS.md](DECISIONS.md).
 
 ## How an update flows
 
-1. The Orca automation **Orca personal update** runs daily. Its precheck,
-   `needs-build.sh`, skips the run unless there is a new upstream release, an open merge, or
-   unpublished personal commits.
+1. The Orca automation **Orca personal update** runs daily to pick up new upstream releases.
+   Its precheck, `needs-build.sh`, skips the run unless there is a new upstream release, an
+   open merge, or personal commits nobody published (a safety net; fixes publish at once).
 2. When there is work, a Claude session runs `sync.sh` and follows [AGENT.md](AGENT.md):
    merge → type check + tests → signed `pnpm build:mac` → push `personal` → GitHub release.
    Conflicts and failures stop the script with a code the agent acts on.
@@ -24,8 +24,9 @@ Logs: `~/Library/Logs/orca-personal-sync/`. Run history: Orca → Automations.
 
 ## Adding a fix
 
-Commit it on `personal` with a `personal:` prefix. The next run sees an unpublished commit
-and rebuilds. To build immediately: `orca automations run <id>` or run `sync.sh` yourself.
+Commit it on `personal` with a `personal:` prefix, then publish straight away with
+`personal-build/sync.sh`, following [AGENT.md](AGENT.md). The daily run picks up new upstream
+releases, plus anything left unpublished as a safety net.
 
 ## Requirements
 
