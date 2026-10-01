@@ -14,7 +14,7 @@ import {
   timestampMs
 } from '../ai-vault/session-scanner-values'
 import { imageSourcePathFromText } from '../../shared/native-chat-image-transcript-markers'
-import { claudeContentBlocks } from './transcript-record-blocks'
+import { claudeContentBlocks, claudeThinkingOnlyBlocks } from './transcript-record-blocks'
 import { claudeInterruptedMessageId } from './transcript-turn-markers'
 
 const MAX_EDIT_PATCH_HUNKS = 40
@@ -96,6 +96,16 @@ export function decodeClaudeTranscriptLine(
     }
   }
   const message = asRecord(record.message)
+  const thought = role === 'assistant' ? claudeThinkingOnlyBlocks(message?.content) : null
+  if (thought) {
+    return {
+      id: extractString(record.uuid) ?? extractString(message?.id) ?? fallbackId,
+      role: 'reasoning',
+      blocks: thought,
+      timestamp,
+      source: 'transcript'
+    }
+  }
   const editPatch = claudeEditPatch(record)
   const contentBlocks = claudeContentBlocks(message?.content)
   const decodedBlocks = editPatch ? withEditPatch(contentBlocks, editPatch) : contentBlocks
@@ -139,8 +149,6 @@ function isImageSourceRecord(blocks: NativeChatBlock[]): boolean {
   )
 }
 
-// Claude marks reasoning via `thinking` content blocks; when a message is made
-// up solely of reasoning, surface it as a reasoning-role message.
 function claudeMessageRole(
   role: 'user' | 'assistant',
   blocks: NativeChatBlock[]

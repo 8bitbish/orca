@@ -24,6 +24,7 @@ export function nativeChatThoughtLabel(live: boolean, seconds: number | null): s
 /**
  * The model's reasoning as one line — "Thinking…" while it is the turn's newest
  * output, "Thought for Ns" once the turn moves on — that opens to the full text.
+ * A thought with no text (signed-empty or redacted) is the same line, not a button.
  * Open state lives in the transcript's disclosure store so windowing cannot
  * re-collapse a thought the reader opened.
  */
@@ -44,6 +45,24 @@ export function NativeChatThoughtRow({
 }): React.JSX.Element {
   const { open, setOpen } = useNativeChatDisclosure(`thought:${messageId}`, false)
   const bodyId = useId()
+  const label = nativeChatThoughtLabel(live, seconds)
+  if (!markdown) {
+    // The provider recorded that it thought, not what: a plain line, nothing to open.
+    return (
+      <div data-native-chat-thought={live ? 'live' : 'settled'} className="flex min-h-6 py-0.5">
+        <span
+          className={cn(
+            'truncate text-sm leading-relaxed',
+            live
+              ? 'animate-pulse text-foreground/85 motion-reduce:animate-none'
+              : 'text-muted-foreground'
+          )}
+        >
+          {label}
+        </span>
+      </div>
+    )
+  }
   return (
     <div data-native-chat-thought={live ? 'live' : 'settled'}>
       <button
@@ -61,7 +80,7 @@ export function NativeChatThoughtRow({
               : 'text-muted-foreground group-hover/thought:text-foreground/80'
           )}
         >
-          {nativeChatThoughtLabel(live, seconds)}
+          {label}
         </span>
         <ChevronRight
           aria-hidden

@@ -201,6 +201,44 @@ describe('MessageRow reasoning', () => {
   })
 })
 
+describe('MessageRow thought with no text', () => {
+  function renderMarker(props: { thoughtSeconds?: number | null; thoughtLive?: boolean } = {}) {
+    return render(
+      <MessageRow
+        message={{
+          id: 'marker',
+          role: 'reasoning',
+          timestamp: 0,
+          source: 'transcript',
+          blocks: [{ type: 'text', text: '' }]
+        }}
+        expandSignal={false}
+        onScrollMessageToTop={vi.fn()}
+        {...props}
+      />
+    )
+  }
+
+  it('reads "Thought for Ns" as plain text with nothing to open', () => {
+    renderMarker({ thoughtSeconds: 2 })
+    const line = screen.getByText('Thought for 2s')
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(line.closest('[data-native-chat-thought]')?.querySelector('svg')).toBeNull()
+  })
+
+  it('reads "Thinking…" while it is the newest output, and "Thought" with no duration', () => {
+    renderMarker({ thoughtLive: true })
+    expect(screen.getByText('Thinking…').closest('[data-native-chat-thought]')).toHaveAttribute(
+      'data-native-chat-thought',
+      'live'
+    )
+    cleanup()
+    renderMarker()
+    expect(screen.getByText('Thought')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+})
+
 describe('MessageRow send mode', () => {
   function renderUser(sentAs?: NativeChatMessage['sentAs']) {
     return render(

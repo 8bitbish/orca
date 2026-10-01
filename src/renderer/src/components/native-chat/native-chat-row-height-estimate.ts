@@ -110,8 +110,8 @@ export function estimateNativeChatRowHeight(
     height = content.subagentGroupCount * SUBAGENT_ROW_PX
     partCount = height > 0 ? 1 : 0
   } else if (
+    // A thought with no text draws the same line.
     content.role === 'reasoning' &&
-    content.textLines > 0 &&
     content.toolCount === 0 &&
     content.imageCount === 0
   ) {

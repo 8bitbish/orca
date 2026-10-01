@@ -8,6 +8,7 @@ import type {
   NativeChatToolResultBlock
 } from '../../shared/native-chat-types'
 import { asRecord, extractString } from '../ai-vault/session-scanner-values'
+import { nativeChatThoughtMarkerBlocks } from '../../shared/native-chat-thought-marker'
 
 /** Coerce an arbitrary tool-result payload into a single output string. */
 export function toolResultOutput(value: unknown): string {
@@ -37,6 +38,29 @@ export function toolResultOutput(value: unknown): string {
     }
   }
   return parts.join('\n')
+}
+
+function isClaudeThinkingPart(item: unknown): boolean {
+  const type = asRecord(item)?.type
+  return type === 'thinking' || type === 'redacted_thinking'
+}
+
+/** A record made only of thinking parts reads as one reasoning row, even when
+ *  every part is empty: Claude Code signs thinking and records `thinking: ''`,
+ *  and redacted thinking never has text. Null for any other content. */
+export function claudeThinkingOnlyBlocks(content: unknown): NativeChatBlock[] | null {
+  if (!Array.isArray(content) || content.length === 0 || !content.every(isClaudeThinkingPart)) {
+    return null
+  }
+  const blocks: NativeChatBlock[] = []
+  for (const item of content) {
+    const record = asRecord(item)
+    const text = extractString(record?.thinking) ?? extractString(record?.text)
+    if (text) {
+      blocks.push({ type: 'text', text })
+    }
+  }
+  return blocks.length > 0 ? blocks : nativeChatThoughtMarkerBlocks()
 }
 
 /** Build the blocks for one Claude content array (string or block[]). */
@@ -75,7 +99,8 @@ function claudeContentBlock(record: Record<string, unknown>): NativeChatBlock | 
       return text ? { type: 'text', text } : null
     }
     case 'thinking': {
-      // Reasoning surfaces as a text block; the message role marks it as reasoning.
+      // Thinking beside other content stays inline; a thinking-only record is
+      // decoded whole by `claudeThinkingOnlyBlocks` instead.
       const text = extractString(record.thinking) ?? extractString(record.text)
       return text ? { type: 'text', text } : null
     }

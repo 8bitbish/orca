@@ -18,6 +18,7 @@ import { NativeChatCodeBlock } from './NativeChatCodeBlock'
 import { NativeChatNoticeRow } from './NativeChatNoticeRow'
 import { NativeChatCopyButton } from './NativeChatCopyButton'
 import { NativeChatMessageTimestamp } from './NativeChatMessageTimestamp'
+import { isNativeChatThoughtMarker } from '../../../../shared/native-chat-thought-marker'
 import { NativeChatThoughtRow } from './NativeChatThoughtRow'
 import {
   NativeChatFencePreviewContext,
@@ -106,6 +107,21 @@ export const MessageRow = memo(function MessageRow({
       onScrollMessageToTop(rowRef.current)
     }
   }, [onScrollMessageToTop])
+
+  // A thought with no text still draws its one line, which has nothing to open.
+  if (isNativeChatThoughtMarker(message) && !folded) {
+    return (
+      <div ref={rowRef} className="max-w-full">
+        <NativeChatThoughtRow
+          messageId={message.id}
+          markdown=""
+          live={thoughtLive}
+          seconds={thoughtSeconds}
+          allowFileUriLinks={allowFileUriLinks}
+        />
+      </div>
+    )
+  }
 
   // Skip rows with nothing renderable so the transcript shows no empty/ghost
   // bubble.

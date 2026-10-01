@@ -103,7 +103,8 @@ export function isModeledClaudeContent(value: unknown): boolean {
   if (part.type === 'tool_result') {
     return claudeText(part.tool_use_id) !== null
   }
-  // Redacted thinking arrives as an empty string plus a signature.
+  // Thinking with no text (signed-empty or redacted) is modeled too: it journals a
+  // thought marker, so it never falls back to a generic row.
   return part.type === 'thinking' || part.type === 'redacted_thinking'
 }
 

@@ -38,7 +38,7 @@ import type {
 } from './native-chat-message-rail-items'
 import { useNativeChatRailHistoryJump } from './use-native-chat-rail-history-jump'
 import { nativeChatReaderScrollInputHandlers } from './native-chat-reader-scroll-input'
-import { nativeChatThoughtSeconds } from './native-chat-thought-duration'
+import { nativeChatSessionThoughtSeconds } from './native-chat-thought-duration'
 
 import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
 import { isStructuredAgentSessionThinking } from '../../../../shared/structured-agent-session-live-turn'
@@ -202,8 +202,8 @@ export function NativeChatMessageList({
         : null
   const lifecycleWorking = session.transcriptLifecycle?.state === 'working'
   const thoughtSeconds = useMemo(
-    () => nativeChatThoughtSeconds(session.agent, journalItems),
-    [journalItems, session.agent]
+    () => nativeChatSessionThoughtSeconds(session.agent, journalItems, messages),
+    [journalItems, messages, session.agent]
   )
   const slots = useMemo(
     () =>

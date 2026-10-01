@@ -3,7 +3,11 @@ import type {
   AgentJournalItemBody,
   AgentJournalRenderItem
 } from '../../../../shared/agent-session-journal-types'
-import { nativeChatThoughtSeconds } from './native-chat-thought-duration'
+import type { NativeChatMessage } from '../../../../shared/native-chat-types'
+import {
+  nativeChatThoughtSeconds,
+  nativeChatTranscriptThoughtSeconds
+} from './native-chat-thought-duration'
 
 const user: AgentJournalItemBody = {
   kind: 'message',
@@ -111,5 +115,55 @@ describe('nativeChatThoughtSeconds', () => {
     const items = [item('t', turn('turn-1', 1_000), 1_000), item('r', thought, 5_000)]
     expect(nativeChatThoughtSeconds('codex', items).size).toBe(0)
     expect(nativeChatThoughtSeconds('claude', undefined).size).toBe(0)
+  })
+})
+
+// The shape of a real Claude Code 2.1.286 terminal session: thinking blocks are
+// recorded empty, one record per block, each stamped as its block completes.
+describe('nativeChatTranscriptThoughtSeconds', () => {
+  function row(
+    id: string,
+    role: NativeChatMessage['role'],
+    iso: string,
+    text = ''
+  ): NativeChatMessage {
+    return {
+      id,
+      role,
+      blocks: [{ type: 'text', text }],
+      timestamp: Date.parse(iso),
+      source: 'transcript'
+    }
+  }
+  const transcript: NativeChatMessage[] = [
+    row('u1', 'user', '2026-10-01T05:17:20.918Z', 'this is me testing'),
+    row('r1', 'reasoning', '2026-10-01T05:17:22.876Z'),
+    row('a1', 'assistant', '2026-10-01T05:17:24.188Z', 'Hi.'),
+    row('u2', 'user', '2026-10-01T05:29:06.888Z', 'Draw how a request moves through'),
+    row('r2', 'reasoning', '2026-10-01T05:29:13.585Z'),
+    {
+      id: 'a2',
+      role: 'assistant',
+      blocks: [{ type: 'tool-call', name: 'Read', input: {} }],
+      timestamp: Date.parse('2026-10-01T05:29:14.642Z'),
+      source: 'transcript'
+    },
+    row('tool', 'tool', '2026-10-01T05:29:14.999Z'),
+    row('r3', 'reasoning', '2026-10-01T05:29:18.142Z')
+  ]
+
+  it("times each turn's first thought from its prompt record, and only that one", () => {
+    expect([...nativeChatTranscriptThoughtSeconds('claude', transcript)]).toEqual([
+      ['r1', 1],
+      ['r2', 6]
+    ])
+  })
+
+  it('ignores optimistic echoes and agents that stamp a thought as it starts', () => {
+    const echoed = transcript.map((message) =>
+      message.id === 'u2' ? { ...message, source: 'hook' as const } : message
+    )
+    expect(nativeChatTranscriptThoughtSeconds('claude', echoed).has('r2')).toBe(false)
+    expect(nativeChatTranscriptThoughtSeconds('codex', transcript).size).toBe(0)
   })
 })

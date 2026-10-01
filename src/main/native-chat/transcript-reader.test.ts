@@ -188,7 +188,66 @@ describe('readNativeChatTranscript (claude)', () => {
     if (!('messages' in result)) {
       throw new Error('expected messages')
     }
-    expect(result.messages[0].blocks[0]).toEqual({ type: 'text', text: 'pondering' })
+    expect(result.messages[0]).toMatchObject({
+      role: 'reasoning',
+      blocks: [{ type: 'text', text: 'pondering' }]
+    })
+  })
+
+  // Shape of Claude Code 2.1.286 records: every thinking block is signed and empty.
+  it('keeps signed-empty and redacted thinking records as thought markers', async () => {
+    const filePath = await writeFixture('orca-native-chat-claude-empty-think-', [
+      {
+        type: 'user',
+        uuid: 'u-1',
+        timestamp: '2026-10-01T05:17:20.918Z',
+        message: { role: 'user', content: 'this is me testing' }
+      },
+      {
+        type: 'assistant',
+        uuid: 'a-think',
+        timestamp: '2026-10-01T05:17:22.876Z',
+        message: {
+          id: 'msg_1',
+          role: 'assistant',
+          content: [{ type: 'thinking', thinking: '', signature: 'CAQSxwUKEAgSGAI4AUII' }]
+        }
+      },
+      {
+        type: 'assistant',
+        uuid: 'a-redacted',
+        timestamp: '2026-10-01T05:17:23.000Z',
+        message: {
+          id: 'msg_1',
+          role: 'assistant',
+          content: [{ type: 'redacted_thinking', data: 'x' }]
+        }
+      },
+      {
+        type: 'assistant',
+        uuid: 'a-text',
+        timestamp: '2026-10-01T05:17:24.188Z',
+        message: {
+          id: 'msg_1',
+          role: 'assistant',
+          content: [
+            { type: 'thinking', thinking: '', signature: 'sig' },
+            { type: 'text', text: 'Hi.' }
+          ]
+        }
+      }
+    ])
+    const result = await readNativeChatTranscript('claude', 'sess', { filePath })
+    if (!('messages' in result)) {
+      throw new Error('expected messages')
+    }
+    expect(result.messages.map(({ id, role, blocks }) => ({ id, role, blocks }))).toEqual([
+      { id: 'u-1', role: 'user', blocks: [{ type: 'text', text: 'this is me testing' }] },
+      { id: 'a-think', role: 'reasoning', blocks: [{ type: 'text', text: '' }] },
+      { id: 'a-redacted', role: 'reasoning', blocks: [{ type: 'text', text: '' }] },
+      // Beside real content an empty thought adds nothing.
+      { id: 'a-text', role: 'assistant', blocks: [{ type: 'text', text: 'Hi.' }] }
+    ])
   })
 })
 

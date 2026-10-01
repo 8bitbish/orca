@@ -8,6 +8,7 @@
 
 import { agentJournalItemKey } from '../../shared/agent-session-journal-item-key'
 import type { AgentJournalItemBody } from '../../shared/agent-session-journal-types'
+import { nativeChatThoughtMarkerBlocks } from '../../shared/native-chat-thought-marker'
 import {
   boundInlineText,
   DEFAULT_JOURNAL_PAYLOAD_LIMITS
@@ -153,15 +154,16 @@ export function journalClaudeMessage(
     ctx.tools.delete(result.toolUseId)
     changed = true
   }
-  if (thinking) {
+  if (thinking !== null) {
     ctx.turn.ensureOpen(message, source, observedAt)
     const thinkingIdentity = claudeThinkingIdentity(envelope.sessionId, envelope.uuid)
+    // Thinking with no text still journals: it is the row "Thought for Ns" reads.
     const thinkingBody: AgentJournalItemBody = {
       kind: 'message',
       role: 'reasoning',
-      blocks: [
-        { type: 'text', text: boundInlineText(thinking, DEFAULT_JOURNAL_PAYLOAD_LIMITS).text }
-      ]
+      blocks: thinking
+        ? [{ type: 'text', text: boundInlineText(thinking, DEFAULT_JOURNAL_PAYLOAD_LIMITS).text }]
+        : nativeChatThoughtMarkerBlocks()
     }
     ctx.sink.appendItem(thinkingIdentity, thinkingBody, stamp(thinkingIdentity, thinkingBody))
     changed = true

@@ -7,6 +7,7 @@ import {
 } from '../../../native-chat/transcript-watch'
 import { defineMethod, defineStreamingMethod, type RpcContext } from '../core'
 import { sanitizeNativeChatRpcBlock } from './native-chat-rpc-block-sanitize'
+import { projectThoughtMarkerMessages } from './native-chat-thought-marker-projection'
 import {
   MOBILE_NATIVE_CHAT_MAX_WINDOW,
   NativeChatSession,
@@ -32,11 +33,16 @@ function sanitizeMessage(
   }
 }
 
+type NativeChatClient = Pick<RpcContext, 'clientKind' | 'clientCapabilities'>
+
 function sanitizeAppendForClient(
   messages: readonly NativeChatMessage[],
-  clientKind: RpcContext['clientKind']
+  client: NativeChatClient
 ): NativeChatMessage[] {
-  return messages.map((message) => sanitizeMessage(message, clientKind))
+  return projectThoughtMarkerMessages(
+    messages.map((message) => sanitizeMessage(message, client.clientKind)),
+    client
+  )
 }
 
 /** Window a transcript to its most recent `limit` messages so a long session
@@ -56,18 +62,22 @@ function windowTranscript(
  *  clients keep those bodies intact. */
 function windowForClient(
   messages: readonly NativeChatMessage[],
-  clientKind: RpcContext['clientKind'],
+  client: NativeChatClient,
   limit = MOBILE_NATIVE_CHAT_DEFAULT_WINDOW
 ): NativeChatMessage[] {
   const windowed = windowTranscript(messages, limit)
-  return windowed.map((message) => sanitizeMessage(message, clientKind))
+  return projectThoughtMarkerMessages(
+    windowed.map((message) => sanitizeMessage(message, client.clientKind)),
+    client
+  )
 }
 
 export const NATIVE_CHAT_METHODS = [
   defineMethod({
     name: 'nativeChat.readSession',
     params: NativeChatSession,
-    handler: async (params, { clientKind, signal }) => {
+    handler: async (params, { clientKind, clientCapabilities, signal }) => {
+      const client = { clientKind, clientCapabilities }
       const limit = params.limit ?? MOBILE_NATIVE_CHAT_DEFAULT_WINDOW
       const result = await readNativeChatTranscriptTail(
         {
@@ -81,7 +91,7 @@ export const NATIVE_CHAT_METHODS = [
       )
       return 'messages' in result
         ? {
-            messages: windowForClient(result.messages, clientKind, limit),
+            messages: windowForClient(result.messages, client, limit),
             hasMore: result.hasMore,
             beforeOffset: result.beforeOffset,
             ...(result.lifecycle ? { lifecycle: result.lifecycle } : {})
@@ -92,7 +102,12 @@ export const NATIVE_CHAT_METHODS = [
   defineStreamingMethod({
     name: 'nativeChat.subscribe',
     params: NativeChatSession,
-    handler: async (params, { runtime, connectionId, clientKind, signal }, emit) => {
+    handler: async (
+      params,
+      { runtime, connectionId, clientKind, clientCapabilities, signal },
+      emit
+    ) => {
+      const client = { clientKind, clientCapabilities }
       if (signal?.aborted) {
         return
       }
@@ -144,7 +159,7 @@ export const NATIVE_CHAT_METHODS = [
           // instead of stranding the view at 'loading' when the read keeps throwing.
           emit({
             type: 'snapshot',
-            messages: windowForClient(messages, clientKind, limit),
+            messages: windowForClient(messages, client, limit),
             hasMore,
             beforeOffset,
             ...(error ? { error } : {}),
@@ -166,7 +181,7 @@ export const NATIVE_CHAT_METHODS = [
           }
           emit({
             type: 'replacement',
-            messages: windowForClient(messages, clientKind, limit),
+            messages: windowForClient(messages, client, limit),
             hasMore,
             beforeOffset,
             ...(lifecycle ? { lifecycle } : {})
@@ -178,7 +193,7 @@ export const NATIVE_CHAT_METHODS = [
           }
           emit({
             type: 'appended',
-            messages: sanitizeAppendForClient(messages, clientKind),
+            messages: sanitizeAppendForClient(messages, client),
             ...(lifecycle ? { lifecycle } : {})
           })
         }

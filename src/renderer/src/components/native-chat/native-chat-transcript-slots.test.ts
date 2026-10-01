@@ -103,6 +103,37 @@ describe('transcript slots', () => {
     expect(idle.find((slot) => slot.message.id === 'r1')?.thoughtLive).toBe(false)
   })
 
+  it('draws a thought with no text, live at the frontier, and merges back-to-back ones', () => {
+    const marker = (id: string, timestamp: number): NativeChatMessage => ({
+      id,
+      role: 'reasoning',
+      blocks: [{ type: 'text', text: '' }],
+      timestamp,
+      source: 'transcript'
+    })
+    const messages = [
+      { ...text('u', 'go', 'user'), timestamp: 1_000 },
+      marker('m1', 3_000),
+      marker('m2', 7_500),
+      toolRun('t'),
+      marker('m3', 9_000)
+    ]
+    const working = build(messages, {
+      activeTurnKey: 'u',
+      isWorking: true,
+      thoughtSeconds: new Map([['m1', 2]])
+    })
+    // m2 folds into m1: one line spanning both, timed from the turn start to m2.
+    expect(working.map((slot) => slot.message.id)).toEqual(['u', 'm1', 't', 'm3'])
+    expect(working[1]).toMatchObject({ thoughtSeconds: 6, thoughtLive: false })
+    expect(working[3]).toMatchObject({ thoughtSeconds: null, thoughtLive: true })
+
+    const merging = build(messages.slice(0, 3), { activeTurnKey: 'u', isWorking: true })
+    expect(merging.map((slot) => slot.message.id)).toEqual(['u', 'm1'])
+    // The merged line is live while its newest member is the turn's newest output.
+    expect(merging[1]).toMatchObject({ thoughtLive: true, thoughtSeconds: null })
+  })
+
   // Approving a call lets that call run, and it sits in the run above the
   // receipt. A question's receipt blocks the agent on the reader, so it does not.
   it('keeps the run above an approval receipt trailing, but not above a question', () => {

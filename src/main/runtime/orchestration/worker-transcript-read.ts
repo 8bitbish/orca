@@ -2,7 +2,11 @@ import type { AgentType, NativeChatMessage } from '../../../shared/native-chat-t
 import { resolveNativeChatTranscriptAgent } from '../../../shared/native-chat-agent-support'
 import type { OrchestrationWorkerReadFallbackReason } from '../../../shared/orchestration-worker-output'
 import { resolveSessionFilePath } from '../../native-chat/session-file-resolver'
-import { nativeChatLineDecoderForAgent } from '../../native-chat/transcript-tail-reader'
+import {
+  nativeChatLineDecoderForAgent,
+  type NativeChatLineDecoder
+} from '../../native-chat/transcript-tail-reader'
+import { isNativeChatThoughtMarker } from '../../../shared/native-chat-thought-marker'
 import type { IFilesystemProvider } from '../../providers/types'
 import {
   boundWorkerTranscriptMessages,
@@ -53,7 +57,14 @@ export async function readWorkerTranscript(args: {
   if (!transcriptAgent) {
     return { ok: false, reason: 'provider_unsupported', warnings: [] }
   }
-  const decode = nativeChatLineDecoderForAgent(args.agent)
+  const agentDecode = nativeChatLineDecoderForAgent(args.agent)
+  // A worker read is evidence of what a worker said; a thought with no text says nothing.
+  const decode: NativeChatLineDecoder | null = agentDecode
+    ? (line, fallbackId) => {
+        const message = agentDecode(line, fallbackId)
+        return message && isNativeChatThoughtMarker(message) ? null : message
+      }
+    : null
   if (!decode) {
     return { ok: false, reason: 'provider_unsupported', warnings: [] }
   }

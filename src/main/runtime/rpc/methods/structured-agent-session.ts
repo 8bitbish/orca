@@ -13,6 +13,10 @@ import {
   projectBackgroundTaskHistory
 } from './structured-agent-session-background-task-capability'
 import {
+  projectThoughtMarkerEvent,
+  projectThoughtMarkerHistory
+} from './native-chat-thought-marker-projection'
+import {
   projectTurnItemEvent,
   projectTurnItemHistory
 } from './structured-agent-session-turn-item-capability'
@@ -255,8 +259,14 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
     name: 'agentSession.history',
     params: HistoryParams,
     handler: async (params, ctx) =>
-      projectTurnItemHistory(
-        projectBackgroundTaskHistory(await (await requireInstalledHost(ctx)).history(params), ctx),
+      projectThoughtMarkerHistory(
+        projectTurnItemHistory(
+          projectBackgroundTaskHistory(
+            await (await requireInstalledHost(ctx)).history(params),
+            ctx
+          ),
+          ctx
+        ),
         ctx
       )
   }),
@@ -277,7 +287,13 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
       dispose = await host.subscribe({
         id: subscriptionId,
         sessionId: params.sessionId,
-        emit: (event) => emit(projectTurnItemEvent(projectBackgroundTaskEvent(event, ctx), ctx)),
+        emit: (event) =>
+          emit(
+            projectThoughtMarkerEvent(
+              projectTurnItemEvent(projectBackgroundTaskEvent(event, ctx), ctx),
+              ctx
+            )
+          ),
         ...(params.cursor ? { cursor: params.cursor } : {})
       })
       if (stream.isClosed()) {

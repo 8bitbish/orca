@@ -13,7 +13,7 @@
 import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
 import { isRootAgentJournalItem } from '../../../../shared/agent-session-journal-producer'
 import { readAgentJournalTurn } from '../../../../shared/agent-session-turn-record'
-import type { AgentType } from '../../../../shared/native-chat-types'
+import type { AgentType, NativeChatMessage } from '../../../../shared/native-chat-types'
 
 /** Agents whose reasoning rows are stamped when the thought completes. */
 const COMPLETED_THOUGHT_STAMP_AGENTS: ReadonlySet<AgentType> = new Set<AgentType>(['claude'])
@@ -67,4 +67,53 @@ export function nativeChatThoughtSeconds(
     turnHasContent = true
   }
   return seconds
+}
+
+/**
+ * The same honest span for a terminal-hosted session, read off its transcript:
+ * the prompt record's timestamp to the thinking record's. Claude Code writes each
+ * content block as its own record once the block completes, so a turn's FIRST
+ * record after the prompt, when it is thinking, is stamped as that thought ends.
+ * Only the transcript's own records count; an optimistic echo carries the
+ * renderer's clock.
+ */
+export function nativeChatTranscriptThoughtSeconds(
+  agent: AgentType,
+  messages: readonly NativeChatMessage[]
+): ReadonlyMap<string, number> {
+  if (!COMPLETED_THOUGHT_STAMP_AGENTS.has(agent)) {
+    return NO_THOUGHT_DURATIONS
+  }
+  const seconds = new Map<string, number>()
+  let turnStartedAt: number | null = null
+  for (const message of messages) {
+    if (message.source !== 'transcript') {
+      continue
+    }
+    if (message.role === 'user') {
+      turnStartedAt = message.timestamp
+      continue
+    }
+    if (
+      message.role === 'reasoning' &&
+      turnStartedAt !== null &&
+      message.timestamp !== null &&
+      message.timestamp >= turnStartedAt
+    ) {
+      seconds.set(message.id, Math.floor((message.timestamp - turnStartedAt) / 1000))
+    }
+    turnStartedAt = null
+  }
+  return seconds
+}
+
+/** Structured sessions time a thought off the journal; terminal ones off the transcript. */
+export function nativeChatSessionThoughtSeconds(
+  agent: AgentType,
+  journalItems: readonly AgentJournalRenderItem[] | undefined,
+  messages: readonly NativeChatMessage[]
+): ReadonlyMap<string, number> {
+  return journalItems
+    ? nativeChatThoughtSeconds(agent, journalItems)
+    : nativeChatTranscriptThoughtSeconds(agent, messages)
 }

@@ -216,6 +216,11 @@ export const AGENT_SESSION_REWIND_RUNTIME_CAPABILITY = 'agent-session.rewind.v1'
 // status form to clients that do not advertise this. Transitional: drop the downgrade once no
 // supported release lacks the capability.
 export const AGENT_SESSION_TURN_ITEM_CAPABILITY = 'agent-session.turn-item.v1' as const
+// Why: a reasoning row with no text (Claude Code's signed-but-empty thinking, redacted thinking)
+// draws as a "Thought" line on clients that know it, but older mobile builds paint it as a blank
+// gap. The host publishes those rows (journal items and terminal transcript messages) only to
+// clients that advertise this.
+export const AGENT_SESSION_THOUGHT_MARKER_CAPABILITY = 'agent-session.thought-marker.v1' as const
 export const AGENT_SESSION_BACKGROUND_TASK_STOP_CAPABILITY =
   'agent-session.background-task-stop.v1' as const
 // Why: agentSession.cancel has a strict schema, so clients must not send prompt identity to an
@@ -322,7 +327,9 @@ export const ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES = [
   BROWSER_CLIENT_HOST_RUNTIME_CAPABILITY,
   BROWSER_CLIENT_PAGE_METADATA_RUNTIME_CAPABILITY,
   // Why: only the renderer runs the retirement-proof ledger; CLI and mobile must keep full lists.
-  SESSION_TABS_RETIREMENT_PROOF_DELTA_RUNTIME_CAPABILITY
+  SESSION_TABS_RETIREMENT_PROOF_DELTA_RUNTIME_CAPABILITY,
+  // Only a chat view draws a thought with no text.
+  AGENT_SESSION_THOUGHT_MARKER_CAPABILITY
 ] as const
 
 export const ANTIGRAVITY_CONFIGURED_MODEL_RUNTIME_CAPABILITY =
@@ -404,6 +411,7 @@ export const RUNTIME_CAPABILITIES = [
   AGENT_SESSION_PROMPT_CANCEL_RUNTIME_CAPABILITY,
   AGENT_SESSION_QUESTION_ANSWERS_RUNTIME_CAPABILITY,
   AGENT_SESSION_TURN_ITEM_CAPABILITY,
+  AGENT_SESSION_THOUGHT_MARKER_CAPABILITY,
   AGENT_SESSION_BACKGROUND_TASK_ROW_STOP_CAPABILITY,
   AGENT_SESSION_KIMI_RESUME_RUNTIME_CAPABILITY,
   AGENT_SESSION_OPENCODE2_RESUME_RUNTIME_CAPABILITY,

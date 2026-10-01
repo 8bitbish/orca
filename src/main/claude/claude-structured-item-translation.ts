@@ -162,13 +162,24 @@ export function claudeToolResults(envelope: ClaudeMessageEnvelope): ClaudeToolRe
   })
 }
 
+/** The envelope's reasoning: its text, '' when it thought without any (Claude Code
+ *  signs thinking and sends `thinking: ''`; redacted thinking has none), or null
+ *  when it carries no thinking part at all. */
 export function claudeThinkingText(envelope: ClaudeMessageEnvelope): string | null {
+  let thought = false
   const parts = envelope.content.flatMap((value) => {
     const part = claudeRecord(value)
-    const thinking = claudeText(part?.thinking)
-    return part?.type === 'thinking' && thinking ? [thinking] : []
+    if (part?.type !== 'thinking' && part?.type !== 'redacted_thinking') {
+      return []
+    }
+    thought = true
+    const thinking = part.type === 'thinking' ? claudeText(part.thinking) : null
+    return thinking ? [thinking] : []
   })
-  return parts.length > 0 ? parts.join('\n') : null
+  if (!thought) {
+    return null
+  }
+  return parts.join('\n')
 }
 
 export function claudeToolBody(input: {

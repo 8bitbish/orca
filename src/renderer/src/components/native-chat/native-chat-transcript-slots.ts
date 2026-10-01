@@ -20,6 +20,7 @@ import {
   type NativeChatTurnStatus
 } from '../../../../shared/native-chat-turn-status'
 import { nativeChatSelfAnchoredTurnRows } from '../../../../shared/native-chat-turn-grouping'
+import { isNativeChatThoughtMarker } from '../../../../shared/native-chat-thought-marker'
 import {
   nativeChatTurnFold,
   type NativeChatTurnFoldRow
@@ -147,7 +148,10 @@ export function buildNativeChatTranscriptSlots(
   }
   // The transcript's newest content, reasoning included: a thought is live only there.
   const newestContentIndex = foldRows.findLastIndex(
-    (row, index) => row.rendersProse || messages[index].blocks.some(isToolCallBlock)
+    (row, index) =>
+      row.rendersProse ||
+      messages[index].blocks.some(isToolCallBlock) ||
+      isNativeChatThoughtMarker(messages[index])
   )
   const settledTurnKeys = new Set(
     Object.entries(turnStatuses.completedByTurn)
@@ -170,6 +174,8 @@ export function buildNativeChatTranscriptSlots(
     }
   })
   const slots: NativeChatTranscriptSlot[] = []
+  // Back-to-back thoughts with no text draw as one line, not a stack of "Thought".
+  let markerRun: { slot: number; startedAt: number | null; seconds: number | null } | null = null
   for (const [index, message] of messages.entries()) {
     const turnKey = turnKeys[index]
     const receipt = receipts.get(message.id)
@@ -201,12 +207,44 @@ export function buildNativeChatTranscriptSlots(
     // Skipping a folded row entirely is what keeps windowing honest: a counted
     // index the row declines to draw reserves estimated height for nothing and
     // opens a gap in the transcript.
+    const isMarker = isThought && isNativeChatThoughtMarker(message)
     const drawsRow =
-      receipt !== undefined || (!folded && nativeChatRowRendersContent(message.blocks))
+      receipt !== undefined ||
+      (!folded && (nativeChatRowRendersContent(message.blocks) || isMarker))
     if (!drawsRow && status === undefined && turnDiff === undefined) {
       continue
     }
     const subagentId = agentJournalItemSubagentId(message)
+    const thoughtLive = isThought && activeTurnIsWorking && index === newestContentIndex
+    const previous = markerRun ? slots[markerRun.slot] : undefined
+    if (
+      markerRun &&
+      previous &&
+      isMarker &&
+      !folded &&
+      receipt === undefined &&
+      status === undefined &&
+      turnDiff === undefined &&
+      previous.turnKey === turnKey &&
+      agentJournalItemSubagentId(previous.message) === subagentId
+    ) {
+      // The run ends at this thought; nothing visible ran since the first began.
+      const { startedAt, seconds } = markerRun
+      slots[markerRun.slot] = {
+        ...previous,
+        thoughtSeconds:
+          seconds !== null && startedAt !== null && message.timestamp !== null
+            ? Math.floor(seconds + Math.max(0, message.timestamp - startedAt) / 1000)
+            : null,
+        thoughtLive
+      }
+      continue
+    }
+    const thoughtSecondsForRow = isThought ? (thoughtSeconds?.get(message.id) ?? null) : null
+    markerRun =
+      isMarker && !folded && receipt === undefined
+        ? { slot: slots.length, startedAt: message.timestamp, seconds: thoughtSecondsForRow }
+        : null
     slots.push({
       message,
       turnKey,
@@ -219,8 +257,8 @@ export function buildNativeChatTranscriptSlots(
       turnFolds: turnKey !== undefined && foldableTurnKeys.has(turnKey),
       turnDiff,
       subagentLabel: nativeChatSubagentLabel(subagentLabels, message),
-      thoughtSeconds: isThought ? (thoughtSeconds?.get(message.id) ?? null) : null,
-      thoughtLive: isThought && activeTurnIsWorking && index === newestContentIndex,
+      thoughtSeconds: thoughtSecondsForRow,
+      thoughtLive,
       estimatedHeight: estimateNativeChatRowHeight(nativeChatRowContentMetrics(message), {
         hasReceipt: receipt !== undefined,
         hasStatus: status !== undefined,

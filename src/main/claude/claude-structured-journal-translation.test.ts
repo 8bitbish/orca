@@ -356,7 +356,7 @@ describe('Claude structured journal translation', () => {
     await reopened.close()
   })
 
-  it('settles result frames, empty thinking and string user replays without painting a row', () => {
+  it('settles result frames and string user replays without painting a row, and keeps empty thinking as a thought', () => {
     const state = sinkState()
     const translator = createClaudeJournalTranslator({ sink: state.sink })
 
@@ -408,6 +408,14 @@ describe('Claude structured journal translation', () => {
       )
     ).toEqual([])
     expect(state.items.some((item) => item.body.kind === 'status')).toBe(false)
+    // Claude Code signs thinking and sends it empty; it still reads "Thought for Ns".
+    expect(
+      state.items.filter((item) => item.body.kind === 'message' && item.body.role === 'reasoning')
+    ).toEqual([
+      expect.objectContaining({
+        body: { kind: 'message', role: 'reasoning', blocks: [{ type: 'text', text: '' }] }
+      })
+    ])
     expect(state.tombstones).toEqual([])
     expect(lifecycleAppends(state.items)).toEqual([
       ['turn-lifecycle:user-replay-1', 'running'],
