@@ -7,10 +7,10 @@
 
 import { createContext } from 'react'
 
-export type NativeChatFenceRoute = 'mermaid' | 'html' | 'svg' | 'code'
+export type NativeChatFenceRoute = 'mermaid' | 'html' | 'svg' | 'widget' | 'code'
 
 export type NativeChatFencePreviewScope = {
-  /** Live HTML/SVG previews; on for assistant replies only. */
+  /** Live HTML/SVG/widget previews; on for assistant replies only. */
   markupPreviews: boolean
   /** Body of the message's trailing unclosed fence, or null when every fence closed. */
   openFenceBody: string | null
@@ -70,7 +70,12 @@ export function nativeChatFenceRoute({
   scope: NativeChatFencePreviewScope
 }): NativeChatFenceRoute {
   const normalized = language?.toLowerCase()
-  if (normalized !== 'mermaid' && normalized !== 'html' && normalized !== 'svg') {
+  if (
+    normalized !== 'mermaid' &&
+    normalized !== 'html' &&
+    normalized !== 'svg' &&
+    normalized !== 'widget'
+  ) {
     return 'code'
   }
   if (scope.openFenceBody !== null && sameFenceBody(scope.openFenceBody, code)) {

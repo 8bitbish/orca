@@ -147,4 +147,43 @@ describe('NativeChatCodeBlock diagrams', () => {
     post(frame.contentWindow, 99_999)
     expect(frame.style.height).toBe(`${NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX}px`)
   })
+
+  it('frames a finished widget fence with a quiet header, source disclosure and copy', async () => {
+    const writeClipboardText = vi.fn().mockResolvedValue(undefined)
+    Object.assign(window, { api: { ui: { writeClipboardText } } })
+    const source = '<div class="card">Hi</div>\n'
+    renderFence('widget', source)
+    const card = document.querySelector('[data-native-chat-diagram="widget"]')
+    expect(card).not.toBeNull()
+    const frame = card?.querySelector('iframe')
+    expect(frame).toHaveAttribute('sandbox', 'allow-scripts')
+    expect(frame).toHaveAccessibleName('Widget preview')
+    expect(frame?.getAttribute('srcdoc')).toContain("default-src 'none'")
+
+    const toggle = screen.getByRole('button', { name: 'Widget' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(card?.querySelector('pre')).toBeNull()
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    const pre = card?.querySelector('pre')
+    expect(pre?.textContent).toBe(source)
+    expect(toggle).toHaveAttribute('aria-controls', pre?.id)
+    // The source opens above the widget; the widget stays drawn.
+    expect(card?.querySelector('iframe')).not.toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy widget source' }))
+    await waitFor(() => expect(writeClipboardText).toHaveBeenCalledWith(source))
+  })
+
+  it('keeps a widget fence as code outside a reply and while it streams', () => {
+    renderFence('widget', '<div class="card">Hi</div>', null)
+    expect(document.querySelector('iframe')).toBeNull()
+    cleanup()
+    renderFence('widget', '<div class="ca', {
+      markupPreviews: true,
+      openFenceBody: '<div class="ca'
+    })
+    expect(document.querySelector('iframe')).toBeNull()
+    expect(document.querySelector('[data-native-chat-diagram]')).toBeNull()
+  })
 })

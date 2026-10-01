@@ -7,10 +7,11 @@ import { NativeChatCopyButton } from './NativeChatCopyButton'
 import { NativeChatDiagramCard } from './NativeChatDiagramCard'
 import { NativeChatMarkupPreview } from './NativeChatMarkupPreview'
 import { NativeChatMermaidDiagram } from './NativeChatMermaidDiagram'
+import { NativeChatWidgetCard } from './NativeChatWidgetCard'
 import { NativeChatFencePreviewContext, nativeChatFenceRoute } from './native-chat-fence-preview'
 
 /** Code fences need their own copy target rather than the whole chat message.
- *  Finished mermaid fences, and html/svg fences in a reply, render as diagrams. */
+ *  Finished mermaid fences, and html/svg/widget fences in a reply, render as diagrams. */
 export function NativeChatCodeBlock({
   children,
   language
@@ -27,6 +28,13 @@ export function NativeChatCodeBlock({
       <NativeChatDiagramCard kind="mermaid" label={getCodeBlockLanguageLabel(route)} source={code}>
         <NativeChatMermaidDiagram source={code.trimEnd()} />
       </NativeChatDiagramCard>
+    )
+  }
+  if (route === 'widget') {
+    return (
+      <NativeChatWidgetCard source={code}>
+        <NativeChatMarkupPreview source={code} kind="widget" />
+      </NativeChatWidgetCard>
     )
   }
   if (route === 'html' || route === 'svg') {

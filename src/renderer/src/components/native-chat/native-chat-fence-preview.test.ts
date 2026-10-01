@@ -34,6 +34,8 @@ describe('nativeChatFenceRoute', () => {
     ['html', 'html'],
     ['HTML', 'html'],
     ['svg', 'svg'],
+    ['widget', 'widget'],
+    ['Widget', 'widget'],
     ['ts', 'code'],
     ['xml', 'code'],
     [undefined, 'code']
@@ -45,6 +47,7 @@ describe('nativeChatFenceRoute', () => {
     const scope = { markupPreviews: false, openFenceBody: null }
     expect(nativeChatFenceRoute({ language: 'html', code: '<p/>', scope })).toBe('code')
     expect(nativeChatFenceRoute({ language: 'svg', code: '<svg/>', scope })).toBe('code')
+    expect(nativeChatFenceRoute({ language: 'widget', code: '<div/>', scope })).toBe('code')
     expect(nativeChatFenceRoute({ language: 'mermaid', code: 'graph TD', scope })).toBe('mermaid')
   })
 

@@ -33,7 +33,17 @@ export function clampNativeChatMarkupHeight(height: number): number {
   return Math.min(NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX, Math.max(MIN_HEIGHT_PX, Math.ceil(height)))
 }
 
-/** Agent-authored HTML or SVG, live in a sandboxed frame sized to its content. */
+function markupPreviewTitle(kind: NativeChatMarkupKind): string {
+  if (kind === 'svg') {
+    return translate('components.native-chat.diagram.svgPreviewTitle', 'SVG preview')
+  }
+  if (kind === 'widget') {
+    return translate('components.native-chat.diagram.widgetPreviewTitle', 'Widget preview')
+  }
+  return translate('components.native-chat.diagram.htmlPreviewTitle', 'HTML preview')
+}
+
+/** Agent-authored HTML, SVG or widget markup, live in a sandboxed frame sized to its content. */
 export function NativeChatMarkupPreview({
   source,
   kind
@@ -86,11 +96,7 @@ export function NativeChatMarkupPreview({
   return (
     <iframe
       ref={iframeRef}
-      title={
-        kind === 'svg'
-          ? translate('components.native-chat.diagram.svgPreviewTitle', 'SVG preview')
-          : translate('components.native-chat.diagram.htmlPreviewTitle', 'HTML preview')
-      }
+      title={markupPreviewTitle(kind)}
       // SECURITY: never add allow-same-origin; see native-chat-markup-preview-document.ts.
       sandbox={NATIVE_CHAT_MARKUP_PREVIEW_SANDBOX}
       referrerPolicy="no-referrer"

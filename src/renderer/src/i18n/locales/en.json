@@ -17895,7 +17895,10 @@
       "diagram": {
         "showSource": "Code",
         "svgPreviewTitle": "SVG preview",
-        "htmlPreviewTitle": "HTML preview"
+        "htmlPreviewTitle": "HTML preview",
+        "widgetPreviewTitle": "Widget preview",
+        "widgetLabel": "Widget",
+        "copyWidget": "Copy widget source"
       }
     },
     "tab": {

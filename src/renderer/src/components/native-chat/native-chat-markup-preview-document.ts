@@ -1,4 +1,4 @@
-// The document a chat reply's ```html / ```svg fence is previewed in.
+// The document a chat reply's ```html / ```svg / ```widget fence is previewed in.
 //
 // This is agent-authored markup, so it only ever runs inside an iframe sandboxed
 // WITHOUT allow-same-origin: an opaque origin with no reach into the parent DOM,
@@ -34,7 +34,7 @@ export const NATIVE_CHAT_MARKUP_PREVIEW_CSP = [
 /** `sandbox` for the preview frame. SECURITY: never add allow-same-origin. */
 export const NATIVE_CHAT_MARKUP_PREVIEW_SANDBOX = 'allow-scripts'
 
-export type NativeChatMarkupKind = 'html' | 'svg'
+export type NativeChatMarkupKind = 'html' | 'svg' | 'widget'
 
 const FORBIDDEN_TAGS = [
   'base',
@@ -114,7 +114,11 @@ const BASE_STYLES = `
 :where(pre,code){font-family:ui-monospace,Menlo,Consolas,monospace}
 `
 
-const SVG_STYLES = ':where(body){display:flex;justify-content:center}'
+const KIND_STYLES: Record<NativeChatMarkupKind, string> = {
+  html: '',
+  svg: ':where(body){display:flex;justify-content:center}',
+  widget: ':where(body){padding:16px}'
+}
 
 export function buildNativeChatMarkupPreviewDocument({
   source,
@@ -135,7 +139,7 @@ export function buildNativeChatMarkupPreviewDocument({
     `<html class="${colorScheme}"><head><meta charset="utf-8">` +
     `<meta http-equiv="Content-Security-Policy" content="${NATIVE_CHAT_MARKUP_PREVIEW_CSP}">` +
     `<meta name="color-scheme" content="${colorScheme}">` +
-    `<style>:root{${tokenCss}}${BASE_STYLES}${kind === 'svg' ? SVG_STYLES : ''}</style>` +
+    `<style>:root{${tokenCss}}${BASE_STYLES}${KIND_STYLES[kind]}</style>` +
     `<script>${NATIVE_CHAT_MARKUP_SIZE_SCRIPT}</script>` +
     `</head><body>${body}</body></html>`
   )
