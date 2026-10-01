@@ -41,11 +41,7 @@ export function useNativeChatProject(
       target: resolved,
       name: resolved.repo.displayName,
       workspace: nativeChatProjectWorkspaceLabel(resolved),
-      icon: resolveNativeChatProjectIcon({
-        payloadIcon,
-        appIconSrc,
-        repoName: resolved.repo.displayName
-      })
+      icon: resolveNativeChatProjectIcon({ payloadIcon, repo: resolved.repo, appIconSrc })
     }
   }, [appIconSrc, payloadIcon, resolved])
 }

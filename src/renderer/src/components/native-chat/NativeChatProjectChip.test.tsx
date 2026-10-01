@@ -72,6 +72,26 @@ describe('NativeChatProjectChip', () => {
     expect(mocks.activate).toHaveBeenCalledWith(personal.id, 'ssh:box')
   })
 
+  it.each([
+    ['a local', undefined],
+    ['an SSH', 'box']
+  ])(
+    "draws the sidebar's repo icon for %s repo without asking main for an app icon",
+    (_label, connectionId) => {
+      const getAppIcon = vi.fn(async () => null)
+      vi.stubGlobal('api', { repos: { getAppIcon } })
+      const src = 'https://github.com/3sidedcube-orca.png?size=64'
+      useAppStore.setState({
+        repos: [{ ...repo, connectionId, repoIcon: { type: 'image', src, source: 'github' } }]
+      })
+      renderReply('See [orca](orca-worktree:orca-personal/personal).')
+      const chip = screen.getByRole('button', { name: /Open orca-personal/ })
+      expect(chip.querySelector('img')).toHaveAttribute('src', src)
+      expect(getAppIcon).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    }
+  )
+
   it('reads an unknown workspace as plain text, with no error', () => {
     renderReply('See [the old one](orca-worktree:orca-personal/gone).')
     expect(screen.queryByRole('button')).toBeNull()

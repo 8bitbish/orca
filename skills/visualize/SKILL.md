@@ -148,7 +148,7 @@ string, so ` ```widget project-card ` would render as a widget.
 - `note`: your one-line summary. Shown as written.
 - `ask`: what you need from the user, highlighted. Shown as written.
 - `icon`: an emoji to use instead of the project's own icon. Usually leave it out: Orca uses the
-  repo's app icon when it finds one, else a coloured letter.
+  icon the sidebar shows for the repo, else its app icon when it finds one, else a coloured letter.
 - `actions`: up to four. Each has a `label` (40 characters at most) and either a `reply` (the
   exact text it sends) or `"input": true` (a small text box for a free reply). `"style":
   "primary"` marks the recommended one.

@@ -21,9 +21,10 @@ function lookupAppIcon(repoId: string): Promise<string | null> {
   return pending
 }
 
-/** The repo's app icon from the main process; null while unknown, remote or absent. */
+/** The repo's app icon from the main process; null while unknown, remote, absent or
+ *  not needed because the repo has a sidebar icon. */
 export function useNativeChatProjectAppIcon(
-  repo: Pick<Repo, 'id' | 'connectionId' | 'executionHostId'> | null
+  repo: Pick<Repo, 'id' | 'connectionId' | 'executionHostId' | 'repoIcon'> | null
 ): string | null {
   const repoId = repo && nativeChatProjectAppIconLookupAllowed(repo) ? repo.id : null
   const [loaded, setLoaded] = useState<{ repoId: string; src: string | null } | null>(null)

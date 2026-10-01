@@ -1,14 +1,18 @@
-// A project's icon in a chat chip or card: the reply's own `icon`, then the app
-// icon found in the repo on this machine, then a monogram on a colour hashed
-// from the repo name. Remote repos never look on disk: their files live on
-// another host, and a same-named local path would be another project's icon.
+// A project's icon in a chat chip or card: the reply's own `icon`, then the repo
+// icon the sidebar shows (custom, favicon or provider avatar, persisted on the
+// repo), then the app icon found in the repo on this machine, then a monogram on
+// a colour hashed from the repo name. Remote repos never look on disk: their
+// files live on another host, and a same-named local path would be another
+// project's icon. Their persisted repo icon is still used.
 
 import { REPO_COLORS } from '../../../../shared/constants'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
+import type { RepoIcon } from '../../../../shared/repo-icon'
 import type { Repo } from '../../../../shared/repo-types'
 
 export type NativeChatProjectIconSource =
   | { kind: 'payload'; glyph: string }
+  | { kind: 'repo'; repoIcon: RepoIcon; badgeColor: string }
   | { kind: 'app'; src: string; fallback: NativeChatProjectMonogram }
   | ({ kind: 'monogram' } & NativeChatProjectMonogram)
 
@@ -35,23 +39,30 @@ export function nativeChatProjectMonogram(repoName: string): NativeChatProjectMo
   }
 }
 
-/** Only a repo whose files are on this machine may be searched for an app icon. */
+/** Only a repo with no sidebar icon whose files are on this machine is searched
+ *  for an app icon. */
 export function nativeChatProjectAppIconLookupAllowed(
-  repo: Pick<Repo, 'connectionId' | 'executionHostId'>
+  repo: Pick<Repo, 'connectionId' | 'executionHostId' | 'repoIcon'>
 ): boolean {
-  return !repo.connectionId && getRepoExecutionHostId(repo) === LOCAL_EXECUTION_HOST_ID
+  return (
+    !repo.repoIcon && !repo.connectionId && getRepoExecutionHostId(repo) === LOCAL_EXECUTION_HOST_ID
+  )
 }
 
 export function resolveNativeChatProjectIcon(args: {
   payloadIcon?: string
+  repo: Pick<Repo, 'displayName' | 'repoIcon' | 'badgeColor'>
   appIconSrc: string | null
-  repoName: string
 }): NativeChatProjectIconSource {
   const glyph = args.payloadIcon?.trim()
   if (glyph) {
     return { kind: 'payload', glyph }
   }
-  const monogram = nativeChatProjectMonogram(args.repoName)
+  if (args.repo.repoIcon) {
+    return { kind: 'repo', repoIcon: args.repo.repoIcon, badgeColor: args.repo.badgeColor }
+  }
+  const repoName = args.repo.displayName
+  const monogram = nativeChatProjectMonogram(repoName)
   if (args.appIconSrc) {
     return { kind: 'app', src: args.appIconSrc, fallback: monogram }
   }
