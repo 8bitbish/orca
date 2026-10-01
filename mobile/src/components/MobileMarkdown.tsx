@@ -1,17 +1,8 @@
 import { openExternalLink } from '../platform/external-link'
 import { createMarkdownInlineMatcher, type MarkdownInlineMatch } from './markdown-inline-matcher'
 import { MobileSelectableText } from './MobileSelectableText'
-import {
-  Fragment,
-  createElement,
-  createContext,
-  memo,
-  useContext,
-  useMemo,
-  type ComponentType,
-  type ReactNode
-} from 'react'
-import { Pressable, ScrollView, Text as NativeText, View, type TextProps } from 'react-native'
+import { Fragment, memo, useContext, useMemo, type ReactNode } from 'react'
+import { Pressable, ScrollView, Text as NativeText, View } from 'react-native'
 import { normalizeMobileMarkdownPreviewHtml } from './mobile-markdown-preview-html'
 import { styles } from './mobile-markdown-styles'
 import {
@@ -27,6 +18,11 @@ import {
 import { isMobileMermaidLanguage } from './mobile-mermaid-language'
 import { parseMobileMarkdown } from './mobile-markdown-parser'
 import { MermaidDiagram } from './pr-sidebar/MermaidDiagram'
+import {
+  MarkdownSelectableContext,
+  MarkdownText,
+  MarkdownTextContext
+} from './mobile-markdown-text'
 import { MobileMarkupPreview } from './markup-preview/MobileMarkupPreview'
 import { mobileMarkupPreviewKind } from './markup-preview/mobile-markup-preview-kind'
 import {
@@ -49,18 +45,15 @@ type Props = {
   onOpenFile?: (pathText: string) => void
   /** Draws closed ```html / ```svg / ```widget fences live; set for agent replies only. */
   markupPreviews?: boolean
+  /** False turns off text selection everywhere in this block (a scrolling transcript on
+   *  Android, where a drag over selectable text starts a selection). */
+  selectable?: boolean
 }
 
 const MAX_TABLE_ROWS = 40
 const MAX_TABLE_COLUMNS = 8
 /** Prose base size — passed to MermaidDiagram fallback mono text. */
 const MERMAID_BASE = 13
-const MarkdownTextContext = createContext<ComponentType<TextProps>>(NativeText)
-
-function MarkdownText(props: TextProps): React.JSX.Element {
-  const TextComponent = useContext(MarkdownTextContext)
-  return createElement(TextComponent, props)
-}
 
 // Web/mail hrefs open the system handler; file-target hrefs (file: URIs and
 // scheme-less paths — the entire desktop file-link contract) go to onOpenFile.
@@ -199,19 +192,19 @@ function renderInline(
     } else if (token.startsWith('~~')) {
       parts.push(
         <MarkdownText key={key} style={styles.strike}>
-          {renderTextRun(token.slice(2, -2), `${key}i`, onOpenFile)}
+          {renderInline(token.slice(2, -2), onOpenFile, renderLink)}
         </MarkdownText>
       )
     } else if (token.startsWith('**') || token.startsWith('__')) {
       parts.push(
         <MarkdownText key={key} style={styles.bold}>
-          {renderTextRun(token.slice(2, -2), `${key}i`, onOpenFile)}
+          {renderInline(token.slice(2, -2), onOpenFile, renderLink)}
         </MarkdownText>
       )
     } else {
       parts.push(
         <MarkdownText key={key} style={styles.italic}>
-          {renderTextRun(token.slice(1, -1), `${key}i`, onOpenFile)}
+          {renderInline(token.slice(1, -1), onOpenFile, renderLink)}
         </MarkdownText>
       )
     }
@@ -427,7 +420,9 @@ function MobileMarkdownInner(props: Props): React.JSX.Element | null {
   const TextComponent = props.rangeSelectable ? MobileSelectableText : NativeText
   return (
     <MarkdownTextContext.Provider value={TextComponent}>
-      <MobileMarkdownContent {...props} />
+      <MarkdownSelectableContext.Provider value={props.selectable !== false}>
+        <MobileMarkdownContent {...props} />
+      </MarkdownSelectableContext.Provider>
     </MarkdownTextContext.Provider>
   )
 }

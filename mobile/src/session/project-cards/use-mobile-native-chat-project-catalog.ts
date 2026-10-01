@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getCachedRepos } from '../../cache/repo-cache'
 import { getCachedWorktrees } from '../../cache/worktree-cache'
 import { hostRepoCatalogRead } from '../../host-screen/host-screen-operations'
@@ -57,36 +57,75 @@ export function useMobileNativeChatProjectCatalog(args: {
       return
     }
     let cancelled = false
-    const refresh = async (): Promise<void> => {
+    // Independent: a refused repo list must not throw away a good workspace list, which alone
+    // can name every project.
+    const refreshWorktrees = async (): Promise<void> => {
       try {
-        const [repoReply, catalog] = await Promise.all([
-          hostRepoCatalogRead.request(client),
-          snapshotRef.current.fetch(client, hostId)
-        ])
+        const catalog = await snapshotRef.current.fetch(client, hostId)
         if (cancelled) {
           return
         }
-        const repoResult = hostRepoCatalogRead.interpret(repoReply)
-        if (repoResult.accepted) {
-          setRepos(repoResult.value)
+        if (catalog.kind === 'request_failed') {
+          console.warn(`[project-cards] worktree.ps refused: ${catalog.code}`)
+          return
         }
-        if (catalog.kind === 'response') {
-          const rows = snapshotRef.current.admit(catalog.pending)
-          if (rows) {
-            setWorktrees(rows)
-          }
+        const rows = snapshotRef.current.admit(catalog.pending)
+        if (rows) {
+          setWorktrees(rows)
         }
-      } catch {
-        // Decorative: the next refresh retries.
+      } catch (error) {
+        console.warn('[project-cards] worktree.ps failed', error)
       }
     }
-    void refresh()
-    const timer = setInterval(() => void refresh(), REFRESH_MS)
+    const refreshRepos = async (): Promise<void> => {
+      try {
+        const repoResult = hostRepoCatalogRead.interpret(await hostRepoCatalogRead.request(client))
+        if (cancelled) {
+          return
+        }
+        if (repoResult.accepted) {
+          setRepos(repoResult.value)
+        } else {
+          console.warn('[project-cards] repo.list refused')
+        }
+      } catch (error) {
+        console.warn('[project-cards] repo.list failed', error)
+      }
+    }
+    const refresh = (): void => {
+      void refreshWorktrees()
+      void refreshRepos()
+    }
+    refresh()
+    const timer = setInterval(refresh, REFRESH_MS)
     return () => {
       cancelled = true
       clearInterval(timer)
     }
   }, [client, connected, enabled, hostId])
 
-  return { repos, worktrees, hostReachable: connected }
+  return useMemo(
+    () => ({
+      repos: withRowRepos(repos, worktrees),
+      worktrees,
+      hostReachable: connected,
+      loaded: worktrees.length > 0
+    }),
+    [connected, repos, worktrees]
+  )
+}
+
+/** Every repo a workspace row names, so a missing or refused repo list still resolves
+ *  targets by name; the listed repo, when there is one, keeps its icon. */
+function withRowRepos(
+  repos: readonly MobileNativeChatProjectRepo[],
+  worktrees: readonly Worktree[]
+): MobileNativeChatProjectRepo[] {
+  const byId = new Map(repos.map((repo) => [repo.id, repo]))
+  for (const row of worktrees) {
+    if (!byId.has(row.repoId) && row.repo) {
+      byId.set(row.repoId, { id: row.repoId, displayName: row.repo })
+    }
+  }
+  return [...byId.values()]
 }

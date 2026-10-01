@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import type { WebSocket } from 'ws'
 import {
   DESKTOP_PROTOCOL_VERSION,
@@ -7,6 +8,7 @@ import {
   applyTerminalQuickCommandMutation,
   type TerminalQuickCommandMutation
 } from '../../src/shared/terminal-quick-commands'
+import type { RuntimeWorktreePsSummary } from '../../src/shared/runtime-types'
 import type { TerminalQuickCommand } from '../../src/shared/terminal-quick-command-types'
 import { handleMockFilePreviewRequest } from './mock-server-file-preview-data'
 import { handleMockGitRequest } from './mock-server-git-state'
@@ -14,14 +16,36 @@ import { handleMockAccountRequest } from './mock-server-account-rpc'
 import { handleMockNativeChatRequest } from './mock-server-native-chat-scenario'
 import { handleMockSessionTabsRequest } from './mock-server-session-tabs-fixture'
 import { handleMockTerminalRequest } from './mock-server-terminal-stream'
-import { createMockRepos, createMockWorktrees, readScenarioNumber } from './mobile-lag-scenario'
+import {
+  createMockRepos,
+  createMockWorktrees,
+  readScenarioNumber,
+  type MockRepo
+} from './mobile-lag-scenario'
 
 const MOCK_REPO_COUNT = readScenarioNumber('MOCK_REPO_COUNT', 2)
 const MOCK_WORKTREE_COUNT = readScenarioNumber('MOCK_WORKTREE_COUNT', 2)
 const MOCK_RPC_DELAY_MS = readScenarioNumber('MOCK_RPC_DELAY_MS', 0)
 
-const FAKE_REPOS = createMockRepos(MOCK_REPO_COUNT)
-let fakeWorktrees = createMockWorktrees(FAKE_REPOS, MOCK_WORKTREE_COUNT)
+// A captured `orca repo list --json` / `orca worktree ps --json` replays a real catalog.
+function readCatalogFile<T>(variable: string, key: string): T[] | null {
+  const file = process.env[variable]
+  if (!file) {
+    return null
+  }
+  const parsed: unknown = JSON.parse(readFileSync(file, 'utf-8'))
+  const result =
+    typeof parsed === 'object' && parsed !== null && 'result' in parsed ? parsed.result : parsed
+  const rows =
+    typeof result === 'object' && result !== null && key in result ? Reflect.get(result, key) : null
+  return Array.isArray(rows) ? rows : null
+}
+
+const FAKE_REPOS =
+  readCatalogFile<MockRepo>('MOCK_REPOS_FILE', 'repos') ?? createMockRepos(MOCK_REPO_COUNT)
+let fakeWorktrees =
+  readCatalogFile<RuntimeWorktreePsSummary>('MOCK_WORKTREES_FILE', 'worktrees') ??
+  createMockWorktrees(FAKE_REPOS, MOCK_WORKTREE_COUNT)
 
 // Mutable quick-command list so the mobile Quick Commands sheet can add/edit/
 // delete against the mock the same way it does a paired desktop.
