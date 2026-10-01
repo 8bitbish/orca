@@ -15,6 +15,7 @@ import {
   writeMobileQueueOrphans,
   type MobileQueuedMessageOrphan
 } from './mobile-terminal-message-queue-orphans'
+import { useScopeKeyedState } from './use-scope-keyed-state'
 
 export type MobileQueueSubmitOutcome =
   | 'queued'
@@ -50,6 +51,11 @@ export type MobileNativeChatMessageQueue = {
 const RESUBSCRIBE_BASE_MS = 2_000
 const RESUBSCRIBE_MAX_MS = 30_000
 
+const emptySnapshot = (): TerminalMessageQueueSnapshot => EMPTY_TERMINAL_MESSAGE_QUEUE_SNAPSHOT
+const noStop = (): TerminalMessageQueueStopOutcome | null => null
+const storedOrphans = (scopeKey: string | null): MobileQueuedMessageOrphan[] =>
+  scopeKey ? readMobileQueueOrphans(scopeKey) : []
+
 function sessionKey(session: TerminalMessageQueueSession | null): string {
   return session
     ? `${session.agent}\u0000${session.sessionId}\u0000${session.transcriptPath ?? ''}`
@@ -80,9 +86,10 @@ export function useMobileNativeChatMessageQueue(args: {
     latest.current = args
   })
   const [connected, setConnected] = useState(false)
-  const [snapshot, setSnapshot] = useState(EMPTY_TERMINAL_MESSAGE_QUEUE_SNAPSHOT)
-  const [orphans, setOrphans] = useState<MobileQueuedMessageOrphan[]>([])
-  const [lastStop, setLastStop] = useState<TerminalMessageQueueStopOutcome | null>(null)
+  // Keyed by tab, so a tab switch never shows the previous tab's queue, stop or lost items.
+  const [snapshot, updateSnapshot] = useScopeKeyedState(scopeKey, emptySnapshot)
+  const [lastStop, updateLastStop] = useScopeKeyedState(scopeKey, noStop)
+  const [orphans, updateOrphans] = useScopeKeyedState(scopeKey, storedOrphans)
   const revisionRef = useRef(-1)
   const retiredIdsRef = useRef(new Set<string>())
   const deliveringIdsRef = useRef(new Set<string>())
@@ -95,9 +102,6 @@ export function useMobileNativeChatMessageQueue(args: {
     retiredIdsRef.current = new Set()
     deliveringIdsRef.current = new Set()
     revisionRef.current = -1
-    setSnapshot(EMPTY_TERMINAL_MESSAGE_QUEUE_SNAPSHOT)
-    setLastStop(null)
-    setOrphans(scopeKey ? readMobileQueueOrphans(scopeKey) : [])
   }, [scopeKey])
 
   // Not watching (chat hidden, tab gone): what changes meanwhile is not this client's to judge.
@@ -122,7 +126,12 @@ export function useMobileNativeChatMessageQueue(args: {
         now: Date.now()
       })
       if (vanished.length > 0 && scopeKey) {
-        setOrphans((previous) => writeMobileQueueOrphans(scopeKey, [...previous, ...vanished]))
+        // The store holds every tab's lost items; state only mirrors this tab's.
+        const stored = writeMobileQueueOrphans(scopeKey, [
+          ...readMobileQueueOrphans(scopeKey),
+          ...vanished
+        ])
+        updateOrphans(() => stored)
       }
       lastKnownRef.current = next.items
       for (const item of next.items) {
@@ -131,9 +140,9 @@ export function useMobileNativeChatMessageQueue(args: {
           latest.current.onDeliveryStarted(item)
         }
       }
-      setSnapshot(next)
+      updateSnapshot(() => next)
     },
-    [scopeKey]
+    [scopeKey, updateOrphans, updateSnapshot]
   )
 
   useEffect(() => {
@@ -160,7 +169,7 @@ export function useMobileNativeChatMessageQueue(args: {
               setConnected(true)
             } else if (event.type === 'delivered') {
               retiredIdsRef.current.add(event.item.id)
-              setLastStop(null)
+              updateLastStop(() => null)
               latest.current.onDelivered(event.item)
             } else {
               retiredIdsRef.current.add(event.itemId)
@@ -186,7 +195,15 @@ export function useMobileNativeChatMessageQueue(args: {
       }
       unsubscribe()
     }
-  }, [applySnapshot, client, sessionIdentity, supported, terminal, unsubscribeSupported])
+  }, [
+    applySnapshot,
+    client,
+    sessionIdentity,
+    supported,
+    terminal,
+    unsubscribeSupported,
+    updateLastStop
+  ])
 
   const active = supported && connected && client !== null && terminal !== null
   const rpc = useMemo(
@@ -257,34 +274,38 @@ export function useMobileNativeChatMessageQueue(args: {
     if (!rpc) {
       return 'fallback'
     }
-    setLastStop(null)
+    updateLastStop(() => null)
     const call = await rpc.stop(latest.current.session ?? undefined)
     if (call.status === 'ok') {
       applySnapshot(call.value.snapshot, false)
-      setLastStop(call.value.outcome)
+      updateLastStop(() => call.value.outcome)
       return 'host'
     }
     // Only a definite "the host did nothing" may fall back to writing Escape here.
     return call.status === 'unknown' ? 'unknown' : 'fallback'
-  }, [applySnapshot, rpc])
+  }, [applySnapshot, rpc, updateLastStop])
 
   const sendNext = useCallback(() => {
-    setLastStop(null)
+    updateLastStop(() => null)
     void rpc?.sendNext().then((call) => {
       if (call.status === 'ok') {
         applySnapshot(call.value.snapshot, false)
       }
     })
-  }, [applySnapshot, rpc])
+  }, [applySnapshot, rpc, updateLastStop])
 
   const dismissOrphan = useCallback(
     (itemId: string) => {
-      setOrphans((previous) => {
-        const next = previous.filter((orphan) => orphan.id !== itemId)
-        return scopeKey ? writeMobileQueueOrphans(scopeKey, next) : next
-      })
+      if (!scopeKey) {
+        return
+      }
+      const stored = writeMobileQueueOrphans(
+        scopeKey,
+        readMobileQueueOrphans(scopeKey).filter((orphan) => orphan.id !== itemId)
+      )
+      updateOrphans(() => stored)
     },
-    [scopeKey]
+    [scopeKey, updateOrphans]
   )
 
   const visible = active ? snapshot : EMPTY_TERMINAL_MESSAGE_QUEUE_SNAPSHOT

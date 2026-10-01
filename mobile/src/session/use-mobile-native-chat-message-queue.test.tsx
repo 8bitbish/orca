@@ -30,6 +30,26 @@ function snap(
   return { revision, lead: 'working', interrupting: false, terminal: 'live', items, ...extra }
 }
 
+/** Only the two calls the queue makes do anything; the rest of the client is inert. */
+function queueTestClient(parts: Pick<RpcClient, 'sendRequest' | 'subscribe'>): RpcClient {
+  return {
+    ...parts,
+    updateTerminalSubscriptionViewport: () => {},
+    getState: () => 'connected',
+    getReconnectAttempt: () => 0,
+    getLastConnectedAt: () => null,
+    onStateChange: () => () => {},
+    notifyForeground: () => {},
+    close: () => {}
+  }
+}
+
+function paramsRecord(params: unknown): Record<string, unknown> {
+  return typeof params === 'object' && params !== null
+    ? Object.fromEntries(Object.entries(params))
+    : {}
+}
+
 type Stream = {
   method: string
   params: unknown
@@ -39,12 +59,12 @@ type Stream = {
 
 function fakeHost(replies: Record<string, (params: Record<string, unknown>) => unknown>) {
   const streams: Stream[] = []
-  const sendRequest = vi.fn(async (method: string, params: Record<string, unknown>) => {
+  const sendRequest = vi.fn<RpcClient['sendRequest']>(async (method, params) => {
     const reply = replies[method]
     if (!reply) {
       return { id: 'r', ok: false, error: { code: 'method_not_found', message: method } }
     }
-    return { id: 'r', ok: true, result: await reply(params) }
+    return { id: 'r', ok: true, result: await reply(paramsRecord(params)) }
   })
   const subscribe = vi.fn((method: string, params: unknown, onData: (frame: unknown) => void) => {
     const stream: Stream = { method, params, onData, closed: false }
@@ -53,7 +73,7 @@ function fakeHost(replies: Record<string, (params: Record<string, unknown>) => u
       stream.closed = true
     }
   })
-  const client = { sendRequest, subscribe } as unknown as RpcClient
+  const client = queueTestClient({ sendRequest, subscribe })
   const live = (): Stream => {
     const stream = streams.findLast((candidate) => !candidate.closed)
     if (!stream) {
@@ -69,6 +89,7 @@ type HarnessProps = {
   supported: boolean
   unsubscribeSupported?: boolean
   terminal: string | null
+  scopeKey?: string
   onDeliveryStarted?: (item: TerminalQueuedMessage) => void
   onDelivered?: (item: TerminalQueuedMessage) => void
 }
@@ -83,7 +104,7 @@ describe('useMobileNativeChatMessageQueue', () => {
       supported: props.supported,
       unsubscribeSupported: props.unsubscribeSupported,
       terminal: props.terminal,
-      scopeKey: 'host\0wt\0tab-1',
+      scopeKey: props.scopeKey ?? 'host\0wt\0tab-1',
       session: { agent: 'claude', sessionId: 'session-1' },
       onDeliveryStarted: props.onDeliveryStarted ?? (() => {}),
       onDelivered: props.onDelivered ?? (() => {})
@@ -356,6 +377,36 @@ describe('useMobileNativeChatMessageQueue', () => {
     ])
     await act(async () => queue?.dismissOrphan('b'))
     expect(queue?.orphans).toEqual([])
+  })
+
+  it('resets on a tab switch and keeps each tab its own lost items', async () => {
+    const host = fakeHost({
+      'terminalMessageQueue.stop': () => ({
+        outcome: 'unverifiable',
+        snapshot: snap(3, [item('a', 'kept')])
+      })
+    })
+    const props = { client: host.client, supported: true, terminal: 'term-1' }
+    await mount(props)
+    await emit(host.live(), {
+      type: 'snapshot',
+      snapshot: snap(1, [item('a', 'kept'), item('b', 'gone')])
+    })
+    await emit(host.live(), { type: 'snapshot', snapshot: snap(2, [item('a', 'kept')]) })
+    await act(async () => {
+      await queue?.stop()
+    })
+    expect(queue?.lastStop).toBe('unverifiable')
+    expect(queue?.orphans).toEqual([expect.objectContaining({ id: 'b' })])
+
+    await update({ ...props, scopeKey: 'host\0wt\0tab-2' })
+    expect(queue?.orphans).toEqual([])
+    expect(queue?.lastStop).toBeNull()
+    expect(queue?.active).toBe(false)
+
+    await update(props)
+    expect(queue?.orphans).toEqual([expect.objectContaining({ id: 'b' })])
+    expect(queue?.lastStop).toBeNull()
   })
 
   it('does not call items lost after the chat stopped watching', async () => {

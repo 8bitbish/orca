@@ -15,6 +15,17 @@ describe('useMobileNativeChatStop with the host queue', () => {
   const sendRequest = vi.fn()
   const onSendError = vi.fn()
   const cancelPending = vi.fn()
+  const client: RpcClient = {
+    sendRequest,
+    subscribe: () => () => {},
+    updateTerminalSubscriptionViewport: () => {},
+    getState: () => 'connected',
+    getReconnectAttempt: () => 0,
+    getLastConnectedAt: () => null,
+    onStateChange: () => () => {},
+    notifyForeground: () => {},
+    close: () => {}
+  }
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -33,7 +44,7 @@ describe('useMobileNativeChatStop with the host queue', () => {
   async function mount(hostStop: (() => Promise<'host' | 'fallback' | 'unknown'>) | null) {
     function Harness(): null {
       stop = useMobileNativeChatStop({
-        client: { sendRequest } as unknown as RpcClient,
+        client,
         enabled: true,
         handleRef: { current: 'terminal-1' },
         deviceTokenRef: { current: 'mobile-1' },

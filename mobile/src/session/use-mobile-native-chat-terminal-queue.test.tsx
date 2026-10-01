@@ -7,6 +7,7 @@ import type {
   TerminalQueuedMessage
 } from '../../../src/shared/terminal-message-queue-contract'
 import type { RpcClient } from '../transport/rpc-client'
+import type { MobileNativeChatSendOrigin } from './mobile-native-chat-pending-echo'
 import { clearMobileQueueOrphansForTests } from './mobile-terminal-message-queue-orphans'
 import { clearQueuedImagePreviewsForTests } from './mobile-terminal-message-queue-previews'
 import { useMobileNativeChatTerminalQueue } from './use-mobile-native-chat-terminal-queue'
@@ -19,8 +20,34 @@ function snap(revision: number, items: TerminalQueuedMessage[]): TerminalMessage
   return { revision, lead: 'working', interrupting: false, terminal: 'live', items }
 }
 
+function sendOrigin(text: string, baselineTailMessageId: string): MobileNativeChatSendOrigin {
+  return {
+    draftKey: 'draft',
+    draftEditGeneration: 0,
+    pendingKey: null,
+    normalizedText: text,
+    baselineOccurrences: 0,
+    baselineTailMessageId,
+    baselineResolved: true
+  }
+}
+
 function userMessage(id: string, text: string, timestamp: number): NativeChatMessage {
   return { id, role: 'user', blocks: [{ type: 'text', text }], timestamp, source: 'transcript' }
+}
+
+/** Only the two calls the queue makes do anything; the rest of the client is inert. */
+function queueTestClient(parts: Pick<RpcClient, 'sendRequest' | 'subscribe'>): RpcClient {
+  return {
+    ...parts,
+    updateTerminalSubscriptionViewport: () => {},
+    getState: () => 'connected',
+    getReconnectAttempt: () => 0,
+    getLastConnectedAt: () => null,
+    onStateChange: () => () => {},
+    notifyForeground: () => {},
+    close: () => {}
+  }
 }
 
 type Result = ReturnType<typeof useMobileNativeChatTerminalQueue>
@@ -34,17 +61,17 @@ describe('useMobileNativeChatTerminalQueue', () => {
   const clearDraftForSend = vi.fn()
   const onSendError = vi.fn()
   let tail = 'm0'
-  const captureSendOrigin = vi.fn((text: string) => ({ text, tail }) as never)
+  const captureSendOrigin = vi.fn((text: string) => sendOrigin(text, tail))
   const sendRequest = vi.fn()
-  const client = {
+  const client = queueTestClient({
     sendRequest,
-    subscribe: (_method: string, _params: unknown, onData: (frame: unknown) => void) => {
+    subscribe: (_method, _params, onData) => {
       streamListener = onData
       return () => {
         streamListener = null
       }
     }
-  } as unknown as RpcClient
+  })
 
   function Harness({ messages }: { messages: NativeChatMessage[] }): null {
     result = useMobileNativeChatTerminalQueue({
@@ -111,7 +138,7 @@ describe('useMobileNativeChatTerminalQueue', () => {
     await emit({ type: 'delivered', item: item('a', 'queued one') })
     expect(acceptSend).toHaveBeenCalledTimes(1)
     expect(acceptSend).toHaveBeenCalledWith(
-      { text: 'queued one', tail: 'm0' },
+      sendOrigin('queued one', 'm0'),
       'queued one',
       undefined,
       false

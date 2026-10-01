@@ -1,5 +1,6 @@
 import { createElement } from 'react'
-import { act, create, type ReactTestRenderer } from 'react-test-renderer'
+import { Text, TextInput } from 'react-native'
+import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type {
   TerminalMessageQueueSnapshot,
@@ -52,7 +53,7 @@ function props(overrides: Partial<MobileNativeChatQueueStackProps> = {}) {
 
 function textOf(renderer: ReactTestRenderer): string {
   return renderer.root
-    .findAllByType('Text' as never)
+    .findAllByType(Text)
     .flatMap((node) => node.props.children)
     .filter((child) => typeof child === 'string' || typeof child === 'number')
     .join('|')
@@ -101,7 +102,7 @@ describe('MobileNativeChatQueuedMessages', () => {
     const edit = view.root.findAllByProps({ accessibilityLabel: 'Edit queued message' })[0]!
     act(() => edit.props.onPress())
     expect(input.onSetEditing).toHaveBeenCalledWith('a', true)
-    const field = view.root.findByType('TextInput' as never)
+    const field = view.root.findByType(TextInput)
     act(() => field.props.onChangeText('first, rewritten'))
     const save = view.root
       .findAllByProps({ accessibilityRole: 'button' })
@@ -169,9 +170,6 @@ describe('MobileNativeChatQueuedMessages', () => {
   })
 })
 
-function hasLabel(
-  node: { findAllByType: (type: never) => { props: { children?: unknown } }[] },
-  label: string
-) {
-  return node.findAllByType('Text' as never).some((text) => text.props.children === label)
+function hasLabel(node: ReactTestInstance, label: string) {
+  return node.findAllByType(Text).some((text) => text.props.children === label)
 }

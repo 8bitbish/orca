@@ -4,6 +4,8 @@
 import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { RpcClient } from '../transport/rpc-client'
+import type { MobileNativeChatSendOrigin } from './mobile-native-chat-pending-echo'
 import type { MobileQueueSubmitOutcome } from './use-mobile-native-chat-message-queue'
 
 const sendWithOutcome = vi.fn()
@@ -28,9 +30,29 @@ type Send = ReturnType<typeof useMobileNativeChatMessageSend>
 describe('useMobileNativeChatMessageSend with a host queue', () => {
   let renderer: ReactTestRenderer | null = null
   let api: Send | null = null
-  const origin = { draftKey: 'k', pendingKey: 'p' }
+  const origin: MobileNativeChatSendOrigin = {
+    draftKey: 'k',
+    draftEditGeneration: 0,
+    pendingKey: 'p',
+    normalizedText: '',
+    baselineOccurrences: 0,
+    baselineTailMessageId: null,
+    baselineResolved: true
+  }
+  // The send goes through the mocked writers, so the client is never called.
+  const client: RpcClient = {
+    sendRequest: vi.fn(),
+    subscribe: () => () => {},
+    updateTerminalSubscriptionViewport: () => {},
+    getState: () => 'connected',
+    getReconnectAttempt: () => 0,
+    getLastConnectedAt: () => null,
+    onStateChange: () => () => {},
+    notifyForeground: () => {},
+    close: () => {}
+  }
   const acceptSend = vi.fn()
-  const captureSendOrigin = vi.fn(() => origin as never)
+  const captureSendOrigin = vi.fn(() => origin)
   const clearDraftForSend = vi.fn()
   const restoreRejectedDraft = vi.fn()
   const onSendError = vi.fn()
@@ -39,7 +61,7 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
   const mount = (queue: typeof queueSubmit | null): void => {
     function Probe(): null {
       api = useMobileNativeChatMessageSend({
-        client: { sendRequest: vi.fn() } as never,
+        client,
         enabled: true,
         handleRef: { current: 'term' },
         deviceTokenRef: { current: 'device' },
