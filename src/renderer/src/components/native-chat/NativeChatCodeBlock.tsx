@@ -10,12 +10,15 @@ import { NativeChatMermaidDiagram } from './NativeChatMermaidDiagram'
 import { NativeChatWidgetCard } from './NativeChatWidgetCard'
 import { NativeChatProjectCard } from './NativeChatProjectCard'
 import { NativeChatShellRunBlock } from './NativeChatShellRunBlock'
+import { NativeChatSlackDraftCard } from './NativeChatSlackDraftCard'
+import { NativeChatSlackMessageCard } from './NativeChatSlackMessageCard'
 import { NativeChatFencePreviewContext, nativeChatFenceRoute } from './native-chat-fence-preview'
 import { NativeChatShellRunContext } from './native-chat-shell-run-workspace'
 
 /** Code fences need their own copy target rather than the whole chat message.
  *  Finished mermaid fences, and html/svg/widget fences in a reply, render as diagrams;
- *  a finished project-card fence in a reply renders as a live project card; a finished
+ *  a finished project-card fence in a reply renders as a live project card, and a
+ *  slack-message or slack-draft fence as a Slack card; a finished
  *  shell fence in the agent's reply gets a Run button when the chat can run it. */
 export function NativeChatCodeBlock({
   children,
@@ -43,6 +46,16 @@ export function NativeChatCodeBlock({
   if (route === 'project-card') {
     return (
       <NativeChatProjectCard
+        source={code}
+        fallback={<NativeChatPlainCodeBlock language={language} code={code} body={children} />}
+      />
+    )
+  }
+  if (route === 'slack-message' || route === 'slack-draft') {
+    const SlackCard =
+      route === 'slack-message' ? NativeChatSlackMessageCard : NativeChatSlackDraftCard
+    return (
+      <SlackCard
         source={code}
         fallback={<NativeChatPlainCodeBlock language={language} code={code} body={children} />}
       />

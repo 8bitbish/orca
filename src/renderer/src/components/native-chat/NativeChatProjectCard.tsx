@@ -1,43 +1,16 @@
 import { useContext, useMemo } from 'react'
 import { ArrowUpRight } from 'lucide-react'
-import { AgentStateDot } from '@/components/AgentStateDot'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
 import { NativeChatFencePreviewContext } from './native-chat-fence-preview'
 import { parseNativeChatProjectCardPayload } from '../../../../shared/native-chat-project-card-payload'
 import { nativeChatProjectCardKey } from './native-chat-project-card-choice'
 import { NativeChatProjectReplyContext } from './native-chat-project-reply-context'
-import {
-  nativeChatProjectStatusDot,
-  nativeChatProjectStatusLabel,
-  type NativeChatProjectStatus
-} from './native-chat-project-status'
+import { NativeChatCardStatusPill } from './NativeChatCardStatusPill'
 import { NativeChatProjectCardActions } from './NativeChatProjectCardActions'
 import { NativeChatProjectIcon } from './NativeChatProjectIcon'
 import { focusNativeChatProject, useNativeChatProject } from './use-native-chat-project'
 import { useNativeChatProjectLiveStatus } from './use-native-chat-project-live-status'
-
-function StatusPill({ status }: { status: NativeChatProjectStatus }): React.JSX.Element {
-  return (
-    <span
-      data-project-status={status}
-      className={cn(
-        'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] leading-4',
-        // Only "Needs you" carries colour, so it is the one that reads first.
-        status === 'needs-you' &&
-          'border-agent-question/40 bg-agent-question/15 font-semibold text-agent-question-text',
-        status === 'working' && 'border-border bg-muted font-medium text-foreground',
-        status === 'done' && 'border-border font-medium text-foreground',
-        status === 'idle' && 'border-border text-muted-foreground',
-        status === 'unverifiable' && 'border-dashed border-border text-muted-foreground'
-      )}
-    >
-      <AgentStateDot state={nativeChatProjectStatusDot(status)} title={null} />
-      {nativeChatProjectStatusLabel(status)}
-    </span>
-  )
-}
 
 /**
  * A ```project-card fence: a project's live status in the reply, with the
@@ -81,7 +54,7 @@ export function NativeChatProjectCard({
               ) : null}
             </div>
           </div>
-          <StatusPill status={live.status} />
+          <NativeChatCardStatusPill status={live.status} />
         </div>
         {payload.note ? <p className="m-0 text-sm leading-relaxed">{payload.note}</p> : null}
         {live.liveLine ? (

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Image as ImageIcon, Loader2, X } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
 import { useLocalImageSrc } from '@/components/editor/useLocalImageSrc'
 import { isNativeChatPastedImagePath } from './native-chat-image-paste'
+import { NativeChatImagePreviewDialog } from './NativeChatImagePreviewDialog'
 import type { NativeChatComposerImageAttachment } from './NativeChatComposerField'
 
 type Props = {
@@ -102,40 +102,13 @@ export function NativeChatImageAttachmentPreview({
           <X className="size-3" />
         </button>
       </div>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="flex max-h-[90vh] max-w-[90vw] flex-col gap-3 border-border bg-background p-3 sm:max-w-4xl">
-          <DialogTitle className="truncate text-sm">{label}</DialogTitle>
-          <DialogDescription className="sr-only">
-            {translate('components.native-chat.composer.imagePreview', 'Full-size image preview')}
-          </DialogDescription>
-          <div className="scrollbar-sleek flex min-h-0 items-center justify-center overflow-auto rounded-md bg-muted/20 p-2">
-            {fullSizeSrc ? (
-              <img
-                src={fullSizeSrc}
-                alt={label}
-                className="max-h-[75vh] max-w-full object-contain"
-              />
-            ) : (
-              <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
-                {isPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    {pendingLabel}
-                  </>
-                ) : (
-                  <>
-                    <ImageIcon className="size-4" />
-                    {translate(
-                      'components.native-chat.composer.imagePreviewUnavailable',
-                      'Preview unavailable'
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <NativeChatImagePreviewDialog
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        label={label}
+        src={fullSizeSrc}
+        pendingLabel={isPending ? pendingLabel : undefined}
+      />
     </>
   )
 }

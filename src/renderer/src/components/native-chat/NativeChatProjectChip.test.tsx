@@ -94,11 +94,4 @@ describe('NativeChatProjectChip', () => {
     expect(screen.getByText('the old one')).toBeInTheDocument()
     expect(document.querySelector('a')).toBeNull()
   })
-
-  it('reads a Slack chip link as plain text until Slack chips are drawn', () => {
-    renderReply('Ask [Sam](slack-user:TFAKE0001/UFAKE0002) first.')
-    expect(screen.queryByRole('button')).toBeNull()
-    expect(screen.getByText('Sam')).toHaveAttribute('data-native-chat-slack-chip', 'plain')
-    expect(document.querySelector('a')).toBeNull()
-  })
 })
