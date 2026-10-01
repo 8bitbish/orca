@@ -156,7 +156,10 @@ function texts(tree: ReactTestRenderer): string {
 
 function linkNodes(tree: ReactTestRenderer) {
   return tree.root.findAll(
-    (node) => String(node.type) === 'Text' && node.props.accessibilityRole === 'link'
+    // Chips are pressable pills; mrkdwn links are pressable text.
+    (node) =>
+      (String(node.type) === 'Text' || String(node.type) === 'Pressable') &&
+      node.props.accessibilityRole === 'link'
   )
 }
 

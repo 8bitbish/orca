@@ -11,3 +11,7 @@ export function MarkdownText(props: TextProps): React.JSX.Element {
   const selectable = useContext(MarkdownSelectableContext)
   return createElement(TextComponent, selectable ? props : { ...props, selectable: false })
 }
+
+/** The prose font size around an inline element, which Android does not pass into a View
+ *  nested in text; inline pills size themselves from it. */
+export const MarkdownProseSizeContext = createContext(14)

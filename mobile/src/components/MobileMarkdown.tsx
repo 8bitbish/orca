@@ -19,6 +19,7 @@ import { isMobileMermaidLanguage } from './mobile-mermaid-language'
 import { parseMobileMarkdown } from './mobile-markdown-parser'
 import { MermaidDiagram } from './pr-sidebar/MermaidDiagram'
 import {
+  MarkdownProseSizeContext,
   MarkdownSelectableContext,
   MarkdownText,
   MarkdownTextContext
@@ -421,7 +422,9 @@ function MobileMarkdownInner(props: Props): React.JSX.Element | null {
   return (
     <MarkdownTextContext.Provider value={TextComponent}>
       <MarkdownSelectableContext.Provider value={props.selectable !== false}>
-        <MobileMarkdownContent {...props} />
+        <MarkdownProseSizeContext.Provider value={13 * (props.textScale ?? 1)}>
+          <MobileMarkdownContent {...props} />
+        </MarkdownProseSizeContext.Provider>
       </MarkdownSelectableContext.Provider>
     </MarkdownTextContext.Provider>
   )
