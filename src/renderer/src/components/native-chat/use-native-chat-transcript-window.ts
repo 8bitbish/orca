@@ -166,9 +166,11 @@ export function useNativeChatTranscriptWindow({
   })
   // Preserve rows above the reader, never compensate growth within the visible
   // row — including its first measurement, which may follow an exact estimate.
+  // Scroll direction is deliberately ignored: a row above that settles late (a
+  // widget reporting its height, a remount) while the reader scrolls up would
+  // otherwise shift the whole view toward the end.
   virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item, _delta, instance) =>
-    item.end <= (instance.scrollOffset ?? 0) &&
-    (instance.scrollDirection !== 'backward' || !instance.itemSizeCache.has(item.key))
+    item.end <= (instance.scrollOffset ?? 0)
 
   const finishReaderTakeover = useCallback(() => {
     if (readerTakeoverFrameRef.current !== null) {

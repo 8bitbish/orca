@@ -351,9 +351,8 @@ describe('transcript follow ownership across growth and appends', () => {
     const { container, rerender } = render(list(transcript))
     paint(container)
     const scroller = scrollRoot(container)
-    // Establish a forward scroll direction before reading at this offset. The
-    // backward-scroll suppression below covers the separate case where a reader
-    // is still moving upward while overscan rows settle.
+    // Establish a forward scroll direction before reading at this offset; the
+    // upward case is covered below.
     scrollTranscript(container, 0)
     paint(container)
     const readingAt = 2000
@@ -393,7 +392,9 @@ describe('transcript follow ownership across growth and appends', () => {
     expect(distanceFromBottom(container)).toBeLessThanOrEqual(NATIVE_CHAT_FOLLOW_REARM_PX)
   })
 
-  it('does not counter upward scrolling when measured overscan rows settle', () => {
+  // A row above that settles late while the reader scrolls up (a widget reporting
+  // its height) must not shift the view toward the end.
+  it('compensates a measured row above that settles while scrolling up', () => {
     const readingAt = 2000
     const aboveIndex = Math.floor(readingAt / ROW_PITCH_PX) - 1
     const { container } = render(list(transcript))
@@ -407,15 +408,16 @@ describe('transcript follow ownership across growth and appends', () => {
     scrollTranscript(container, readingAt)
     paint(container)
     const scroller = scrollRoot(container)
-    const scrollTo = vi.spyOn(scroller, 'scrollTo')
 
-    layout.measuredRowHeights = layout.measuredRowHeights.map((height, index) =>
-      index === aboveIndex ? height + 20 : height
-    )
-    paint(container)
-
-    expect(scroller.scrollTop).toBe(readingAt)
-    expect(scrollTo).not.toHaveBeenCalled()
+    for (const delta of [20, -30]) {
+      const before = scroller.scrollTop
+      layout.measuredRowHeights = layout.measuredRowHeights.map((height, index) =>
+        index === aboveIndex ? height + delta : height
+      )
+      paint(container)
+      expect(scroller.scrollTop).toBe(before + delta)
+    }
+    expect(screen.getByRole('button', { name: /jump to latest/i })).toBeInTheDocument()
   })
 
   it('keeps the offset when a visible row shrinks past the viewport top', () => {
