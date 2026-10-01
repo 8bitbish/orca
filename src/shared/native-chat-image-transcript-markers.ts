@@ -13,8 +13,10 @@ const HORIZONTAL_WHITESPACE_START = /^[^\S\r\n]+/
 const HORIZONTAL_WHITESPACE_END = /[^\S\r\n]+$/
 // Why: Claude Code records a large paste as `<pasted_content id="x">…</pasted_content id="x">`,
 // so the journaled turn never equals the sent draft and its echo would stay pinned at the tail.
+// It also splits a paste at ~1KB PTY reads (even mid-word) into several blocks plus a bare tail,
+// so the newline padding is Claude's and the pieces rejoin with nothing between them.
 const CLAUDE_PASTED_CONTENT_WRAPPER =
-  /<pasted_content id="([^"\s]{1,32})">([\s\S]*?)<\/pasted_content id="\1">/g
+  /\n{0,2}<pasted_content id="([^"\s]{1,32})">\n?([\s\S]*?)\n?<\/pasted_content id="\1">\n{0,2}/g
 
 export function imageSourcePathFromText(text: string): string | null {
   return text.match(IMAGE_SOURCE_MARKER)?.[1]?.trim() ?? null
@@ -69,7 +71,7 @@ export function normalizeNativeChatUserText(text: string): string {
   return stripImagePromptMarker(
     stripAnsiEscapeSequences(text)
       .replace(TERMINAL_CONTROL_CHARACTER_PATTERN, '')
-      .replace(CLAUDE_PASTED_CONTENT_WRAPPER, ' $2 ')
+      .replace(CLAUDE_PASTED_CONTENT_WRAPPER, '$2')
   )
     .trim()
     .replace(/\s+/g, ' ')

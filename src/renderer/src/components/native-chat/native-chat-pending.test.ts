@@ -192,6 +192,20 @@ describe('prunePendingSends', () => {
     expect(next).toEqual([])
   })
 
+  it('drops a large paste Claude Code split into several <pasted_content> blocks', () => {
+    // Claude Code wraps each ~1KB PTY read separately, cutting words, and leaves the tail bare.
+    const draft = 'first part and where I can quickly review and go through them?'
+    const recorded =
+      '\n\n<pasted_content id="87ce">\nfirst part and\n</pasted_content id="87ce">\n\n' +
+      '\n<pasted_content id="87ce">\n where I can quickly revie\n</pasted_content id="87ce">\n\n' +
+      'w and go through them?'
+    const next = prunePendingSends(
+      [pendingOf('p1', draft)],
+      [userMessage('m1', recorded), assistantMessage('m2', 'makes sense')]
+    )
+    expect(next).toEqual([])
+  })
+
   it('does not treat an unrelated longer user turn as a glued match', () => {
     const pending = [pendingOf('p1', 'hi')]
     expect(

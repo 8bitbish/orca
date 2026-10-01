@@ -291,12 +291,23 @@ describe('normalizeNativeChatUserText pasted_content wrapper', () => {
     ).toBe(normalizeNativeChatUserText('Command\nclean up'))
   })
 
-  it('keeps typed text around the wrapper', () => {
+  it('rejoins a paste Claude Code split at PTY reads, even mid-word', () => {
+    // Shape recorded for a ~2KB one-line draft: two ~1KB blocks sharing an id, then a bare tail.
+    const recorded =
+      '\n\n<pasted_content id="87ce">\nfirst part and\n</pasted_content id="87ce">\n\n' +
+      '\n<pasted_content id="87ce">\n where I can quickly revie\n</pasted_content id="87ce">\n\n' +
+      'w and go through them?'
+    expect(normalizeNativeChatUserText(recorded)).toBe(
+      'first part and where I can quickly review and go through them?'
+    )
+  })
+
+  it('keeps a real newline that falls on a split boundary', () => {
     expect(
       normalizeNativeChatUserText(
-        'see below\n\n<pasted_content id="1">\nlog\n</pasted_content id="1">\nthanks'
+        '\n\n<pasted_content id="1">\nline one\n\n</pasted_content id="1">\n\nline two'
       )
-    ).toBe('see below log thanks')
+    ).toBe('line one line two')
   })
 
   it('leaves unrelated angle-bracket text alone', () => {
