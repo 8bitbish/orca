@@ -32,6 +32,7 @@ import { JIRA_METHODS } from './jira'
 import { SSH_METHODS } from './ssh'
 import { SPEECH_METHODS } from './speech'
 import { NATIVE_CHAT_SLACK_METHODS } from './native-chat-slack'
+import { TERMINAL_MESSAGE_QUEUE_METHODS } from './terminal-message-queue'
 import { CLIENT_UI_METHODS } from './client-ui'
 import { CLIENT_EVENT_METHODS } from './client-events'
 import { WORKSPACE_PORT_METHODS } from './workspace-ports'
@@ -83,6 +84,7 @@ export const ALL_RPC_METHODS = [
   ...SESSION_TAB_METHODS,
   ...NATIVE_CHAT_METHODS,
   ...NATIVE_CHAT_SLACK_METHODS,
+  ...TERMINAL_MESSAGE_QUEUE_METHODS,
   ...FILE_METHODS,
   ...GIT_METHODS,
   ...GITHUB_METHODS,

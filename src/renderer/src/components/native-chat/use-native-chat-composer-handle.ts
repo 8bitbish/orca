@@ -20,7 +20,7 @@ export function useNativeChatComposerHandle(
   }
 ): void {
   const { disabled, sendPty, sendStructured, structuredTransport } = args
-  const { focus, insertTypedText, handlePasteEvent, pasteFromClipboard } = args
+  const { focus, insertTypedText, handlePasteEvent, pasteFromClipboard, restoreDraft } = args
   // Sent like typed text through the same path as Enter, leaving the user's draft in place.
   const sendReply = useCallback(
     (text: string): boolean => {
@@ -37,7 +37,14 @@ export function useNativeChatComposerHandle(
   )
   useImperativeHandle(
     ref,
-    () => ({ focus, insertTypedText, handlePasteEvent, pasteFromClipboard, sendReply }),
-    [focus, insertTypedText, handlePasteEvent, pasteFromClipboard, sendReply]
+    () => ({
+      focus,
+      insertTypedText,
+      handlePasteEvent,
+      pasteFromClipboard,
+      sendReply,
+      restoreDraft
+    }),
+    [focus, insertTypedText, handlePasteEvent, pasteFromClipboard, sendReply, restoreDraft]
   )
 }

@@ -18009,6 +18009,48 @@
           "workspaceBusy": "Another block is running in this workspace’s Runs terminal."
         },
         "waitingForOutput": "Waiting for output…"
+      },
+      "queue": {
+        "queueMessage": "Queue message",
+        "queueMessageHint": "Queue — sends when the agent finishes",
+        "notSentExited": "Not sent — the terminal closed",
+        "notSentFailed": "Not sent — delivery failed",
+        "notSentLost": "Not sent — the queue was lost",
+        "editLabel": "Edit queued message",
+        "cancelEdit": "Cancel",
+        "saveEdit": "Save",
+        "itemPrefix": "Queued message {{value0}}: ",
+        "imageCount": "{{value0}} image(s)",
+        "sending": "Sending…",
+        "editingElsewhere": "Being edited",
+        "restore": "Restore to composer",
+        "edit": "Edit queued message",
+        "discard": "Discard message",
+        "remove": "Remove from queue",
+        "stopping": "Stopping the agent…",
+        "waitingOnDialog": "Waiting for you to answer the agent",
+        "sendsWhenDone": "Sends when the agent finishes",
+        "label": "Queued messages",
+        "heading": "Queued · {{value0}}",
+        "stopUnverifiable": "Couldn't confirm the agent stopped. Queued messages send when it finishes.",
+        "sendNextNow": "Send next now"
+      },
+      "slack": {
+        "directMessage": "Direct message",
+        "group": "Group",
+        "opensInSlack": "(opens in Slack)",
+        "to": "To",
+        "in": "in",
+        "inThread": "in thread",
+        "draftNotSent": "Draft, not sent",
+        "oneReply": "1 reply",
+        "replies": "{{value0}} replies",
+        "youReplied": "you replied",
+        "notReplied": "you haven’t replied",
+        "fyi": "FYI",
+        "openInSlack": "Open in Slack",
+        "less": "less ▴",
+        "more": "more ▾"
       }
     },
     "tab": {

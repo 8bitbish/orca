@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { NATIVE_FILE_DROP_TARGET } from '../../../../shared/native-file-drop'
 import type { ComposerAutocomplete, NativeChatPickerItem } from './native-chat-composer-state'
 import { NativeChatMentionHint, NativeChatPickerMenu } from './NativeChatAutocompleteMenus'
-import { NativeChatComposerActions } from './NativeChatComposerActions'
+import { NativeChatComposerActions, type NativeChatWorkingSend } from './NativeChatComposerActions'
 import type { NativeChatContextUsageSummary } from './native-chat-context-usage-summary'
 import { nativeChatComposerPlaceholder } from './native-chat-composer-target'
 import type {
@@ -35,6 +35,8 @@ export type NativeChatComposerFieldProps = {
   imageAttachments: readonly NativeChatComposerImageAttachment[]
   sendButtonDisabled: boolean
   isWorking: boolean
+  /** A draft written while the agent works: queue it, or send it where the main agent is idle. */
+  workingSend?: NativeChatWorkingSend | null
   attachDisabled: boolean
   dictationDisabled: boolean
   isDictating: boolean
@@ -109,6 +111,7 @@ export function NativeChatComposerField({
   imageAttachments,
   sendButtonDisabled,
   isWorking,
+  workingSend,
   attachDisabled,
   dictationDisabled,
   isDictating,
@@ -286,6 +289,7 @@ export function NativeChatComposerField({
                 dictationDisabled={dictationDisabled}
                 sendDisabled={sendButtonDisabled}
                 isWorking={isWorking}
+                workingSend={workingSend}
                 isDictating={isDictating}
                 isDictationHoldMode={isDictationHoldMode}
                 onAttach={onAttach}

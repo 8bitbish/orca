@@ -1,6 +1,4 @@
-import type { NativeChatComposerInput } from './native-chat-composer-input'
 import { forwardRef, useCallback, useState } from 'react'
-import { useAppStore } from '../../store'
 import { useNativeChatComposerInterrupt } from './use-native-chat-composer-interrupt'
 import { useNativeChatContextUsageSummary } from './use-native-chat-context-usage-summary'
 import { getSettingsForAgentTabRuntimeOwner } from '@/lib/agent-paste-draft'
@@ -37,6 +35,8 @@ import { useNativeChatComposerAppMenuSelection } from './use-native-chat-compose
 import { useNativeChatWorkspaceFileDrop } from './use-native-chat-workspace-file-drop'
 import { useNativeChatComposerSubmit } from './use-native-chat-composer-submit'
 import { useNativeChatComposerHandle } from './use-native-chat-composer-handle'
+import { useNativeChatComposerQueueAffordances } from './use-native-chat-composer-queue-affordances'
+import { useNativeChatComposerDraftInput } from './use-native-chat-composer-draft-input'
 
 export type {
   NativeChatComposerHandle,
@@ -67,7 +67,8 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       onSwitchToTerminal,
       readTerminalScreen,
       launchSeed,
-      structuredTransport
+      structuredTransport,
+      queue
     },
     ref
   ): React.JSX.Element {
@@ -94,21 +95,12 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
     const [history, setHistory] = useState<HistoryState>(EMPTY_HISTORY)
     const [activeSuggestion, setActiveSuggestion] = useState(0)
     const [notice, setNotice] = useState<string | null>(null)
-    const [dictationPressed, setDictationPressed] = useState(false)
     const { textareaRef } = useNativeChatComposerAppMenuSelection(imeEnterGesture.isComposing)
     const { cancelPendingSends, trackPendingSend } = useNativeChatSendLifecycle(
       terminalTabId,
       targetPtyId,
       onOptimisticSendCanceled
     )
-    const dictationState = useAppStore((store) => store.dictationState)
-    const voiceSettings = useAppStore((store) => store.settings?.voice)
-    const dictationDisabled = voiceSettings?.enabled !== true || !voiceSettings.sttModel
-    const isDictating =
-      dictationPressed ||
-      dictationState === 'starting' ||
-      dictationState === 'listening' ||
-      dictationState === 'stopping'
 
     const { agentCommands, sessionSkillNames } = useNativeChatComposerCatalog(
       agent,
@@ -149,10 +141,6 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       ? [true, !canSend]
       : [targetPtyId !== null, targetPtyId === null || !canSend]
 
-    const syncCaret = useCallback((el: NativeChatComposerInput) => {
-      setCaret(el.selectionStart ?? el.value.length)
-    }, [])
-
     const attachments = useNativeChatComposerAttachments({
       attachmentScopeKey: paneKey,
       allowWithoutTarget: Boolean(structuredTransport),
@@ -182,13 +170,6 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       attachResolvedPaths,
       setNotice
     })
-    // A pasted image has no agent-readable path until its save lands; sending
-    // mid-save would ship the message without the image the chip promises.
-    const hasPendingAttachment = imageAttachments.some((attachment) => attachment.pending)
-    const sendButtonDisabled = isWorking
-      ? !hasPty || !onStop
-      : disabled || hasPendingAttachment || (draft.trim() === '' && imageAttachments.length === 0)
-
     const { insertTypedText, focus } = useNativeChatTypedInsertion({
       textareaRef,
       caret,
@@ -222,8 +203,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
     })
 
     const { pickAttachment } = useNativeChatFileAttachmentActions(paneKey, attachExternalPaths)
-    const { toggleDictation, startHoldDictation, stopHoldDictation } =
-      useNativeChatDictationActions({ textareaRef, setDictationPressed })
+    const dictation = useNativeChatDictationActions({ textareaRef })
     const { dispatch: dispatchSessionOptionCommand, isDispatching: isDispatchingSessionOption } =
       useNativeChatSessionOptionCommand({
         agent,
@@ -280,7 +260,8 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       setCaret,
       clearSkillOrigin,
       clearImageAttachments,
-      setNotice
+      setNotice,
+      queue: structuredTransport ? null : queue
     })
     const { send, goalMode } = useNativeChatComposerSubmit({
       structuredTransport,
@@ -294,7 +275,24 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       setCaret,
       setHistory
     })
+    const { sendButtonDisabled, workingSend, restoreDraft } = useNativeChatComposerQueueAffordances(
+      {
+        draft,
+        imageAttachments,
+        isWorking,
+        disabled,
+        hasPty,
+        canStop: Boolean(onStop),
+        structured: Boolean(structuredTransport),
+        queue,
+        setDraft,
+        setCaret,
+        attachResolvedPaths,
+        focus
+      }
+    )
     useNativeChatComposerHandle(ref, {
+      restoreDraft,
       focus,
       insertTypedText,
       handlePasteEvent: handlePaste,
@@ -353,16 +351,17 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       setHistory
     })
 
-    const handleDraftChange = useCallback(
-      (value: string, element: NativeChatComposerInput) => {
-        setDraft(value)
-        setHistory((prev) => ({ entries: prev.entries, index: null }))
-        syncCaret(element)
-        handleDraftOrCaretChange(value, element.selectionStart ?? value.length)
-        setActiveSuggestion(0)
-      },
-      [handleDraftOrCaretChange, setDraft, syncCaret]
-    )
+    const { handleDraftChange, handleTextareaSelect, handleImeSettled } =
+      useNativeChatComposerDraftInput({
+        draft,
+        setDraft,
+        setCaret,
+        setHistory,
+        setActiveSuggestion,
+        handleDraftOrCaretChange,
+        flushDraftAppends,
+        flushPendingAttachments: attachments.flushPendingAttachments
+      })
 
     return (
       <NativeChatComposerField
@@ -378,25 +377,16 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
         imageAttachments={imageAttachments}
         sendButtonDisabled={sendButtonDisabled}
         isWorking={isWorking}
+        workingSend={workingSend}
         attachDisabled={disabled}
-        dictationDisabled={dictationDisabled}
-        isDictating={isDictating}
-        isDictationHoldMode={voiceSettings?.dictationMode === 'hold'}
+        dictationDisabled={dictation.dictationDisabled}
+        isDictating={dictation.isDictating}
+        isDictationHoldMode={dictation.isDictationHoldMode}
         imeEnterGesture={imeEnterGesture}
         onDraftChange={handleDraftChange}
-        onTextareaSelect={(element) => {
-          syncCaret(element)
-          handleDraftOrCaretChange(element.value, element.selectionStart ?? element.value.length)
-          setActiveSuggestion(0)
-        }}
+        onTextareaSelect={handleTextareaSelect}
         onKeyDown={handleKeyDown}
-        onImeSettled={(element) => {
-          if (element.value !== draft) {
-            handleDraftChange(element.value, element)
-          }
-          flushDraftAppends()
-          attachments.flushPendingAttachments()
-        }}
+        onImeSettled={handleImeSettled}
         onPaste={handlePaste}
         pickerListboxId={picker.listboxId}
         onChoosePickerItem={goalMode.interceptPick(completeItem)}
@@ -415,9 +405,9 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
         }}
         onRemoveImageAttachment={(id) => removeImageAttachment(id)}
         onAttach={pickAttachment}
-        onDictationToggle={toggleDictation}
-        onDictationHoldStart={startHoldDictation}
-        onDictationHoldEnd={stopHoldDictation}
+        onDictationToggle={dictation.toggleDictation}
+        onDictationHoldStart={dictation.startHoldDictation}
+        onDictationHoldEnd={dictation.stopHoldDictation}
         onSend={send}
         onStop={interrupt}
         sessionOptionsSurface={sessionOptionsSurface}

@@ -66,6 +66,17 @@ export type NativeChatComposerProps = {
   launchSeed?: NativeChatLaunchSeed
   /** Structured journal transport; absent keeps the existing PTY path unchanged. */
   structuredTransport?: NativeChatStructuredComposerTransport
+  /** The host's mid-turn message queue; absent (or an old host) keeps every send direct. */
+  queue?: NativeChatComposerQueue | null
+}
+
+/** The composer's view of the host queue: whether a send now is held, and how to hold it. */
+export type NativeChatComposerQueue = {
+  willQueue: boolean
+  enqueue: (
+    text: string,
+    imagePaths: string[]
+  ) => Promise<'queued' | 'direct' | 'refused' | 'failed'>
 }
 
 /** Launch context prefilled into the TUI input as an unsent draft, plus the two
@@ -91,4 +102,6 @@ export type NativeChatComposerHandle = {
   pasteFromClipboard: () => void
   /** Sends `text` as the user's next message without touching the draft; false if it could not. */
   sendReply: (text: string) => boolean
+  /** Puts a queued message back into the draft (after any text already there), with its images. */
+  restoreDraft: (text: string, imagePaths: readonly string[]) => void
 }

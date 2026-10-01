@@ -1,16 +1,29 @@
 import type { NativeChatComposerInput } from './native-chat-composer-input'
-import { useCallback, type Dispatch, type RefObject, type SetStateAction } from 'react'
+import { useCallback, useState, type RefObject } from 'react'
+import { useAppStore } from '../../store'
 import { dispatchDictationControl } from '../dictation/dictation-control-events'
 
+/** The composer's dictation controls and the state its mic button shows. */
 export function useNativeChatDictationActions(args: {
   textareaRef: RefObject<NativeChatComposerInput | null>
-  setDictationPressed: Dispatch<SetStateAction<boolean>>
 }): {
   toggleDictation: () => void
   startHoldDictation: () => void
   stopHoldDictation: () => void
+  isDictating: boolean
+  dictationDisabled: boolean
+  isDictationHoldMode: boolean
 } {
-  const { setDictationPressed, textareaRef } = args
+  const { textareaRef } = args
+  const [dictationPressed, setDictationPressed] = useState(false)
+  const dictationState = useAppStore((store) => store.dictationState)
+  const voiceSettings = useAppStore((store) => store.settings?.voice)
+  const dictationDisabled = voiceSettings?.enabled !== true || !voiceSettings.sttModel
+  const isDictating =
+    dictationPressed ||
+    dictationState === 'starting' ||
+    dictationState === 'listening' ||
+    dictationState === 'stopping'
   const focusForDictation = useCallback(() => textareaRef.current?.focus(), [textareaRef])
   const toggleDictation = useCallback(() => {
     focusForDictation()
@@ -25,5 +38,12 @@ export function useNativeChatDictationActions(args: {
     setDictationPressed(false)
     dispatchDictationControl('stop')
   }, [setDictationPressed])
-  return { toggleDictation, startHoldDictation, stopHoldDictation }
+  return {
+    toggleDictation,
+    startHoldDictation,
+    stopHoldDictation,
+    isDictating,
+    dictationDisabled,
+    isDictationHoldMode: voiceSettings?.dictationMode === 'hold'
+  }
 }

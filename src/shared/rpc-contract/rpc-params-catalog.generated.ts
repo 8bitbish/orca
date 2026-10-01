@@ -485,6 +485,12 @@ import {
   ThreadGoalParams,
   UnsubscribeParams
 } from './structured-agent-session-params'
+import {
+  TerminalMessageQueueEdit,
+  TerminalMessageQueueRemove,
+  TerminalMessageQueueSubmit,
+  TerminalMessageQueueTarget
+} from './terminal-message-queue-params'
 import { TerminalAdoptOrphans } from './terminal-orphan-params'
 import { TerminalQuickCommandsUpdate } from './terminal-quick-command-params'
 import {
@@ -1157,6 +1163,13 @@ export const RPC_PARAMS_BY_METHOD = {
   'terminal.unsubscribe': TerminalUnsubscribe,
   'terminal.updateViewport': TerminalUpdateViewport,
   'terminal.wait': TerminalWait,
+  'terminalMessageQueue.edit': TerminalMessageQueueEdit,
+  'terminalMessageQueue.list': TerminalMessageQueueTarget,
+  'terminalMessageQueue.remove': TerminalMessageQueueRemove,
+  'terminalMessageQueue.sendNext': TerminalMessageQueueTarget,
+  'terminalMessageQueue.stop': TerminalMessageQueueTarget,
+  'terminalMessageQueue.submit': TerminalMessageQueueSubmit,
+  'terminalMessageQueue.subscribe': TerminalMessageQueueTarget,
   'ui.get': null,
   'ui.recordFeatureInteraction': FeatureInteractionIdParam,
   'ui.set': UiUpdate,

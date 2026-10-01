@@ -114,4 +114,57 @@ describe('NativeChatComposerActions', () => {
     expect(onSend).not.toHaveBeenCalled()
     expect(onStop).not.toHaveBeenCalled()
   })
+
+  it('offers Queue beside Stop for a draft written while the agent works', () => {
+    const onSend = vi.fn()
+    const onStop = vi.fn()
+    render(
+      <NativeChatComposerActions
+        attachDisabled={false}
+        dictationDisabled={false}
+        sendDisabled={false}
+        isWorking
+        workingSend={{ kind: 'queue', disabled: false }}
+        isDictating={false}
+        isDictationHoldMode={false}
+        onAttach={vi.fn()}
+        onDictationToggle={vi.fn()}
+        onDictationHoldStart={vi.fn()}
+        onDictationHoldEnd={vi.fn()}
+        onSend={onSend}
+        onStop={onStop}
+        sessionOptionsSurface={null}
+        sessionOptionsSnapshot={[]}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Queue message' }))
+    expect(onSend).toHaveBeenCalledTimes(1)
+    expect(onStop).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Stop the agent' }))
+    expect(onStop).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows only Stop while working with an empty draft', () => {
+    render(
+      <NativeChatComposerActions
+        attachDisabled={false}
+        dictationDisabled={false}
+        sendDisabled={false}
+        isWorking
+        workingSend={null}
+        isDictating={false}
+        isDictationHoldMode={false}
+        onAttach={vi.fn()}
+        onDictationToggle={vi.fn()}
+        onDictationHoldStart={vi.fn()}
+        onDictationHoldEnd={vi.fn()}
+        onSend={vi.fn()}
+        onStop={vi.fn()}
+        sessionOptionsSurface={null}
+        sessionOptionsSnapshot={[]}
+      />
+    )
+    expect(screen.queryByRole('button', { name: 'Queue message' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Stop the agent' })).toBeTruthy()
+  })
 })

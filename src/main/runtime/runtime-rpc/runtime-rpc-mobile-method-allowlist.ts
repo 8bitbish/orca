@@ -1,3 +1,5 @@
+import { TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS } from './runtime-rpc-mobile-terminal-message-queue-methods'
+
 export const MOBILE_RPC_METHOD_ALLOWLIST = new Set([
   'accounts.list',
   'accounts.consumeCodexResetCredit',
@@ -238,6 +240,7 @@ export const MOBILE_RPC_METHOD_ALLOWLIST = new Set([
   'nativeChat.slackImage',
   'nativeChat.subscribe',
   'nativeChat.unsubscribe',
+  ...TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS,
   'settings.get',
   'settings.getTerminalQuickCommands',
   'settings.mutateNativeChatSessionOptions',

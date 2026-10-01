@@ -22,6 +22,7 @@ import {
   startOrcadWithHost
 } from './orcad-lifecycle'
 import { parseArgs } from './orcad-command-arguments'
+import { messageQueueStatusSourceFromHookServer } from '../terminal-message-queue/terminal-message-queue-status-source'
 import {
   changedAiVaultSearchSettings,
   type AiVaultSearchSettings
@@ -248,6 +249,11 @@ async function startOrcadRuntime(
       }
     }
   })
+
+  // Why here too: orcad is the execution host for its PTYs, so its queue reads its own store.
+  runtime.attachTerminalMessageQueueStatusSource(
+    messageQueueStatusSourceFromHookServer(agentHookServer)
+  )
 
   const { installOrcadSessionSearchService } = await import('./orcad-session-search')
   sessionSearch = await installOrcadSessionSearchService({

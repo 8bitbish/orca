@@ -221,6 +221,9 @@ export const AGENT_SESSION_TURN_ITEM_CAPABILITY = 'agent-session.turn-item.v1' a
 // gap. The host publishes those rows (journal items and terminal transcript messages) only to
 // clients that advertise this.
 export const AGENT_SESSION_THOUGHT_MARKER_CAPABILITY = 'agent-session.thought-marker.v1' as const
+// Why: `terminalMessageQueue.*` is new; a client probes this before holding a prompt on the host,
+// and a host without it leaves the client writing straight to the terminal as before.
+export const TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY = 'terminal.message-queue.v1' as const
 export const AGENT_SESSION_BACKGROUND_TASK_STOP_CAPABILITY =
   'agent-session.background-task-stop.v1' as const
 // Why: agentSession.cancel has a strict schema, so clients must not send prompt identity to an
@@ -382,6 +385,7 @@ export const RUNTIME_CAPABILITIES = [
   TERMINAL_PROMPT_DELIVERY_RUNTIME_CAPABILITY,
   TERMINAL_PAIRED_PARKING_RUNTIME_CAPABILITY,
   TERMINAL_QUICK_COMMANDS_RUNTIME_CAPABILITY,
+  TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY,
   WORKTREE_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,
   WORKTREE_ARCHIVE_FAILURE_BLOCKING_RUNTIME_CAPABILITY,
   TERMINAL_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,

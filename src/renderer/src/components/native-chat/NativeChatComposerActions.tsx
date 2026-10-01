@@ -1,4 +1,4 @@
-import { ArrowUp, Mic, Plus, Square } from 'lucide-react'
+import { ArrowUp, ListPlus, Mic, Plus, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
@@ -12,11 +12,14 @@ import { NativeChatContextUsageRing } from './NativeChatContextUsageRing'
 import type { NativeChatContextUsageSummary } from './native-chat-context-usage-summary'
 import type { NativeChatOptionPickerRequest } from './native-chat-composer-types'
 
+export type NativeChatWorkingSend = { kind: 'queue' | 'send'; disabled: boolean }
+
 export type NativeChatComposerActionsProps = {
   attachDisabled: boolean
   dictationDisabled: boolean
   sendDisabled: boolean
   isWorking: boolean
+  workingSend?: NativeChatWorkingSend | null
   isDictating: boolean
   isDictationHoldMode: boolean
   onAttach: () => void
@@ -39,6 +42,7 @@ export function NativeChatComposerActions({
   dictationDisabled,
   sendDisabled,
   isWorking,
+  workingSend,
   isDictating,
   isDictationHoldMode,
   onAttach,
@@ -65,6 +69,10 @@ export function NativeChatComposerActions({
       onSend()
     }
   }
+  const workingSendLabel =
+    workingSend?.kind === 'queue'
+      ? translate('components.native-chat.queue.queueMessage', 'Queue message')
+      : translate('components.native-chat.composer.send', 'Send')
   const dictationLabel = isDictating
     ? translate('components.native-chat.composer.stopDictation', 'Stop dictation')
     : translate('components.native-chat.composer.startDictation', 'Start dictation')
@@ -145,6 +153,40 @@ export function NativeChatComposerActions({
             {dictationLabel}
           </TooltipContent>
         </Tooltip>
+        {workingSend ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                data-native-chat-working-send={workingSend.kind}
+                aria-label={workingSendLabel}
+                disabled={workingSend.disabled}
+                onClick={(event) => {
+                  if (event.detail <= 1) {
+                    onSend()
+                  }
+                }}
+                variant="default"
+                size="icon"
+                className="size-8 rounded-full pointer-coarse:size-10"
+              >
+                {workingSend.kind === 'queue' ? (
+                  <ListPlus className="size-4" />
+                ) : (
+                  <ArrowUp className="size-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4}>
+              {workingSend.kind === 'queue'
+                ? translate(
+                    'components.native-chat.queue.queueMessageHint',
+                    'Queue — sends when the agent finishes'
+                  )
+                : workingSendLabel}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
         <Button
           type="button"
           data-native-chat-critical-action={isWorking ? 'stop' : undefined}
