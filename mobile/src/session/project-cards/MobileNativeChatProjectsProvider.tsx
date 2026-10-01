@@ -12,10 +12,12 @@ import {
   type MobileNativeChatProjects
 } from './mobile-native-chat-project-context'
 import { useMobileNativeChatProjectCatalog } from './use-mobile-native-chat-project-catalog'
+import { MobileNativeChatSlackContext } from '../slack-cards/mobile-native-chat-slack-context'
+import { useMobileNativeChatSlackImages } from '../slack-cards/use-mobile-native-chat-slack-images'
 
 const CLOCK_MS = 30_000
 
-/** Gives a native chat's chips and cards the host's catalog, a send and navigation. */
+/** Gives a native chat's chips and cards the host's catalog, Slack images, a send and navigation. */
 export function MobileNativeChatProjectsProvider({
   client,
   hostId,
@@ -36,6 +38,7 @@ export function MobileNativeChatProjectsProvider({
   const router = useRouteHandoff()
   const enabled = useMemo(() => mobileNativeChatMentionsProject(messages), [messages])
   const catalog = useMobileNativeChatProjectCatalog({ client, hostId, connState, enabled })
+  const slack = useMobileNativeChatSlackImages(client, hostId)
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!enabled) {
@@ -62,9 +65,11 @@ export function MobileNativeChatProjectsProvider({
   )
   return (
     <MobileNativeChatProjectsContext.Provider value={value}>
-      <MobileMarkdownRenderersContext.Provider value={MOBILE_NATIVE_CHAT_MARKDOWN_RENDERERS}>
-        {children}
-      </MobileMarkdownRenderersContext.Provider>
+      <MobileNativeChatSlackContext.Provider value={slack}>
+        <MobileMarkdownRenderersContext.Provider value={MOBILE_NATIVE_CHAT_MARKDOWN_RENDERERS}>
+          {children}
+        </MobileMarkdownRenderersContext.Provider>
+      </MobileNativeChatSlackContext.Provider>
     </MobileNativeChatProjectsContext.Provider>
   )
 }
