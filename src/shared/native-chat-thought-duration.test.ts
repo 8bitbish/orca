@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type {
-  AgentJournalItemBody,
-  AgentJournalRenderItem
-} from '../../../../shared/agent-session-journal-types'
-import type { NativeChatMessage } from '../../../../shared/native-chat-types'
+import type { AgentJournalItemBody, AgentJournalRenderItem } from './agent-session-journal-types'
+import type { NativeChatMessage } from './native-chat-types'
 import {
   nativeChatThoughtSeconds,
   nativeChatTranscriptThoughtSeconds

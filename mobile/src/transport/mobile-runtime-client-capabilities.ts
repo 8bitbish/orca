@@ -1,6 +1,7 @@
 import {
   AGENT_LAUNCH_RUNTIME_CAPABILITY,
   AGENT_SESSION_PENDING_SEND_RESULT_RUNTIME_CAPABILITY,
+  AGENT_SESSION_THOUGHT_MARKER_CAPABILITY,
   AGENT_SESSION_TURN_ITEM_CAPABILITY,
   CLAUDE_STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY,
   SESSION_TABS_SPLIT_GROUP_PLACEMENT_RUNTIME_CAPABILITY,
@@ -20,7 +21,9 @@ export const MOBILE_RUNTIME_CLIENT_CAPABILITIES = remoteRuntimeClientCapabilitie
   // Mobile renders either launch outcome — a structured chat or a terminal agent — so it may ask
   // the host to pick. Without this the host refuses `agent.launch` and every mobile create with an
   // agent stays a PTY.
-  AGENT_LAUNCH_RUNTIME_CAPABILITY
+  AGENT_LAUNCH_RUNTIME_CAPABILITY,
+  // A thought with no text draws as its own "Thought" line here, so the host may send the marker.
+  AGENT_SESSION_THOUGHT_MARKER_CAPABILITY
 ])
 
 export const MOBILE_RUNTIME_CLIENT_CAPABILITY_UPDATE_METHOD =

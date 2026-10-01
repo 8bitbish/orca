@@ -1,3 +1,4 @@
+import type { AgentJournalRenderItem } from '../../../src/shared/agent-session-journal-types'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type {
   AskAnswerSelection,
@@ -41,6 +42,8 @@ export type MobileNativeChatController = {
   nativeChatActiveTurnOpenedBy: string | null
   /** Structured lane: the turn that owns each journal item's row. */
   nativeChatTurnKeysByItemId: ReadonlyMap<string, string> | null
+  /** Structured lane: the journal rows behind the messages, for thought durations. */
+  nativeChatJournalItems: readonly AgentJournalRenderItem[] | undefined
   nativeChatCanStop: boolean
   nativeChatStreamingText?: string
   /** Agent mid-turn, regardless of whether chat is the visible view. */

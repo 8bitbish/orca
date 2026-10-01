@@ -38,7 +38,7 @@ import type {
 } from './native-chat-message-rail-items'
 import { useNativeChatRailHistoryJump } from './use-native-chat-rail-history-jump'
 import { nativeChatReaderScrollInputHandlers } from './native-chat-reader-scroll-input'
-import { nativeChatSessionThoughtSeconds } from './native-chat-thought-duration'
+import { nativeChatSessionThoughtSeconds } from '../../../../shared/native-chat-thought-duration'
 
 import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
 import { isStructuredAgentSessionThinking } from '../../../../shared/structured-agent-session-live-turn'

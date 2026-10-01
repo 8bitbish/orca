@@ -10,10 +10,10 @@
 // streams reasoning, so its row is created as the thought STARTS — the same
 // subtraction would report latency, not thinking — and gets no duration.
 
-import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
-import { isRootAgentJournalItem } from '../../../../shared/agent-session-journal-producer'
-import { readAgentJournalTurn } from '../../../../shared/agent-session-turn-record'
-import type { AgentType, NativeChatMessage } from '../../../../shared/native-chat-types'
+import type { AgentJournalRenderItem } from './agent-session-journal-types'
+import { isRootAgentJournalItem } from './agent-session-journal-producer'
+import { readAgentJournalTurn } from './agent-session-turn-record'
+import type { AgentType, NativeChatMessage } from './native-chat-types'
 
 /** Agents whose reasoning rows are stamped when the thought completes. */
 const COMPLETED_THOUGHT_STAMP_AGENTS: ReadonlySet<AgentType> = new Set<AgentType>(['claude'])

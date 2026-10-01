@@ -9,6 +9,10 @@ import { NATIVE_CHAT_SUBAGENT_ATTRIBUTION_COPY } from '../../../src/shared/nativ
 import type { NativeChatBlock, NativeChatMessage } from '../../../src/shared/native-chat-types'
 import { MobileMarkdown } from '../components/MobileMarkdown'
 import { MobileNativeChatMessageIdContext } from './project-cards/mobile-native-chat-project-context'
+import {
+  MobileNativeChatThoughtRow,
+  type MobileNativeChatThought
+} from './MobileNativeChatThoughtRow'
 import { MobileNativeChatTurnStatus } from './MobileNativeChatTurnStatus'
 import { ToolRun } from './MobileNativeChatToolRun'
 import type { NativeChatTurnStatus } from './use-mobile-native-chat-turn-status'
@@ -69,6 +73,10 @@ function Prose({
   return null
 }
 
+export type MobileNativeChatThoughtFor = (
+  item: NativeChatMessage
+) => MobileNativeChatThought | undefined
+
 function MobileNativeChatMessageImpl({
   message,
   toolsExpanded = false,
@@ -81,7 +89,8 @@ function MobileNativeChatMessageImpl({
   onToggleTurn,
   activeTurnIsWorking,
   structuredActivityUi = false,
-  subagentLabel
+  subagentLabel,
+  thought
 }: {
   message: NativeChatMessage
   toolsExpanded?: boolean
@@ -104,6 +113,8 @@ function MobileNativeChatMessageImpl({
   structuredActivityUi?: boolean
   /** The roster's name for the subagent that wrote this row, when one names it. */
   subagentLabel?: string
+  /** A reasoning row's fold: set, it draws as one "Thought for Ns" line that opens. */
+  thought?: MobileNativeChatThought
 }): React.JSX.Element {
   const isUser = message.role === 'user'
   const isReasoning = message.role === 'reasoning'
@@ -149,7 +160,7 @@ function MobileNativeChatMessageImpl({
           style={[
             styles.content,
             isUser && styles.userBubble,
-            isReasoning && styles.reasoning,
+            isReasoning && !thought && styles.reasoning,
             subagentName !== null && styles.subagent
           ]}
         >
@@ -169,17 +180,26 @@ function MobileNativeChatMessageImpl({
               {subagentName}
             </NativeText>
           ) : null}
-          <MobileNativeChatMessageIdContext.Provider value={message.id}>
-            {prose.map((block, index) => (
-              <Prose
-                key={index}
-                block={block}
-                invert={isUser}
-                fontScale={fontScale}
-                onOpenFile={onOpenFile}
-              />
-            ))}
-          </MobileNativeChatMessageIdContext.Provider>
+          {isReasoning && thought ? (
+            <MobileNativeChatThoughtRow
+              markdown={prose.map((block) => (isTextBlock(block) ? block.text : '')).join('\n\n')}
+              thought={thought}
+              fontScale={fontScale}
+              onOpenFile={onOpenFile}
+            />
+          ) : (
+            <MobileNativeChatMessageIdContext.Provider value={message.id}>
+              {prose.map((block, index) => (
+                <Prose
+                  key={index}
+                  block={block}
+                  invert={isUser}
+                  fontScale={fontScale}
+                  onOpenFile={onOpenFile}
+                />
+              ))}
+            </MobileNativeChatMessageIdContext.Provider>
+          )}
           {showToolRun ? (
             <ToolRun
               // Why: a global toggle intentionally resets all per-run/per-line

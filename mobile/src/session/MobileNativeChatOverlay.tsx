@@ -8,6 +8,8 @@ import { foldMobileNativeChatMessages } from './mobile-native-chat-render-data'
 import type { MobileNativeChatImageAttachments } from './use-mobile-native-chat-image-attachments'
 import type { MobileNativeChatController } from './use-mobile-native-chat-controller'
 import { useMobileNativeChatStreamingBubble } from './use-mobile-native-chat-streaming-bubble'
+import { useMobileNativeChatThoughtSeconds } from './use-mobile-native-chat-thought-seconds'
+import { useMobileNativeChatThoughts } from './use-mobile-native-chat-thoughts'
 
 type Props = {
   controller: MobileNativeChatController
@@ -69,6 +71,15 @@ export function MobileNativeChatOverlay({
     controller.nativeChatStreamScopeKey,
     controller.nativeChatStreamLive
   )
+  const thoughtFor = useMobileNativeChatThoughts({
+    thoughtSeconds: useMobileNativeChatThoughtSeconds(
+      controller.nativeChatAgent,
+      controller.nativeChatJournalItems,
+      session.messages
+    ),
+    liveRowId:
+      controller.nativeChatAgentWorking && streaming === null ? (folded.at(-1)?.id ?? null) : null
+  })
   if (!controller.showNativeChat) {
     return null
   }
@@ -96,6 +107,7 @@ export function MobileNativeChatOverlay({
           settledTurns={controller.nativeChatSettledTurns}
           activeTurnOpenedBy={controller.nativeChatActiveTurnOpenedBy}
           turnKeysByItemId={controller.nativeChatTurnKeysByItemId}
+          thoughtFor={thoughtFor}
           streaming={streaming}
           onStop={controller.handleNativeChatStop}
           ask={controller.nativeChatAsk}

@@ -40,7 +40,7 @@ import { MobileNativeChatPromptCard } from './MobileNativeChatPromptCard'
 import type { MobileChatPermission } from './mobile-native-chat-permission'
 import type { MobileChatQuestion } from './mobile-native-chat-question'
 import type { MobileNativeChatSessionOptionPickersProps } from './MobileNativeChatSessionOptionPickers'
-import { MobileNativeChatMessage } from './MobileNativeChatMessage'
+import { MobileNativeChatMessage, type MobileNativeChatThoughtFor } from './MobileNativeChatMessage'
 import type { MobileNativeChatStatus } from './use-mobile-native-chat-session'
 
 /** Why the composer input is locked: the transport is disconnected, or the
@@ -70,6 +70,8 @@ type Props = {
   activeTurnOpenedBy?: string | null
   /** Structured lane: host-attributed turn ownership per journal item id. */
   turnKeysByItemId?: ReadonlyMap<string, string> | null
+  /** Each reasoning row's "Thought for Ns" fold. */
+  thoughtFor?: MobileNativeChatThoughtFor
   /** Interrupt the agent mid-turn (shown as a Stop button on the working bar). */
   /** Interrupt a provider turn. */
   onStop?: () => void
@@ -157,6 +159,7 @@ export function MobileNativeChatView({
   settledTurns,
   activeTurnOpenedBy = null,
   turnKeysByItemId = null,
+  thoughtFor,
   onStop,
   streaming,
   hasMore,
@@ -288,6 +291,7 @@ export function MobileNativeChatView({
   const renderItem = useCallback(
     ({ item, index }: { item: NativeChatMessage; index: number }) => (
       <MobileNativeChatMessage
+        thought={thoughtFor?.(item)}
         message={item}
         toolsExpanded={toolsExpanded}
         fontScale={fontScale}
@@ -298,7 +302,7 @@ export function MobileNativeChatView({
         {...turns.resolveRow(index, item)}
       />
     ),
-    [toolsExpanded, fontScale, onOpenFile, structuredActivityUi, subagentLabels, turns]
+    [toolsExpanded, fontScale, onOpenFile, structuredActivityUi, subagentLabels, turns, thoughtFor]
   )
 
   const emptyState = mobileNativeChatEmptyState(status, agent ?? null, error)

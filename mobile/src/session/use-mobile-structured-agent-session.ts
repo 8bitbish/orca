@@ -1,3 +1,4 @@
+import type { AgentJournalRenderItem } from '../../../src/shared/agent-session-journal-types'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { dispatchMobileStructuredCommand } from './mobile-structured-composer-command'
 import {
@@ -50,6 +51,8 @@ type StructuredMobileAttachment = StructuredAgentSessionAttachment & {
 type StructuredMobileSession = ReturnType<typeof useMobileStructuredAgentOptions> &
   ReturnType<typeof useMobileStructuredAgentTurnTiming> & {
     session: MobileNativeChatSession
+    /** The journal rows the messages project from; thought durations read their host stamps. */
+    journalItems: readonly AgentJournalRenderItem[]
     isWorking: boolean
     turnId: string | null
     /** What labels the live turn's one indicator row. */
@@ -292,6 +295,7 @@ export function useMobileStructuredAgentSession(args: {
       loadingEarlier: loadingOlder,
       loadEarlier
     },
+    journalItems: state.items,
     isWorking: isStructuredAgentSessionMainAgentWorking(turnId, state.submissions, state.fence),
     turnId,
     turnIndicator,

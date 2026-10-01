@@ -297,6 +297,7 @@ export function useMobileNativeChatController(args: {
       ? structuredNativeChat.activeTurnOpenedBy
       : null,
     nativeChatTurnKeysByItemId: activeChatStructured ? structuredNativeChat.turnKeysByItemId : null,
+    nativeChatJournalItems: activeChatStructured ? structuredNativeChat.journalItems : undefined,
     nativeChatCanStop: activeChatStructured
       ? structuredNativeChat.turnId !== null
       : nativeChatAgentWorking,
