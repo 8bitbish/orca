@@ -37,3 +37,12 @@ export function openExternalLink(url: string): void {
     console.warn('[page] the shell did not take a URL to open', { url })
   }
 }
+
+/** Like `openExternalLink`, but says whether the shell took the URL, so a caller can try a fallback. */
+export async function tryOpenExternalLink(url: string): Promise<boolean> {
+  if (readBridgeExternalLinkUrl(url) === null || !post(url)) {
+    console.warn('[page] the shell did not take a URL to open', { url })
+    return false
+  }
+  return true
+}

@@ -24,6 +24,17 @@ export function openExternalLink(url: string): void {
   }
 }
 
+/** Like `openExternalLink`, but says whether the URL opened, so a caller can try a fallback. */
+export async function tryOpenExternalLink(url: string): Promise<boolean> {
+  try {
+    await Linking.openURL(url)
+    return true
+  } catch (error) {
+    report(url, error)
+    return false
+  }
+}
+
 /** Named rather than swallowed: nothing else records a tap that opened nothing. */
 function report(url: string, error: unknown): void {
   console.warn('[platform] could not open a URL', { url }, error)

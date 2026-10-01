@@ -20,7 +20,7 @@ const linking = vi.hoisted(() => {
 
 vi.mock('react-native', () => ({ Linking: { openURL: linking.openURL } }))
 
-import { openExternalLink } from './external-link'
+import { openExternalLink, tryOpenExternalLink } from './external-link'
 
 beforeEach(() => {
   linking.openURL.mockReset()
@@ -62,5 +62,20 @@ describe('a URL the platform refuses before it returns a promise', () => {
     openExternalLink('')
     expect(warned).toHaveBeenCalled()
     warned.mockRestore()
+  })
+})
+
+describe('trying a URL so a caller can fall back', () => {
+  it('says whether the app opened it, including a synchronous refusal', async () => {
+    await expect(tryOpenExternalLink('slack://user?team=TFAKE0001&id=UFAKE0002')).resolves.toBe(
+      true
+    )
+    linking.openURL.mockImplementation(() => Promise.reject(new Error('no activity found')))
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    await expect(tryOpenExternalLink('slack://user?team=TFAKE0001&id=UFAKE0002')).resolves.toBe(
+      false
+    )
+    linking.openURL.mockImplementation(linking.validatingOpen)
+    await expect(tryOpenExternalLink('')).resolves.toBe(false)
   })
 })

@@ -1,6 +1,10 @@
 /** The web form: the page has no way out of itself, so the shell is asked. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { openExternalLink, publishExternalLinkOpener } from './external-link.web'
+import {
+  openExternalLink,
+  publishExternalLinkOpener,
+  tryOpenExternalLink
+} from './external-link.web'
 
 let warned: ReturnType<typeof vi.spyOn>
 
@@ -53,5 +57,22 @@ describe('opening a URL from inside the shell', () => {
     expect(warned.mock.calls).toEqual([
       ['[page] the shell did not take a URL to open', { url: 'https://example.com' }]
     ])
+  })
+})
+
+describe('trying a URL so a caller can fall back', () => {
+  it('reports a refused scheme as not opened, without asking the shell', async () => {
+    const asked: string[] = []
+    publishExternalLinkOpener((url) => {
+      asked.push(url)
+      return true
+    })
+    await expect(tryOpenExternalLink('slack://channel?team=TFAKE0001&id=CFAKE0003')).resolves.toBe(
+      false
+    )
+    await expect(tryOpenExternalLink('https://acme.slack.com/archives/CFAKE0003')).resolves.toBe(
+      true
+    )
+    expect(asked).toEqual(['https://acme.slack.com/archives/CFAKE0003'])
   })
 })
