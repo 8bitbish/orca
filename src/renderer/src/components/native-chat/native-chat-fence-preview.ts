@@ -7,10 +7,18 @@
 
 import { createContext } from 'react'
 import { NATIVE_CHAT_PROJECT_CARD_FENCE } from '../../../../shared/native-chat-project-card-payload'
+import { nativeChatShellRunBlock } from '../../../../shared/native-chat-shell-run-block'
 
 export { NATIVE_CHAT_PROJECT_CARD_FENCE }
 
-export type NativeChatFenceRoute = 'mermaid' | 'html' | 'svg' | 'widget' | 'project-card' | 'code'
+export type NativeChatFenceRoute =
+  | 'mermaid'
+  | 'html'
+  | 'svg'
+  | 'widget'
+  | 'project-card'
+  | 'shell-run'
+  | 'code'
 
 export type NativeChatFencePreviewScope = {
   /** Live HTML/SVG/widget previews and project cards; on for assistant replies only. */
@@ -19,6 +27,10 @@ export type NativeChatFencePreviewScope = {
   openFenceBody: string | null
   /** The message the fence belongs to; project cards key their reply state by it. */
   messageId?: string
+  /** Run buttons on shell fences; on for the agent's own replies only. */
+  shellRuns?: boolean
+  /** The message's closed fence bodies in order, so a run can key itself by block index. */
+  fenceBodies?: readonly string[]
 }
 
 /** No provider: the block is not in a reply, so markup stays code. */
@@ -29,9 +41,10 @@ export const NativeChatFencePreviewContext = createContext<NativeChatFencePrevie
 
 const FENCE_LINE = /^ {0,3}(`{3,}|~{3,})(.*)$/
 
-/** The body of a trailing fence that has not been closed, as CommonMark would
- *  read it to the end of the document. */
-export function nativeChatOpenFenceBody(markdown: string): string | null {
+/** Each closed fence's body in order, and the body of a trailing fence still open,
+ *  as CommonMark would read it to the end of the document. */
+export function nativeChatFences(markdown: string): { closed: string[]; open: string | null } {
+  const closed: string[] = []
   let open: { marker: string; bodyStart: number } | null = null
   let lineStart = 0
   while (lineStart <= markdown.length) {
@@ -50,6 +63,7 @@ export function nativeChatOpenFenceBody(markdown: string): string | null {
         marker.length >= open.marker.length &&
         rest.trim() === ''
       ) {
+        closed.push(markdown.slice(open.bodyStart, lineStart))
         open = null
       }
     }
@@ -58,10 +72,15 @@ export function nativeChatOpenFenceBody(markdown: string): string | null {
     }
     lineStart = newline + 1
   }
-  return open === null ? null : markdown.slice(open.bodyStart)
+  return { closed, open: open === null ? null : markdown.slice(open.bodyStart) }
 }
 
-function sameFenceBody(left: string, right: string): boolean {
+/** The body of a trailing fence that has not been closed. */
+export function nativeChatOpenFenceBody(markdown: string): string | null {
+  return nativeChatFences(markdown).open
+}
+
+export function sameFenceBody(left: string, right: string): boolean {
   return left.replace(/\s+$/, '') === right.replace(/\s+$/, '')
 }
 
@@ -74,6 +93,9 @@ export function nativeChatFenceRoute({
   code: string
   scope: NativeChatFencePreviewScope
 }): NativeChatFenceRoute {
+  if (scope.openFenceBody !== null && sameFenceBody(scope.openFenceBody, code)) {
+    return 'code'
+  }
   const normalized = language?.toLowerCase()
   if (
     normalized !== 'mermaid' &&
@@ -82,10 +104,9 @@ export function nativeChatFenceRoute({
     normalized !== 'widget' &&
     normalized !== NATIVE_CHAT_PROJECT_CARD_FENCE
   ) {
-    return 'code'
-  }
-  if (scope.openFenceBody !== null && sameFenceBody(scope.openFenceBody, code)) {
-    return 'code'
+    return scope.shellRuns === true && nativeChatShellRunBlock(language, code) !== null
+      ? 'shell-run'
+      : 'code'
   }
   if (normalized === 'mermaid') {
     return 'mermaid'

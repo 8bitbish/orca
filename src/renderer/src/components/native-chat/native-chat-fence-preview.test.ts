@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   nativeChatFenceRoute,
+  nativeChatFences,
   nativeChatOpenFenceBody,
   type NativeChatFencePreviewScope
 } from './native-chat-fence-preview'
@@ -86,5 +87,29 @@ describe('nativeChatFenceRoute: project cards', () => {
 
   it('does not treat a widget fence as a project card: the info string after the first word is dropped', () => {
     expect(nativeChatFenceRoute({ language: 'widget', code: card, scope: REPLY })).toBe('widget')
+  })
+})
+
+describe('shell Run routing', () => {
+  const RUNS: NativeChatFencePreviewScope = { ...REPLY, shellRuns: true }
+
+  it('routes a closed shell fence to the Run block only where runs are on', () => {
+    expect(nativeChatFenceRoute({ language: 'bash', code: 'ls\n', scope: RUNS })).toBe('shell-run')
+    expect(nativeChatFenceRoute({ language: 'bash', code: 'ls\n', scope: REPLY })).toBe('code')
+    expect(nativeChatFenceRoute({ language: 'ts', code: 'ls\n', scope: RUNS })).toBe('code')
+  })
+
+  it('holds back a shell fence that is still streaming', () => {
+    const scope = { ...RUNS, openFenceBody: 'ls -l' }
+    expect(nativeChatFenceRoute({ language: 'bash', code: 'ls -l\n', scope })).toBe('code')
+  })
+})
+
+describe('nativeChatFences', () => {
+  it('lists closed fence bodies in order, apart from a trailing open one', () => {
+    expect(nativeChatFences('a\n```bash\nls\n```\nb\n~~~sh\npwd\n~~~\n```bash\nmid')).toEqual({
+      closed: ['ls\n', 'pwd\n'],
+      open: 'mid'
+    })
   })
 })

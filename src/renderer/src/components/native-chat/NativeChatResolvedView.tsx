@@ -53,10 +53,8 @@ import type { NativeChatResolvedViewProps } from './native-chat-view-types'
 import { useNativeChatFileLinkContext } from './use-native-chat-file-link-context'
 import { formatShortcutLabel } from '@/hooks/useShortcutLabel'
 import { isQueuedPendingMessageId } from './native-chat-synthetic-message-ids'
-import {
-  NativeChatProjectReplyContext,
-  useNativeChatProjectReplyChannel
-} from './native-chat-project-reply-context'
+import { useNativeChatProjectReplyChannel } from './native-chat-project-reply-context'
+import { NativeChatReplyScope } from './NativeChatReplyScope'
 
 /** Renders the bridge UI after NativeChatSessionGate resolves its agent session. */
 export function NativeChatResolvedView({
@@ -388,7 +386,11 @@ export function NativeChatResolvedView({
         ) : viewState.kind === 'empty' ? (
           <NativeChatEmptyState kind="empty" agent={agent} />
         ) : (
-          <NativeChatProjectReplyContext.Provider value={projectReplies}>
+          <NativeChatReplyScope
+            projectReplies={projectReplies}
+            worktreeId={fileLinkContext?.worktreeId}
+            sessionId={sessionId}
+          >
             <NativeChatMessageList
               session={sessionWithPending}
               isVisible={isVisible}
@@ -401,7 +403,7 @@ export function NativeChatResolvedView({
               allowFileUriLinks={fileLinkContext !== null}
               deliveryNotices={launchPromptDeliveryNotices}
             />
-          </NativeChatProjectReplyContext.Provider>
+          </NativeChatReplyScope>
         )}
       </div>
       {/* Live interactive prompt (question / approval) is the bottom input region

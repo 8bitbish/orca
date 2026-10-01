@@ -9,11 +9,14 @@ import { NativeChatMarkupPreview } from './NativeChatMarkupPreview'
 import { NativeChatMermaidDiagram } from './NativeChatMermaidDiagram'
 import { NativeChatWidgetCard } from './NativeChatWidgetCard'
 import { NativeChatProjectCard } from './NativeChatProjectCard'
+import { NativeChatShellRunBlock } from './NativeChatShellRunBlock'
 import { NativeChatFencePreviewContext, nativeChatFenceRoute } from './native-chat-fence-preview'
+import { NativeChatShellRunContext } from './native-chat-shell-run-workspace'
 
 /** Code fences need their own copy target rather than the whole chat message.
  *  Finished mermaid fences, and html/svg/widget fences in a reply, render as diagrams;
- *  a finished project-card fence in a reply renders as a live project card. */
+ *  a finished project-card fence in a reply renders as a live project card; a finished
+ *  shell fence in the agent's reply gets a Run button when the chat can run it. */
 export function NativeChatCodeBlock({
   children,
   language
@@ -23,7 +26,12 @@ export function NativeChatCodeBlock({
 }): React.JSX.Element {
   const code = extractCodeText(children)
   const scope = useContext(NativeChatFencePreviewContext)
-  const route = nativeChatFenceRoute({ language, code, scope })
+  const canRun = useContext(NativeChatShellRunContext) !== null
+  const route = nativeChatFenceRoute({
+    language,
+    code,
+    scope: canRun ? scope : { ...scope, shellRuns: false }
+  })
 
   if (route === 'mermaid') {
     return (
@@ -39,6 +47,9 @@ export function NativeChatCodeBlock({
         fallback={<NativeChatPlainCodeBlock language={language} code={code} body={children} />}
       />
     )
+  }
+  if (route === 'shell-run') {
+    return <NativeChatShellRunBlock language={language} code={code} body={children} />
   }
   if (route === 'widget') {
     return (

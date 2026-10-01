@@ -23,7 +23,7 @@ import { NativeChatThoughtRow } from './NativeChatThoughtRow'
 import { renderNativeChatWorktreeLink } from './NativeChatProjectChip'
 import {
   NativeChatFencePreviewContext,
-  nativeChatOpenFenceBody,
+  nativeChatFences,
   type NativeChatFencePreviewScope
 } from './native-chat-fence-preview'
 import {
@@ -95,14 +95,18 @@ export const MessageRow = memo(function MessageRow({
   const providerFrame = message.blocks.find((block) => block.type === 'text' && block.providerFrame)
 
   // Replies preview html/svg fences; every row holds back a fence still streaming.
-  const fenceScope = useMemo<NativeChatFencePreviewScope>(
-    () => ({
+  // Run buttons belong to the agent's own replies, never a subagent's aside.
+  const shellRuns = message.role === 'assistant' && agentJournalItemSubagentId(message) === null
+  const fenceScope = useMemo<NativeChatFencePreviewScope>(() => {
+    const fences = nativeChatFences(markdown)
+    return {
       markupPreviews: message.role === 'assistant',
-      openFenceBody: nativeChatOpenFenceBody(markdown),
-      messageId: message.id
-    }),
-    [markdown, message.id, message.role]
-  )
+      openFenceBody: fences.open,
+      messageId: message.id,
+      shellRuns,
+      fenceBodies: fences.closed
+    }
+  }, [markdown, message.id, message.role, shellRuns])
 
   const scrollToTop = useCallback(() => {
     if (rowRef.current) {

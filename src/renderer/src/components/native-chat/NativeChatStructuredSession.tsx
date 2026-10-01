@@ -29,10 +29,8 @@ import { structuredAgentSessionReadFailureNotice } from './structured-agent-sess
 import { useStructuredAgentSessionStartFailureFacts } from './use-structured-agent-session-start-failure-facts'
 import { structuredAgentSessionDeliveryNotices } from './structured-agent-session-delivery-notices'
 import type { AgentJournalSubmission } from '../../../../shared/agent-session-journal-types'
-import {
-  NativeChatProjectReplyContext,
-  useNativeChatProjectReplyChannel
-} from './native-chat-project-reply-context'
+import { useNativeChatProjectReplyChannel } from './native-chat-project-reply-context'
+import { NativeChatReplyScope } from './NativeChatReplyScope'
 
 const NO_SUBMISSIONS: readonly AgentJournalSubmission[] = []
 
@@ -280,7 +278,11 @@ export function NativeChatStructuredSession(
         ) : viewState.kind === 'empty' ? (
           <NativeChatEmptyState kind="empty" agent={props.agent} />
         ) : (
-          <NativeChatProjectReplyContext.Provider value={projectReplies}>
+          <NativeChatReplyScope
+            projectReplies={projectReplies}
+            worktreeId={fileLinkContext?.worktreeId}
+            sessionId={props.sessionId}
+          >
             <NativeChatMessageList
               session={session}
               journalItems={controller.journalItems}
@@ -300,7 +302,7 @@ export function NativeChatStructuredSession(
               runtimeContext={imageRuntimeContext}
               deliveryNotices={deliveryNotices}
             />
-          </NativeChatProjectReplyContext.Provider>
+          </NativeChatReplyScope>
         )}
       </div>
       <NativeChatLaunchRetry
