@@ -11,10 +11,11 @@
  * this closure reaches that package from nowhere at all.
  *
  * An empty list is also what a scan that read nothing reports, so the control below no longer
- * uses the list — it runs the same walk over the four native modules that do import the package and
- * over the four web siblings that replace them. The diagram is the fourth: its native component
+ * uses the list — it runs the same walk over the five native modules that do import the package and
+ * over the five web siblings that replace them. The diagram is the fourth: its native component
  * seals untrusted source in a `WebView` and its sibling renders the same diagram in the document
- * (C7.10 item B), which is the same substitution the other three are.
+ * (C7.10 item B), which is the same substitution the other three are. The chat markup preview is
+ * the fifth; its sibling leaves the fence as code.
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -31,18 +32,20 @@ const SESSION = 'app/h/[hostId]/session/[worktreeId].tsx'
 /** Nothing: every consumer this closure had now resolves to a web sibling that needs no WebView. */
 const REMAINING = []
 
-/** The four answered, whose `.web.tsx` the builder resolves instead of the native file. */
+/** The five answered, whose `.web.tsx` the builder resolves instead of the native file. */
 const ANSWERED = [
   'src/components/MobileRichMarkdownEditor.web.tsx',
   'src/components/MobileHtmlPreview.web.tsx',
+  'src/components/markup-preview/MobileMarkupPreview.web.tsx',
   'src/components/pr-sidebar/MermaidDiagram.web.tsx',
   'src/terminal/TerminalWebView.web.tsx'
 ]
 
-/** The native files behind those four, which do import the package. The scan's own control. */
+/** The native files behind those five, which do import the package. The scan's own control. */
 const NATIVE_CONSUMERS = [
   'src/components/MobileRichMarkdownEditor.tsx',
   'src/components/MobileHtmlPreview.tsx',
+  'src/components/markup-preview/MobileMarkupPreview.tsx',
   'src/components/pr-sidebar/MermaidDiagram.tsx',
   'src/terminal/TerminalWebView.tsx'
 ]

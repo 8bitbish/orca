@@ -27,6 +27,8 @@ import {
 import { isMobileMermaidLanguage } from './mobile-mermaid-language'
 import { parseMobileMarkdown } from './mobile-markdown-parser'
 import { MermaidDiagram } from './pr-sidebar/MermaidDiagram'
+import { MobileMarkupPreview } from './markup-preview/MobileMarkupPreview'
+import { mobileMarkupPreviewKind } from './markup-preview/mobile-markup-preview-kind'
 
 type Props = {
   content?: string
@@ -41,6 +43,8 @@ type Props = {
    *  optional :line(:col) suffix). Omitted on screens with no file viewer, where
    *  paths render as plain text (no behavior change). */
   onOpenFile?: (pathText: string) => void
+  /** Draws closed ```html / ```svg / ```widget fences live; set for agent replies only. */
+  markupPreviews?: boolean
 }
 
 const MAX_TABLE_ROWS = 40
@@ -213,7 +217,8 @@ function MobileMarkdownContent({
   fallback = '',
   rangeSelectable = false,
   textScale = 1,
-  onOpenFile
+  onOpenFile,
+  markupPreviews = false
 }: Props) {
   const text = content?.trim() ?? ''
   const previewText = useMemo(() => normalizeMobileMarkdownPreviewHtml(text), [text])
@@ -231,6 +236,7 @@ function MobileMarkdownContent({
     ) : null
   }
   const mermaidSourceOccurrences = new Map<string, number>()
+  const markupSourceOccurrences = new Map<string, number>()
   // Native-chat range selection is set on each block; nested inline spans inherit it.
 
   return (
@@ -260,6 +266,20 @@ function MobileMarkdownContent({
           // Mermaid fences render as diagrams (WebView), not as raw code — same as PR sidebar.
           // Unclosed fences are still streaming: mounting the WebView per tick would
           // reload its document up to 20x/sec, so they stay raw code until terminated.
+          const markupKind =
+            markupPreviews && block.closed ? mobileMarkupPreviewKind(block.language) : null
+          if (markupKind) {
+            const previewKey = `${markupKind}:${block.text}`
+            const occurrence = markupSourceOccurrences.get(previewKey) ?? 0
+            markupSourceOccurrences.set(previewKey, occurrence + 1)
+            return (
+              <MobileMarkupPreview
+                key={`${previewKey}:${occurrence}`}
+                source={block.text}
+                kind={markupKind}
+              />
+            )
+          }
           if (isMobileMermaidLanguage(block.language) && block.closed) {
             const occurrence = mermaidSourceOccurrences.get(block.text) ?? 0
             mermaidSourceOccurrences.set(block.text, occurrence + 1)

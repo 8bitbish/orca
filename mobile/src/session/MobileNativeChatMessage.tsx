@@ -41,6 +41,7 @@ function Prose({
         rangeSelectable
         textScale={1.25 * fontScale}
         onOpenFile={onOpenFile}
+        markupPreviews
       />
     )
   }

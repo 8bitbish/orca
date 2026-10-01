@@ -7,10 +7,13 @@ import {
   NATIVE_CHAT_MARKUP_SIZE_MESSAGE,
   type NativeChatMarkupKind
 } from './native-chat-markup-preview-document'
+import {
+  clampNativeChatMarkupHeight,
+  NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX
+} from '../../../../shared/native-chat-markup-preview-policy'
 
-const MIN_HEIGHT_PX = 48
-/** Taller content scrolls inside the frame instead of growing the transcript. */
-export const NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX = 560
+export { clampNativeChatMarkupHeight, NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX }
+
 const INITIAL_HEIGHT_PX = 160
 const MAX_REMEMBERED_HEIGHTS = 64
 
@@ -27,10 +30,6 @@ function rememberHeight(key: string, height: number): void {
       rememberedHeights.delete(oldest)
     }
   }
-}
-
-export function clampNativeChatMarkupHeight(height: number): number {
-  return Math.min(NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX, Math.max(MIN_HEIGHT_PX, Math.ceil(height)))
 }
 
 function markupPreviewTitle(kind: NativeChatMarkupKind): string {

@@ -27,6 +27,9 @@ vi.mock('react-native/Libraries/Utilities/codegenNativeComponent', () => ({
 vi.mock('react-native-uitextview', () => import('react-native-uitextview/src/Text'))
 vi.mock('./MobileSelectableText', () => import('./MobileSelectableText.ios'))
 vi.mock('./pr-sidebar/MermaidDiagram', () => ({ MermaidDiagram: 'MermaidDiagram' }))
+vi.mock('./markup-preview/MobileMarkupPreview', () => ({
+  MobileMarkupPreview: 'MobileMarkupPreview'
+}))
 
 let renderer: ReactTestRenderer | undefined
 afterEach(() => {

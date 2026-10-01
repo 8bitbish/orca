@@ -13,6 +13,9 @@ vi.mock('react-native', () => ({
 }))
 
 vi.mock('./pr-sidebar/MermaidDiagram', () => ({ MermaidDiagram: 'MermaidDiagram' }))
+vi.mock('./markup-preview/MobileMarkupPreview', () => ({
+  MobileMarkupPreview: 'MobileMarkupPreview'
+}))
 
 type TestNode = {
   type: string
