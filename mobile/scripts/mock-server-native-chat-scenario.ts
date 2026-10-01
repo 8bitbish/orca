@@ -112,6 +112,12 @@ function worktreeOf(request: RpcRequest): string {
 // (thinking→text on the assistant turn, toolCall blocks, toolResult turns), so
 // the phone exercises the same render path a live omp pane would.
 function mockTranscript(): NativeChatMessage[] {
+  const fixtureFile = process.env.MOCK_CHAT_TRANSCRIPT_FILE
+  if (fixtureFile) {
+    // Read per request, so a fixture can be edited without a restart (and re-pair).
+    const parsed: unknown = JSON.parse(readFileSync(fixtureFile, 'utf-8'))
+    return Array.isArray(parsed) ? parsed : []
+  }
   if (CHAT_AGENT !== 'omp') {
     return []
   }

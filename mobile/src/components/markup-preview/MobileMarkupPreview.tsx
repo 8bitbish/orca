@@ -65,7 +65,6 @@ export const MobileMarkupPreview = memo(function MobileMarkupPreview({
         mixedContentMode="never"
         incognito
         cacheEnabled={false}
-        dataDetectorTypes="none"
         allowsLinkPreview={false}
         mediaPlaybackRequiresUserAction
         onMessage={(event) => {
