@@ -7,7 +7,7 @@ import type {
   NativeChatSettledTurn,
   NativeChatSettledTurns
 } from '../../../../shared/native-chat-turn-status'
-import { isNoiseMessage } from '../../../../shared/native-chat-noise'
+import { isHarnessTurnOpenerMessage, isNoiseMessage } from '../../../../shared/native-chat-noise'
 import type { NativeChatAwaitingInput } from './NativeChatMessageList'
 import { shouldShowNativeChatWorking } from './native-chat-working-suppression'
 
@@ -92,18 +92,25 @@ export function nativeChatHookLatestTurnWorkedSeconds(
   return hookSilent ? null : undefined
 }
 
-/** The transcript's latest turn: its last prompt, harness notices aside. */
+/** A row that opens a turn: a prompt, or a harness delivery the agent answers. Other
+ *  harness notices are user-role but neither start nor end one. */
+function opensNativeChatTerminalTurn(message: NativeChatMessage): boolean {
+  return (
+    message.role === 'user' && (!isNoiseMessage(message) || isHarnessTurnOpenerMessage(message))
+  )
+}
+
+/** The transcript's latest turn: its last prompt or turn-opening delivery. */
 export function nativeChatLatestTurnId(messages: readonly NativeChatMessage[]): string | null {
-  const latest = messages.findLast((message) => message.role === 'user' && !isNoiseMessage(message))
-  return latest?.id ?? null
+  return messages.findLast(opensNativeChatTerminalTurn)?.id ?? null
 }
 
 /**
  * Durations of the transcript's finished turns, from its own timestamps (one clock): a turn runs
- * from its prompt to the agent's last timestamped row or its interruption. Other system rows (file
- * mentions, extension notes) can land long after, next to the following prompt. The latest turn is
- * left out, since nothing here says it has ended, and so is a turn missing either end, which keeps
- * what the pane observed.
+ * from its prompt or turn-opening delivery to the agent's last timestamped row or its interruption.
+ * Other system rows (file mentions, extension notes) can land long after, next to the following
+ * prompt. The latest turn is left out, since nothing here says it has ended, and so is a turn
+ * missing either end, which keeps what the pane observed.
  */
 export function nativeChatTranscriptSettledTurns(
   messages: readonly NativeChatMessage[]
@@ -111,8 +118,7 @@ export function nativeChatTranscriptSettledTurns(
   const settled = new Map<string, NativeChatSettledTurn>()
   let turn: { id: string; startedAt: number | null; endedAt: number | null } | null = null
   for (const message of messages) {
-    // A harness notice is user-role but draws no row, so it neither starts nor extends a turn.
-    if (message.role !== 'user' || isNoiseMessage(message)) {
+    if (!opensNativeChatTerminalTurn(message)) {
       const agentRow =
         message.role === 'system' ? isInterruptedStatusMessage(message) : message.role !== 'user'
       if (turn && agentRow && message.timestamp != null) {

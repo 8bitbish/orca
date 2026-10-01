@@ -14,6 +14,7 @@ import {
   timestampMs
 } from '../ai-vault/session-scanner-values'
 import { imageSourcePathFromText } from '../../shared/native-chat-image-transcript-markers'
+import { isHarnessTurnOpenerText } from '../../shared/harness-injected-user-turns'
 import { claudeContentBlocks, claudeThinkingOnlyBlocks } from './transcript-record-blocks'
 import { claudeInterruptedMessageId } from './transcript-turn-markers'
 
@@ -96,6 +97,11 @@ export function decodeClaudeTranscriptLine(
     }
   }
   const message = asRecord(record.message)
+  if (role === 'assistant' && isClaudeNoResponseFiller(message)) {
+    // Why: the harness's stand-in reply to a meta turn. Drawn, it is the newest prose of the
+    // turn it lands in, so it would stand as that turn's answer and fold the real reply away.
+    return null
+  }
   const thought = role === 'assistant' ? claudeThinkingOnlyBlocks(message?.content) : null
   if (thought) {
     return {
@@ -122,8 +128,11 @@ export function decodeClaudeTranscriptLine(
   // image. Dropping it left the prompt turn with no trace of its attachments — the
   // base64 blocks on the prompt itself carry no url/path and are dropped too — so a
   // turn with images rendered with no images at all.
+  // A peer session's hand-back arrives as a meta turn the agent answers. It still draws
+  // nothing, but it is the boundary that keeps that answer out of the previous turn.
   const blocks = isInjectedUserTurn
-    ? isImageSourceRecord(decodedBlocks)
+    ? isImageSourceRecord(decodedBlocks) ||
+      (record.isMeta === true && isHarnessTurnOpenerRecord(decodedBlocks))
       ? decodedBlocks
       : decodedBlocks.filter((block) => block.type === 'tool-result')
     : decodedBlocks
@@ -138,6 +147,29 @@ export function decodeClaudeTranscriptLine(
     timestamp,
     source: 'transcript'
   }
+}
+
+function isClaudeNoResponseFiller(message: Record<string, unknown> | null): boolean {
+  if (message?.model !== '<synthetic>') {
+    return false
+  }
+  const content = message.content
+  const text =
+    typeof content === 'string'
+      ? content
+      : Array.isArray(content) && content.length === 1
+        ? asRecord(content[0])?.text
+        : undefined
+  return typeof text === 'string' && text.trim() === 'No response requested.'
+}
+
+function isHarnessTurnOpenerRecord(blocks: NativeChatBlock[]): boolean {
+  const first = blocks[0]
+  return (
+    first?.type === 'text' &&
+    blocks.every((block) => block.type === 'text') &&
+    isHarnessTurnOpenerText(first.text)
+  )
 }
 
 // Keep only genuine image companion records; a marker mixed with prose must

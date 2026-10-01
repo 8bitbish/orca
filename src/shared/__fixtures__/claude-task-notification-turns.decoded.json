@@ -1,0 +1,238 @@
+[
+  {
+    "id": "dd613f68-794f-4dea-ac4c-8503ba72fce8",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Human prompt 1"
+      }
+    ],
+    "timestamp": 1790837176156,
+    "source": "transcript"
+  },
+  {
+    "id": "2668f78c-d33d-436d-a195-c59364d07b7b",
+    "role": "reasoning",
+    "blocks": [
+      {
+        "type": "text",
+        "text": ""
+      }
+    ],
+    "timestamp": 1790837185736,
+    "source": "transcript"
+  },
+  {
+    "id": "e1e83569-9e94-4f00-ab1f-068087c7588f",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Assistant reply 1."
+      }
+    ],
+    "timestamp": 1790837195492,
+    "source": "transcript"
+  },
+  {
+    "id": "98685c6d-f3cf-4466-8b68-0e366e285df4",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "<task-notification>\n<task-id>b0000001</task-id>\n<summary>Monitor event: \"background check changed\"</summary>\n<event>status: done</event>\n</task-notification>"
+      }
+    ],
+    "timestamp": 1790837419153,
+    "source": "transcript"
+  },
+  {
+    "id": "037446db-50d8-4ddc-b4fd-6004641e9e80",
+    "role": "reasoning",
+    "blocks": [
+      {
+        "type": "text",
+        "text": ""
+      }
+    ],
+    "timestamp": 1790837421710,
+    "source": "transcript"
+  },
+  {
+    "id": "e4dbea4f-1270-489f-8fcf-7b00abeb7eed",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "tool-call",
+        "name": "Bash",
+        "input": {
+          "command": "echo ok"
+        },
+        "callId": "toolu_01QqkgPfUAbybvHNSm7xeryF"
+      }
+    ],
+    "timestamp": 1790837422999,
+    "source": "transcript"
+  },
+  {
+    "id": "aedcbc48-83a8-444a-912e-30802b974cbd",
+    "role": "tool",
+    "blocks": [
+      {
+        "type": "tool-result",
+        "output": "ok"
+      }
+    ],
+    "timestamp": 1790837423514,
+    "source": "transcript"
+  },
+  {
+    "id": "6a0e45a6-da61-4428-b612-ee5fc7b4ab47",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Assistant reply 2."
+      }
+    ],
+    "timestamp": 1790837427251,
+    "source": "transcript"
+  },
+  {
+    "id": "e72105c4-4705-4521-93d0-7af49f1fcdb8",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Human prompt 2"
+      }
+    ],
+    "timestamp": 1790838116510,
+    "source": "transcript"
+  },
+  {
+    "id": "cc3af04c-594f-44d2-9b59-3a81da831ebc",
+    "role": "reasoning",
+    "blocks": [
+      {
+        "type": "text",
+        "text": ""
+      }
+    ],
+    "timestamp": 1790838119237,
+    "source": "transcript"
+  },
+  {
+    "id": "08039f4a-8635-4724-973b-83e110a342fa",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "tool-call",
+        "name": "Bash",
+        "input": {
+          "command": "echo ok"
+        },
+        "callId": "toolu_01NQHWMhywVmqVKqXcs4E7NP"
+      }
+    ],
+    "timestamp": 1790838121133,
+    "source": "transcript"
+  },
+  {
+    "id": "f2edaddc-759d-45bb-9a55-f2c627da1e5d",
+    "role": "tool",
+    "blocks": [
+      {
+        "type": "tool-result",
+        "output": "ok"
+      }
+    ],
+    "timestamp": 1790838121710,
+    "source": "transcript"
+  },
+  {
+    "id": "57701417-d85d-4b55-968b-a8d69cbc9651",
+    "role": "reasoning",
+    "blocks": [
+      {
+        "type": "text",
+        "text": ""
+      }
+    ],
+    "timestamp": 1790838128869,
+    "source": "transcript"
+  },
+  {
+    "id": "532ac2a1-746a-4461-a938-5daa40f8cc29",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Assistant reply 3."
+      }
+    ],
+    "timestamp": 1790838128876,
+    "source": "transcript"
+  },
+  {
+    "id": "11ca4fad-f270-4ead-97e9-9c84b114a7d9",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "<task-notification>\n<task-id>b0000001</task-id>\n<summary>Monitor event: \"background check changed\"</summary>\n<event>status: done</event>\n</task-notification>"
+      }
+    ],
+    "timestamp": 1790838167489,
+    "source": "transcript"
+  },
+  {
+    "id": "31879de8-4f5d-4491-b45a-59799698fa25",
+    "role": "reasoning",
+    "blocks": [
+      {
+        "type": "text",
+        "text": ""
+      }
+    ],
+    "timestamp": 1790838170252,
+    "source": "transcript"
+  },
+  {
+    "id": "d2c1a666-cc3b-41e7-be24-d5d6cc0c3471",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Assistant reply 4."
+      }
+    ],
+    "timestamp": 1790838171200,
+    "source": "transcript"
+  },
+  {
+    "id": "7e849485-1317-4969-9649-9d526a3e8af8",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Human prompt 3"
+      }
+    ],
+    "timestamp": 1790838221848,
+    "source": "transcript"
+  },
+  {
+    "id": "b388729b-b83c-4edf-ab0e-96532c996224",
+    "role": "reasoning",
+    "blocks": [
+      {
+        "type": "text",
+        "text": ""
+      }
+    ],
+    "timestamp": 1790838225139,
+    "source": "transcript"
+  }
+]

@@ -12,6 +12,7 @@ export type { NativeChatTurnStatus }
 
 export function useNativeChatTurnStatus({
   messages,
+  turnKeys,
   activeTurnKey,
   isWorking,
   workingStartedAt,
@@ -19,6 +20,8 @@ export function useNativeChatTurnStatus({
   thinking = false
 }: {
   messages: readonly NativeChatMessage[]
+  /** Each row's turn: a turn with no user bubble (provider- or harness-opened) is still a turn. */
+  turnKeys?: readonly (string | undefined)[]
   /** The user message whose bar carries the live clock (`selectNativeChatActiveTurnKey`). */
   activeTurnKey: string
   isWorking: boolean
@@ -34,9 +37,17 @@ export function useNativeChatTurnStatus({
   const [timingByTurn, setTimingByTurn] = useState<NativeChatTurnTimingByTurn>({})
 
   useLayoutEffect(() => {
-    const validTurnKeys = new Set(
-      messages.filter((message) => message.role === 'user').map((message) => message.id)
-    )
+    const validTurnKeys = new Set<string>()
+    for (const message of messages) {
+      if (message.role === 'user') {
+        validTurnKeys.add(message.id)
+      }
+    }
+    for (const turnKey of turnKeys ?? []) {
+      if (turnKey !== undefined) {
+        validTurnKeys.add(turnKey)
+      }
+    }
     setTimingByTurn((current) =>
       reduceNativeChatTurnTiming(current, {
         activeTurnKey,
@@ -46,7 +57,7 @@ export function useNativeChatTurnStatus({
         now: Date.now()
       })
     )
-  }, [activeTurnKey, isWorking, messages, workingStartedAt])
+  }, [activeTurnKey, isWorking, messages, turnKeys, workingStartedAt])
 
   return selectNativeChatTurnStatuses(timingByTurn, {
     activeTurnKey,
