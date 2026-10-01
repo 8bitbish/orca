@@ -43,5 +43,11 @@ finished stages are skipped. Repeat until it prints `Published v...` or `Nothing
 
 ## Report
 
+Immediately before writing the report, run `personal-build/close-session-later.sh`. It returns
+at once. Once this turn ends and Orca has saved the report to the run history, it closes this
+terminal. In a session the automation did not start, it does nothing. Do not close the
+terminal any other way: a session that closes itself before its last turn ends loses the
+report. If the script errors, say so in the report and carry on.
+
 End with a short summary: the upstream release merged, what conflicted and how you resolved
 it, and whether a build was published (with its version).
