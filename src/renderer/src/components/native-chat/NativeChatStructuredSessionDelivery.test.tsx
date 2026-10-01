@@ -45,6 +45,8 @@ vi.mock('@/runtime/structured-agent-session-client', () => ({
 
 vi.mock('./use-structured-agent-session', async () => {
   const { useStructuredAgentSessionOutbox } = await import('./use-structured-agent-session-outbox')
+  const { useStructuredAgentSessionHeldQueue } =
+    await import('./use-structured-agent-session-held-queue')
   const { projectStructuredAgentSessionMessages } =
     await import('../../../../shared/structured-agent-session-message-projection')
   return {
@@ -57,6 +59,16 @@ vi.mock('./use-structured-agent-session', async () => {
         target: props.target,
         fence: 1,
         submissions: mocks.submissions as never
+      })
+      const heldQueue = useStructuredAgentSessionHeldQueue({
+        outbox: outbox.outbox,
+        blockedClientMessageId: outbox.blockedClientMessageId,
+        working: false,
+        turnId: null,
+        awaitingAnswer: false,
+        editingId: null,
+        setEditingId: () => {},
+        revise: outbox.revise
       })
       return {
         journalItems: [],
@@ -83,6 +95,7 @@ vi.mock('./use-structured-agent-session', async () => {
         blockedClientMessageId: outbox.blockedClientMessageId,
         send: outbox.send,
         retry: outbox.retry,
+        heldQueue,
         isWorking: false,
         isMonitoringBackgroundTasks: mocks.monitoringBackgroundTasks,
         supportsBackgroundTaskStop: mocks.supportsBackgroundTaskStop,

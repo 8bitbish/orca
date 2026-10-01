@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import * as structuredConversationCommands from './structured-conversation-command-send'
 import type { AgentSessionPromptResult } from '../../../../shared/agent-session-wire'
 import { useStructuredAgentSessionOutbox } from './use-structured-agent-session-outbox'
@@ -30,6 +30,8 @@ import type { StructuredAgentSessionLaunchView } from './use-native-chat-provisi
 import { useStructuredAgentSessionThreadGoal } from './use-structured-agent-session-thread-goal'
 import { useStructuredAgentSessionContextUsage } from './use-structured-agent-session-context-usage'
 import { useStructuredAgentSessionRailOutline } from './use-structured-agent-session-rail-outline'
+import { useStructuredAgentSessionHeldQueue } from './use-structured-agent-session-held-queue'
+import { isStructuredAgentSessionTurnInProgress } from '../../../../shared/structured-agent-session-held-send'
 
 export type { StructuredPromptItem } from './structured-agent-session-message-projection'
 
@@ -88,12 +90,14 @@ export function useStructuredAgentSession(args: {
     mutate,
     ...(launch ? { launch } : {})
   })
+  const [editingId, setEditingId] = useState<string | null>(null)
   const outboxController = useStructuredAgentSessionOutbox({
     sessionId,
     target,
     fence: transportState.fence,
     submissions: transportState.submissions,
-    composerScopeKey
+    composerScopeKey,
+    hold: { turn: transportState.isWorking, editingId }
   })
 
   const threadGoal = useStructuredAgentSessionThreadGoal({
@@ -128,10 +132,21 @@ export function useStructuredAgentSession(args: {
           transportState.submissions,
           outboxController.blockedClientMessageId
         )))
+  const heldQueue = useStructuredAgentSessionHeldQueue({
+    outbox,
+    blockedClientMessageId: outboxController.blockedClientMessageId,
+    working: transportState.isWorking,
+    turnId: transportState.turnId,
+    awaitingAnswer: prompts.length > 0,
+    editingId,
+    setEditingId,
+    revise: outboxController.revise
+  })
   const messages = useStructuredAgentSessionMessages(
     transportState.journalItems,
     outbox,
-    transportState.submissions
+    transportState.submissions,
+    heldQueue.heldIds
   )
   return {
     conversationCommands,
@@ -181,9 +196,16 @@ export function useStructuredAgentSession(args: {
     backgroundTasks: transportState.backgroundTasks,
     turnId: transportState.turnId,
     canStop,
+    heldQueue,
     stop: () => {
+      heldQueue.noteStop()
       if (stopsConversation) {
-        outboxController.withdrawUnsent()
+        // Behind a running turn the outbox is the queue: Stop ends the turn and the next goes out
+        // as it settles. With none, what the outbox holds is the work Stop takes back.
+        const { turnId, submissions, fence } = transportState
+        if (!isStructuredAgentSessionTurnInProgress(turnId, submissions, fence)) {
+          outboxController.withdrawUnsent()
+        }
         return mutate('agentSession.cancel', 'agentSession.cancel', {})
       }
       return transportState.turnId

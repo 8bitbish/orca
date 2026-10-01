@@ -21,7 +21,7 @@ import type {
   AgentSessionThreadGoalChange,
   AgentSessionThreadGoalResult
 } from '../../../shared/agent-session-wire'
-import { isStructuredAgentSessionMainAgentWorking } from '../../../shared/structured-agent-session-main-agent-working'
+import { isStructuredAgentSessionTurnInProgress } from '../../../shared/structured-agent-session-held-send'
 import {
   agentSessionFailureWords,
   type AgentJournalDispatchRejection
@@ -173,29 +173,33 @@ export function cancelStructuredAgentSessionTurn(
     {
       ...plan,
       run: async (ctx) => {
-        // Stop withdraws every queued message first, whatever the start or the child is doing.
-        const withdrawn = await ctx.journal.rejectQueuedSubmissions(
-          ctx.fence,
-          agentSessionFailureWords(agentSessionFailureFact('cancelled'), { surface: 'rejection' })
-        )
         const named = params.turnId !== undefined ? { turnId: params.turnId } : {}
         const child = context.sessions.get(ctx.sessionId)?.child
+        // A turn in progress keeps what is queued behind it: Stop ends that turn, and the delivery
+        // loop hands the next message over as it settles. With none, a queued message is itself
+        // the work in flight, so Stop withdraws it.
+        const turnInProgress =
+          child?.phase === 'ready' &&
+          isStructuredAgentSessionTurnInProgress(
+            ctx.journal.activeTurnId(),
+            ctx.journal.submissions(),
+            ctx.fence
+          )
+        const withdrawn = turnInProgress
+          ? []
+          : await ctx.journal.rejectQueuedSubmissions(
+              ctx.fence,
+              agentSessionFailureWords(agentSessionFailureFact('cancelled'), {
+                surface: 'rejection'
+              })
+            )
         if (child?.phase === 'starting') {
           // A start that may never land is the one thing here Stop has to end; the chat stays.
           await context.stopAgent(ctx.sessionId)
           return { ok: true, value: { ...named, cancelled: true } }
         }
-        // A Stop naming no turn ends nothing more unless the session reads working, by the rule
-        // every session list and the chat's own Stop read it.
-        const inFlight =
-          params.turnId !== undefined ||
-          isStructuredAgentSessionMainAgentWorking(
-            ctx.journal.activeTurnId(),
-            ctx.journal.submissions(),
-            ctx.fence
-          )
         const record = context.deps.store.getRecord(ctx.sessionId)
-        return child && inFlight
+        return child && (turnInProgress || params.turnId !== undefined)
           ? plan.run({
               ...ctx,
               failureTextContext: structuredAgentSessionFailureWordsContext(record)

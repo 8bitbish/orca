@@ -5,8 +5,10 @@ import {
   admitStructuredAgentSessionOutboxEntry,
   createStructuredAgentSessionOutboxEntry,
   reconcileStructuredAgentSessionOutbox,
+  updateStructuredAgentSessionOutboxEntry,
   type StructuredAgentSessionOutboxEntry
 } from '../../../../shared/structured-agent-session-outbox'
+import { retriedStructuredAgentSessionOutbox } from './structured-agent-session-outbox-revision'
 import { withdrawUnsentStructuredAgentSessionOutboxEntries } from '../../../../shared/structured-agent-session-outbox-stop-withdrawal'
 import {
   journalAnswersInFlightSend,
@@ -36,8 +38,12 @@ export function useStructuredAgentSessionOutbox(args: {
   submissions: readonly AgentJournalSubmission[]
   /** The composer that gets back what a Stop withdrew from this client's outbox. */
   composerScopeKey?: string
+  /** Keeps queued messages here: the agent's turn is running, or the person is editing this one. */
+  hold?: { turn: boolean; editingId: string | null }
 }) {
   const { composerScopeKey, fence, sessionId, submissions, target } = args
+  const holdTurn = args.hold?.turn === true
+  const holdEditingId = args.hold?.editingId ?? null
   // What resends, unblocks and drops a send in flight besides a Retry or a new send; see the hook.
   const owner = useStructuredAgentSessionOutboxOwnerChange(target, fence)
   const restoreWithdrawn = useStructuredAgentSessionWithdrawnRestore(sessionId, composerScopeKey)
@@ -176,7 +182,14 @@ export function useStructuredAgentSessionOutbox(args: {
       return
     }
     const admission = admitStructuredAgentSessionOutboxEntry(outbox, blockedIdRef.current)
-    if (admission.state !== 'dispatch' || fence === null || inFlightIdRef.current !== null) {
+    // One message per turn: the next waits here until the turn it would fold into settles.
+    const held = holdTurn || admission.entry?.clientMessageId === holdEditingId
+    if (
+      admission.state !== 'dispatch' ||
+      held ||
+      fence === null ||
+      inFlightIdRef.current !== null
+    ) {
       return
     }
     const next = admission.entry
@@ -212,7 +225,7 @@ export function useStructuredAgentSessionOutbox(args: {
       // local state, so mirror the settled state once the shared admission finishes.
       void dispatch.promise.then(mirrorPersisted)
     }
-  }, [applyDisposition, fence, outbox, sessionId, target])
+  }, [applyDisposition, fence, holdEditingId, holdTurn, outbox, sessionId, target])
 
   useStructuredAgentSessionOutboxUnconfirmedProbe({
     sessionId,
@@ -264,70 +277,57 @@ export function useStructuredAgentSessionOutbox(args: {
     }
   }, [restoreWithdrawn, sessionId, submissions])
 
+  const commit = useCallback(
+    (next: StructuredAgentSessionOutboxEntry[]): boolean => {
+      if (!writeOutbox(sessionId, next)) {
+        setError('Message could not be saved to the outbox')
+        return false
+      }
+      outboxRef.current = next
+      setOutbox(next)
+      return true
+    },
+    [sessionId]
+  )
+
   const retry = (clientMessageId: string): void => {
     // Another message's Retry must not send the one the queue is held on.
     if (blockedIdRef.current === clientMessageId) {
       blockedIdRef.current = null
     }
     setError(null)
-    const submission = submissions.find(
-      (candidate) => candidate.clientMessageId === clientMessageId
-    )
-    const current = outboxRef.current.find((entry) => entry.clientMessageId === clientMessageId)
-    // The host settled this id as rejected, and reusing it only replays that forever, so rotate the
-    // id for a safe resend. Read from the message itself, which outlives a restart, or from a
-    // reconciliation that settled an earlier unknown before the outbox caught up. A refusal that
-    // settled the message already rotated it.
-    const recordedRejection =
-      current?.state === 'rejected' && current.lastFailure?.kind === 'rejected'
-    if (current && (recordedRejection || submission?.dispatchState === 'rejected')) {
-      const rotated = outboxRef.current.map((entry) =>
-        entry.clientMessageId === clientMessageId
-          ? {
-              ...entry,
-              clientMessageId: structuredSessionOperationId(),
-              state: 'queued' as const,
-              lastAttemptAt: null,
-              retryAfterUnknownSubmittedAt: null
-            }
-          : entry
+    commit(
+      retriedStructuredAgentSessionOutbox(
+        outboxRef.current,
+        clientMessageId,
+        submissions,
+        structuredSessionOperationId
       )
-      if (!writeOutbox(sessionId, rotated)) {
-        setError('Message could not be saved to the outbox')
-        return
-      }
-      outboxRef.current = rotated
-      setOutbox(rotated)
-      return
-    }
-    const retryAfterUnknownSubmittedAt =
-      submission?.dispatchState === 'unknown'
-        ? submission.submittedAt
-        : current?.state === 'unconfirmed'
-          ? -1
-          : null
-    const next = outboxRef.current.map((entry) =>
-      entry.clientMessageId === clientMessageId
-        ? {
-            ...entry,
-            state: 'queued' as const,
-            retryAfterUnknownSubmittedAt
-          }
-        : entry
     )
-    if (!writeOutbox(sessionId, next)) {
-      setError('Message could not be saved to the outbox')
-      return
-    }
-    outboxRef.current = next
-    setOutbox(next)
   }
+
+  /** Edits (or, given null, drops) a message the outbox still holds; false once it is on its way. */
+  const revise = useCallback(
+    (
+      clientMessageId: string,
+      update: (entry: StructuredAgentSessionOutboxEntry) => StructuredAgentSessionOutboxEntry | null
+    ): boolean => {
+      const current = outboxRef.current
+      const entry = current.find((candidate) => candidate.clientMessageId === clientMessageId)
+      if (entry?.state !== 'queued' || inFlightIdRef.current === clientMessageId) {
+        return false
+      }
+      return commit(updateStructuredAgentSessionOutboxEntry(current, clientMessageId, update))
+    },
+    [commit]
+  )
   return {
     outbox,
     error,
     blockedClientMessageId: blockedIdRef.current,
     send,
     retry,
+    revise,
     withdrawUnsent
   }
 }

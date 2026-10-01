@@ -9,10 +9,17 @@ import { projectStructuredAgentSessionMessages } from './structured-agent-sessio
 export function useStructuredAgentSessionMessages(
   items: readonly AgentJournalRenderItem[],
   outbox: readonly StructuredAgentSessionOutboxEntry[],
-  submissions: readonly AgentJournalSubmission[]
+  submissions: readonly AgentJournalSubmission[],
+  /** Sends the Queued stack shows instead, until they go out. */
+  heldIds?: ReadonlySet<string>
 ) {
   return useMemo(
-    () => projectStructuredAgentSessionMessages(items, outbox, submissions),
-    [items, outbox, submissions]
+    () =>
+      projectStructuredAgentSessionMessages(
+        items,
+        heldIds?.size ? outbox.filter((entry) => !heldIds.has(entry.clientMessageId)) : outbox,
+        submissions
+      ),
+    [heldIds, items, outbox, submissions]
   )
 }

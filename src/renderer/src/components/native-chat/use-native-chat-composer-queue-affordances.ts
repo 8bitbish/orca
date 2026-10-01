@@ -43,9 +43,10 @@ export function useNativeChatComposerQueueAffordances(args: {
     ? !args.hasPty || !args.canStop
     : args.disabled || hasPendingAttachment || draftEmpty
   // While the agent works, a written draft still gets a send action beside Stop: it queues on a
-  // host that holds mid-turn prompts, and sends straight away where the main agent is idle.
+  // host that holds mid-turn prompts, and sends straight away where the main agent is idle. A
+  // structured chat's outbox always holds one, so there it is always Queue.
   const workingSend =
-    args.isWorking && !draftEmpty && !args.structured
+    args.isWorking && !draftEmpty && (!args.structured || args.queue?.willQueue)
       ? {
           kind: args.queue?.willQueue ? ('queue' as const) : ('send' as const),
           disabled: args.disabled || hasPendingAttachment

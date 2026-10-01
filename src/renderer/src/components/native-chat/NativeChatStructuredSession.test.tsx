@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
 import { useAppStore } from '@/store'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import {
   claudeGroupedQuestionPromptItems,
   legacySingleQuestionPromptItems
@@ -392,6 +393,36 @@ describe('NativeChatStructuredSession', () => {
     act(() => mocks.composerProps?.onStop?.())
     expect(mocks.stop).toHaveBeenCalledOnce()
     expect(mocks.cancel).not.toHaveBeenCalled()
+  })
+
+  it('lists a message sent mid-turn in the Queued stack, not the wire, and removes it there', async () => {
+    mocks.isWorking = true
+    mocks.turnId = 'turn-1'
+    render(
+      <TooltipProvider>
+        {claudeSessionView('structured-tab-queue', 'session-queue')}
+      </TooltipProvider>
+    )
+    const transport = mocks.composerProps?.structuredTransport
+
+    act(() => {
+      expect(transport?.send?.('Then add the tests.', [])).toBe(true)
+    })
+
+    const stack = await waitFor(() => {
+      const found = document.querySelector('[data-native-chat-queue="true"]')
+      expect(found).not.toBeNull()
+      return found!
+    })
+    expect(stack.textContent).toContain('Then add the tests.')
+    expect(screen.getByRole('button', { name: 'Edit queued message' })).toBeTruthy()
+    expect(mocks.composerProps).toMatchObject({ queue: { willQueue: true } })
+    expect(mocks.call.mock.calls.some(([, method]) => method === 'agentSession.send')).toBe(false)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove from queue' }))
+    await waitFor(() =>
+      expect(document.querySelector('[data-native-chat-queue="true"]')).toBeNull()
+    )
   })
 
   it('keeps the strip mounted through a running turn, with the turn owning the voice', () => {

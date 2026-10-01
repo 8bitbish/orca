@@ -224,6 +224,11 @@ export const AGENT_SESSION_THOUGHT_MARKER_CAPABILITY = 'agent-session.thought-ma
 // Why: `terminalMessageQueue.*` is new; a client probes this before holding a prompt on the host,
 // and a host without it leaves the client writing straight to the terminal as before.
 export const TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY = 'terminal.message-queue.v1' as const
+// Why: a structured host with this never hands a send to the provider while the session's own
+// turn runs: it stays the journal's queued submission until the turn settles, one per turn, in
+// order, and a Stop ends the turn and keeps them, so the next goes out at once. Clients read it to
+// know a send made mid-turn waits rather than folding in; nothing on the wire changes shape.
+export const AGENT_SESSION_HELD_SEND_RUNTIME_CAPABILITY = 'agent-session.held-send.v1' as const
 export const AGENT_SESSION_BACKGROUND_TASK_STOP_CAPABILITY =
   'agent-session.background-task-stop.v1' as const
 // Why: agentSession.cancel has a strict schema, so clients must not send prompt identity to an
@@ -386,6 +391,7 @@ export const RUNTIME_CAPABILITIES = [
   TERMINAL_PAIRED_PARKING_RUNTIME_CAPABILITY,
   TERMINAL_QUICK_COMMANDS_RUNTIME_CAPABILITY,
   TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY,
+  AGENT_SESSION_HELD_SEND_RUNTIME_CAPABILITY,
   WORKTREE_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,
   WORKTREE_ARCHIVE_FAILURE_BLOCKING_RUNTIME_CAPABILITY,
   TERMINAL_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,

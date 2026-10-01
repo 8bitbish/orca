@@ -725,7 +725,6 @@ describe('an eviction between acceptance and handover', () => {
   })
 
   it('rejects a queued message behind a handed-over one, which alone stays in doubt (W24)', async () => {
-    const second = deferred<void>()
     const awaitStarted = vi.fn(async (): Promise<void> => undefined)
     adapterExtras = { awaitStarted }
     await host.close(SESSION)
@@ -733,12 +732,12 @@ describe('an eviction between acceptance and handover', () => {
     dispatch.mockResolvedValueOnce({ state: 'admitted' })
     const handed = await accept('handed over')
     await eventually(async () => expect((await submission(handed))?.handedOverAt).toBeDefined())
-    awaitStarted.mockImplementation(() => second.promise)
     const queued = await accept('still queued')
-    await eventually(async () => expect(awaitStarted).toHaveBeenCalledTimes(2))
+    // Held while the provider has not answered the first: one message per turn.
+    expect(await submission(queued)).toMatchObject({ dispatchState: 'pending' })
+    expect((await submission(queued))?.handedOverAt).toBeUndefined()
 
     await host.close(SESSION)
-    second.resolve()
 
     expect(await reopened(queued)).toMatchObject({
       dispatchState: 'rejected',

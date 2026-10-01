@@ -83,7 +83,9 @@ export function createStructuredSessionMocks() {
     messageListProps: initialMessageListProps,
     composerProps: nullable<{
       launchSeed?: NativeChatLaunchSeed
-      structuredTransport?: Record<string, unknown>
+      structuredTransport?: Record<string, unknown> & {
+        send?: (text: string, attachments: readonly unknown[]) => boolean
+      }
       isWorking?: boolean
       onStop?: () => void
     }>(),
@@ -124,6 +126,8 @@ export function createStructuredSessionMocks() {
     useStructuredAgentSession: async () => {
       const { useStructuredAgentSessionOutbox } =
         await import('./use-structured-agent-session-outbox')
+      const { useStructuredAgentSessionHeldQueue } =
+        await import('./use-structured-agent-session-held-queue')
       const { projectStructuredAgentSessionMessages } =
         await import('../../../../shared/structured-agent-session-message-projection')
       return {
@@ -137,7 +141,18 @@ export function createStructuredSessionMocks() {
             sessionId: props.sessionId,
             target: props.target,
             fence: props.transportEnabled === false ? null : 1,
+            hold: { turn: Boolean(mocks.isWorking), editingId: null },
             submissions: mocks.submissions as never
+          })
+          const heldQueue = useStructuredAgentSessionHeldQueue({
+            outbox: outbox.outbox,
+            blockedClientMessageId: outbox.blockedClientMessageId,
+            working: Boolean(mocks.isWorking),
+            turnId: mocks.turnId ?? null,
+            awaitingAnswer: false,
+            editingId: null,
+            setEditingId: () => {},
+            revise: outbox.revise
           })
           return {
             journalItems: mocks.journalItems,
@@ -172,6 +187,7 @@ export function createStructuredSessionMocks() {
             blockedClientMessageId: outbox.blockedClientMessageId,
             send: outbox.send,
             retry: outbox.retry,
+            heldQueue,
             isWorking: mocks.isWorking,
             backgroundTasks: {
               show: mocks.showBackgroundTasks || mocks.monitoringBackgroundTasks,

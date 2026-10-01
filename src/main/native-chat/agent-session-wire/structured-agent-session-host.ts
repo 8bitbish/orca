@@ -63,7 +63,11 @@ export class StructuredAgentSessionHost {
     this
   )
   private readonly sessions = new StructuredAgentSessionConversations({
-    deliver: (sessionId, journal) => this.subscribers.publish(sessionId, journal),
+    deliver: (sessionId, journal) => {
+      this.subscribers.publish(sessionId, journal)
+      // A settled turn is a commit: the next queued message goes out on it.
+      this.conversationDelivery.loop.nudge(sessionId)
+    },
     onDeliveryError: (sessionId, error) => this.deps.onEventSinkError?.({ sessionId, error }),
     now: () => this.now()
   })

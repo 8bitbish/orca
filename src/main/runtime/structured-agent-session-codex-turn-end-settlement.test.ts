@@ -207,24 +207,28 @@ describe('a Codex send its turn ended without taking it', () => {
     expect(verdictOf((await settled()).submissions, sent)).toBe('withdrawn')
   })
 
-  it('withdraws a follow-up Codex steered into the turn a Stop ends, with no working latch', async () => {
+  it('holds a follow-up behind the running Codex turn, and a Stop sends it as that turn ends', async () => {
     const opening = await send('look around')
     await vi.waitFor(() => expect(answers).toBe(1))
     turns.start()
     turns.echo(opening)
     const followUp = await send('and check the tests')
-    // Steered: Codex answers with the running turn, and fires no second turn/started.
-    await vi.waitFor(() => expect(answers).toBe(2))
+    // Never steered into the running turn: Codex is not asked to start anything until it ends.
+    await host.flushStreamedEvents(SESSION)
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    expect(answers).toBe(1)
+    expect(verdictOf((await settled()).submissions, followUp)).toBe('pending')
 
     await stop('turn-1')
 
-    await vi.waitFor(async () =>
-      expect(verdictOf((await settled()).submissions, followUp)).not.toBe('pending')
-    )
+    // The interrupted turn's end hands the follow-up over as a turn of its own.
+    await vi.waitFor(() => expect(answers).toBe(2))
     const after = await settled()
     expect(verdictOf(after.submissions, opening)).toBe('accepted')
-    expect(verdictOf(after.submissions, followUp)).toBe('withdrawn')
-    expect(after.owesWork).toBe(false)
+    expect(verdictOf(after.submissions, followUp)).toBe('pending')
+    expect(
+      after.submissions.find((entry) => entry.clientMessageId === followUp)?.handedOverAt
+    ).toBeDefined()
   })
 })
 

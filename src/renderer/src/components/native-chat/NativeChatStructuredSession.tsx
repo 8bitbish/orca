@@ -31,6 +31,7 @@ import { structuredAgentSessionDeliveryNotices } from './structured-agent-sessio
 import type { AgentJournalSubmission } from '../../../../shared/agent-session-journal-types'
 import { useNativeChatProjectReplyChannel } from './native-chat-project-reply-context'
 import { NativeChatReplyScope } from './NativeChatReplyScope'
+import { NativeChatQueuedMessages } from './NativeChatQueuedMessages'
 
 const NO_SUBMISSIONS: readonly AgentJournalSubmission[] = []
 
@@ -339,6 +340,7 @@ export function NativeChatStructuredSession(
           onChange={(change) => void controller.threadGoal?.change(change)}
         />
       ) : null}
+      <NativeChatQueuedMessages {...controller.heldQueue.stackProps} />
       {/* Prompt cards take the composer's slot, below the background-task dock. */}
       {prompt && approval ? (
         <NativeChatApprovalCard
@@ -394,6 +396,7 @@ export function NativeChatStructuredSession(
           isWorking={controller.canStop}
           onStop={() => void controller.stop()}
           structuredTransport={structuredTransport}
+          queue={controller.heldQueue.composerQueue}
           launchSeed={{ ...launchDraftSignal, ownsTabWideLaunchDraft: true }}
         />
       )}
