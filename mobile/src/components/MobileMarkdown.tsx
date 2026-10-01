@@ -25,6 +25,7 @@ import {
   MarkdownTextContext
 } from './mobile-markdown-text'
 import { MobileMarkupPreview } from './markup-preview/MobileMarkupPreview'
+import { MobileInlineCode } from './MobileInlineCode'
 import { mobileMarkupPreviewKind } from './markup-preview/mobile-markup-preview-kind'
 import {
   MobileMarkdownRenderersContext,
@@ -173,23 +174,15 @@ function renderInline(
       }
     } else if (token.startsWith('`')) {
       const code = token.slice(1, -1)
-      if (onOpenFile && isFilePathCodeSpan(code)) {
-        parts.push(
-          <MarkdownText
-            key={key}
-            style={[styles.inlineCode, styles.inlineCodeLink]}
-            onPress={() => onOpenFile(normalizeFilePath(code.trim()))}
-          >
-            {code}
-          </MarkdownText>
-        )
-      } else {
-        parts.push(
-          <MarkdownText key={key} style={styles.inlineCode}>
-            {code}
-          </MarkdownText>
-        )
-      }
+      const filePath =
+        onOpenFile && isFilePathCodeSpan(code) ? normalizeFilePath(code.trim()) : null
+      parts.push(
+        <MobileInlineCode
+          key={key}
+          code={code}
+          onPress={filePath && onOpenFile ? () => onOpenFile(filePath) : undefined}
+        />
+      )
     } else if (token.startsWith('~~')) {
       parts.push(
         <MarkdownText key={key} style={styles.strike}>
