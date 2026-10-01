@@ -89,6 +89,9 @@ export function nativeChatShellRunBusyText(): string {
 }
 
 export function formatNativeChatShellRunDuration(ms: number): string {
+  if (ms < 100) {
+    return '<0.1s'
+  }
   if (ms < 60_000) {
     return `${(ms / 1000).toFixed(1)}s`
   }

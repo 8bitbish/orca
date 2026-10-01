@@ -20,6 +20,10 @@ export type NativeChatShellRunScreen = {
 const COLUMNS = 120
 const ROWS = 40
 const SCROLLBACK = 1000
+// oxlint-disable-next-line no-control-regex -- matches the ESC byte of the serializer's cursor-forward gaps.
+const CURSOR_FORWARD = /\u001b\[(\d*)C/g
+// oxlint-disable-next-line no-control-regex -- matches the ESC byte of every CSI but SGR (`m`).
+const NON_SGR_CSI = /\u001b\[[\d;?]*[@A-Za-ln-z]/g
 
 export function createNativeChatShellRunScreen(): NativeChatShellRunScreen {
   const terminal = new Terminal({
@@ -37,6 +41,9 @@ export function createNativeChatShellRunScreen(): NativeChatShellRunScreen {
       serializer
         .serialize({ excludeModes: true, excludeAltBuffer: true })
         .replace(/\r\n/g, '\n')
+        // The serializer writes runs of blank cells as cursor moves; the pane needs the spaces.
+        .replace(CURSOR_FORWARD, (_match, count: string) => ' '.repeat(Number(count || '1')))
+        .replace(NON_SGR_CSI, '')
         .replace(/\n+$/, ''),
     cursorLine: () => {
       const buffer = terminal.buffer.active

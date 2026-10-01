@@ -34,7 +34,7 @@ export type NativeChatShellRunStream = {
 export type NativeChatShellRunTransport = {
   /** The terminal behind `handle`, or null when the host no longer has it. */
   find: (target: RuntimeClientTarget, handle: string) => Promise<NativeChatShellRunTerminal | null>
-  /** Opens the Runs tab in the background and types `command` once its shell is ready. */
+  /** Adds an inactive Runs tab and types `command` once its shell is ready. */
   create: (
     target: RuntimeClientTarget,
     args: { worktreeId: string; command: string; shell?: string }
@@ -101,7 +101,8 @@ async function create(
       // Typed only once the shell's line editor is up, so nothing is lost to startup.
       startupCommandDelivery: 'shell-ready',
       title: NATIVE_CHAT_SHELL_RUN_TERMINAL_TITLE,
-      presentation: 'background',
+      // No presentation: the host adds an inactive tab, so the workspace shows a Runs tab
+      // without switching to it. 'background' would leave the terminal with no tab at all.
       ...(args.shell ? { shell: args.shell } : {})
     },
     { timeoutMs: RPC_TIMEOUT_MS }
