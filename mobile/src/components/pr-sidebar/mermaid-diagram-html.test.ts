@@ -9,6 +9,7 @@ vi.mock('react-native', () => ({
   View: 'View'
 }))
 vi.mock('react-native-webview', () => ({ WebView: 'WebView' }))
+vi.mock('../MobileDiagramHeader', () => ({ MobileDiagramHeader: 'MobileDiagramHeader' }))
 
 // The diagram source is untrusted (agent output, PR/chat content). It is embedded
 // inside an inline <script>, so it must not be able to close that script element.

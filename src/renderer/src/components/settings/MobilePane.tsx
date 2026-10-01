@@ -11,6 +11,7 @@ import { useMobilePairedDeviceRevocation } from './use-mobile-paired-device-revo
 import type { MobileNetworkInterface } from './mobile-network-interface-selection'
 import { MachineNameField } from './MachineNameField'
 import { MobilePairingQrSection } from './MobilePairingQrSection'
+import { useMobilePairingQrRefresh } from './use-mobile-pairing-qr-refresh'
 import { MobilePairedDevicesSection } from './MobilePairedDevicesSection'
 import { MobileAutoRestoreFitSection } from './MobileAutoRestoreFitSection'
 import { MobilePairingConnectionOptions } from './MobilePairingConnectionOptions'
@@ -262,6 +263,7 @@ export function MobilePane(): React.JSX.Element {
       signedIn
     ]
   )
+  useMobilePairingQrRefresh(pairingUrl, () => void generateQR())
 
   const changeConnectionMode = useCallback(
     (nextMode: MobilePairingConnectionMode) => {
