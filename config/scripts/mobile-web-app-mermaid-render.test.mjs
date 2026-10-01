@@ -161,7 +161,10 @@ async function buildNativeDocument(outDir) {
       react: stubPath,
       'react/jsx-runtime': stubPath,
       'react-native': stubPath,
-      'react-native-webview': stubPath
+      'react-native-webview': stubPath,
+      // The diagram header's icons and clipboard; the document under test never draws it.
+      'lucide-react-native': stubPath,
+      'expo-clipboard': stubPath
     },
     define: { __DEV__: 'false', 'process.env.NODE_ENV': '"production"' }
   })

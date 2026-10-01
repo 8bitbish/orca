@@ -2,6 +2,7 @@ import { memo, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { WebView } from 'react-native-webview'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
+import { MobileDiagramHeader } from '../MobileDiagramHeader'
 import { MERMAID_DIAGRAM_CONFIG } from './mermaid-diagram-config'
 import { MERMAID_ENGINE_JS } from './mermaid-webview-engine.generated'
 
@@ -22,6 +23,7 @@ export type MermaidDiagramProps = {
 export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: MermaidDiagramProps) {
   const [height, setHeight] = useState(0)
   const [failed, setFailed] = useState(false)
+  const [showSource, setShowSource] = useState(false)
   const html = useMemo(() => buildHtml(source), [source])
 
   if (failed) {
@@ -30,38 +32,49 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
 
   return (
     <View style={styles.frame}>
-      <View style={styles.label}>
-        <Text style={styles.labelText}>mermaid</Text>
-      </View>
-      <WebView
-        style={[styles.webview, { height: height || 120 }]}
-        originWhitelist={['*']}
-        source={{ html }}
-        javaScriptEnabled
-        scrollEnabled={false}
-        // Diagram is self-contained; any navigation attempt means something is
-        // wrong, so treat it as a render failure and fall back to source.
-        onShouldStartLoadWithRequest={(request) => {
-          if (request.url === 'about:blank' || request.url.startsWith('data:')) {
-            return true
-          }
-          setFailed(true)
-          return false
-        }}
-        onError={() => setFailed(true)}
-        onHttpError={() => setFailed(true)}
-        onMessage={(event) => {
-          const data = event.nativeEvent.data
-          if (data === 'error') {
-            setFailed(true)
-            return
-          }
-          const parsed = Number(data)
-          if (Number.isFinite(parsed) && parsed > 0) {
-            setHeight(Math.ceil(parsed))
-          }
-        }}
+      <MobileDiagramHeader
+        label="mermaid"
+        source={source}
+        showSource={showSource}
+        onToggleSource={() => setShowSource(!showSource)}
       />
+      {showSource ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.fallbackScroll}>
+          <Text selectable style={[styles.fallbackText, { fontSize: base - 1 }]}>
+            {source}
+          </Text>
+        </ScrollView>
+      ) : (
+        <WebView
+          style={[styles.webview, { height: height || 120 }]}
+          originWhitelist={['*']}
+          source={{ html }}
+          javaScriptEnabled
+          scrollEnabled={false}
+          // Diagram is self-contained; any navigation attempt means something is
+          // wrong, so treat it as a render failure and fall back to source.
+          onShouldStartLoadWithRequest={(request) => {
+            if (request.url === 'about:blank' || request.url.startsWith('data:')) {
+              return true
+            }
+            setFailed(true)
+            return false
+          }}
+          onError={() => setFailed(true)}
+          onHttpError={() => setFailed(true)}
+          onMessage={(event) => {
+            const data = event.nativeEvent.data
+            if (data === 'error') {
+              setFailed(true)
+              return
+            }
+            const parsed = Number(data)
+            if (Number.isFinite(parsed) && parsed > 0) {
+              setHeight(Math.ceil(parsed))
+            }
+          }}
+        />
+      )}
     </View>
   )
 })

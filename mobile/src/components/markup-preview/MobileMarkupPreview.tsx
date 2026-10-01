@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { WebView, type WebViewMessageEvent } from 'react-native-webview'
 import {
   clampNativeChatMarkupHeight,
@@ -8,6 +8,7 @@ import {
   type NativeChatMarkupKind
 } from '../../../../src/shared/native-chat-markup-preview-policy'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
+import { MobileDiagramHeader } from '../MobileDiagramHeader'
 import { buildMobileMarkupPreviewDocument } from './mobile-markup-preview-document'
 
 export type MobileMarkupPreviewProps = { source: string; kind: NativeChatMarkupKind }
@@ -41,39 +42,51 @@ export const MobileMarkupPreview = memo(function MobileMarkupPreview({
   kind
 }: MobileMarkupPreviewProps) {
   const [height, setHeight] = useState(INITIAL_HEIGHT_PX)
+  const [showSource, setShowSource] = useState(false)
   const html = useMemo(() => buildMobileMarkupPreviewDocument(source, kind), [source, kind])
 
   return (
     <View style={styles.frame}>
-      <View style={styles.label}>
-        <Text style={styles.labelText}>{kind}</Text>
-      </View>
-      <WebView
-        style={[styles.webview, { height }]}
-        originWhitelist={['about:blank']}
-        source={{ html }}
-        scrollEnabled={height >= NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX}
-        nestedScrollEnabled
-        onShouldStartLoadWithRequest={(request) =>
-          request.url === 'about:blank' || request.url.startsWith('data:')
-        }
-        setSupportMultipleWindows={false}
-        javaScriptCanOpenWindowsAutomatically={false}
-        allowFileAccess={false}
-        allowFileAccessFromFileURLs={false}
-        allowUniversalAccessFromFileURLs={false}
-        mixedContentMode="never"
-        incognito
-        cacheEnabled={false}
-        allowsLinkPreview={false}
-        mediaPlaybackRequiresUserAction
-        onMessage={(event) => {
-          const next = previewHeight(event)
-          if (next !== null) {
-            setHeight(next)
-          }
-        }}
+      <MobileDiagramHeader
+        label={kind}
+        source={source}
+        showSource={showSource}
+        onToggleSource={() => setShowSource(!showSource)}
       />
+      {showSource ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.source}>
+          <Text selectable style={styles.sourceText}>
+            {source}
+          </Text>
+        </ScrollView>
+      ) : (
+        <WebView
+          style={[styles.webview, { height }]}
+          originWhitelist={['about:blank']}
+          source={{ html }}
+          scrollEnabled={height >= NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX}
+          nestedScrollEnabled
+          onShouldStartLoadWithRequest={(request) =>
+            request.url === 'about:blank' || request.url.startsWith('data:')
+          }
+          setSupportMultipleWindows={false}
+          javaScriptCanOpenWindowsAutomatically={false}
+          allowFileAccess={false}
+          allowFileAccessFromFileURLs={false}
+          allowUniversalAccessFromFileURLs={false}
+          mixedContentMode="never"
+          incognito
+          cacheEnabled={false}
+          allowsLinkPreview={false}
+          mediaPlaybackRequiresUserAction
+          onMessage={(event) => {
+            const next = previewHeight(event)
+            if (next !== null) {
+              setHeight(next)
+            }
+          }}
+        />
+      )}
     </View>
   )
 })
@@ -87,13 +100,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.bgRaised
   },
-  label: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderSubtle,
-    backgroundColor: colors.bgPanel
-  },
-  labelText: { color: colors.textSecondary, fontSize: 11, fontFamily: typography.monoFamily },
+  source: { padding: spacing.sm, maxHeight: NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX },
+  sourceText: { color: colors.textPrimary, fontSize: 12, fontFamily: typography.monoFamily },
   webview: { backgroundColor: colors.bgRaised }
 })
