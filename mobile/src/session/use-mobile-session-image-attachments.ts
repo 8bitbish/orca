@@ -48,6 +48,11 @@ type Args = {
   readonly onNativeChatSendError: (message: string) => void
   readonly onSuccess: () => void
   readonly onError: () => void
+  /** Offers a native-chat image send to the host's message queue before the paste. */
+  readonly nativeChatQueueSend?: (
+    text: string,
+    images: readonly { id: string; path: string; previewUri: string }[]
+  ) => Promise<'queued' | 'direct' | 'rejected'>
 }
 
 /** A session exposes image attachment on two surfaces that share one upload
@@ -72,7 +77,8 @@ export function useMobileSessionImageAttachments({
   showToast,
   onNativeChatSendError,
   onSuccess,
-  onError
+  onError,
+  nativeChatQueueSend
 }: Args): {
   attachImage: (source: MobileImageSource) => Promise<void>
   isAttaching: boolean
@@ -106,7 +112,8 @@ export function useMobileSessionImageAttachments({
     baseSend: nativeChatBaseSend,
     readSeededLaunchDraft,
     onAttachSuccess: onSuccess,
-    onError
+    onError,
+    queueSend: nativeChatQueueSend
   })
   return { attachImage, isAttaching, nativeChatImages }
 }

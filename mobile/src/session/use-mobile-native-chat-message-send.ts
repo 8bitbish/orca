@@ -21,6 +21,8 @@ import {
   AGENT_TUI_CLEAR_INPUT_LINE,
   buildAgentTuiClearInputForText
 } from '../../../src/shared/agent-tui-input-clear'
+import { offerMobileNativeChatSendToQueue } from './mobile-native-chat-queue-send'
+import type { MobileNativeChatQueueSubmit } from './mobile-native-chat-queue-send'
 
 export type MobileNativeChatMessageSend = {
   /** Composer send that syncs the draft (clear on send, restore on rejection). */
@@ -79,6 +81,8 @@ export function useMobileNativeChatMessageSend(args: {
     onUnconfirmed: () => void
   ) => void
   onSendError: (message: string) => void
+  /** The host's queue for this terminal; null on a host without one, or before it is live. */
+  queueSubmit?: MobileNativeChatQueueSubmit | null
 }): MobileNativeChatMessageSend {
   const {
     client,
@@ -94,7 +98,8 @@ export function useMobileNativeChatMessageSend(args: {
     restoreRejectedDraft,
     acceptSend,
     holdUnconfirmedSend,
-    onSendError
+    onSendError,
+    queueSubmit = null
   } = args
 
   const sendMessage = useCallback(
@@ -125,6 +130,24 @@ export function useMobileNativeChatMessageSend(args: {
         onSendError('Message not sent (disconnected)')
         return 'rejected'
       }
+      const classification = classifyMobileNativeChatSend(agent, text)
+      // Why: typed into a mid-turn TUI the prompt is absorbed by the running turn; the host holds
+      // it instead and its echo appears on delivery. An idle agent answers 'direct'.
+      const queued =
+        queueSubmit && syncComposer && !images?.length && classification === 'chat' && text
+          ? await offerMobileNativeChatSendToQueue({
+              submit: queueSubmit,
+              text,
+              draftText,
+              origin,
+              clearDraft: clearDraftForSend,
+              restoreDraft: restoreRejectedDraft,
+              onSendError
+            })
+          : null
+      if (queued === 'queued' || queued === 'rejected') {
+        return queued === 'queued' ? 'accepted' : 'rejected'
+      }
       // The agent's input may still hold an orphaned image paste from an earlier
       // send (#10228); submitting on top of it would glue the image onto this
       // message. Healed before the draft clear so a failed heal — which sends
@@ -140,6 +163,9 @@ export function useMobileNativeChatMessageSend(args: {
         deadline
       }
       if (!(await healMobileNativeChatStaleInput(healArgs))) {
+        if (queued === 'direct') {
+          restoreRejectedDraft(origin, draftText)
+        }
         onSendError('Message not sent')
         return 'rejected'
       }
@@ -150,7 +176,6 @@ export function useMobileNativeChatMessageSend(args: {
         clearDraftForSend(origin, draftText)
       }
       const seededLaunchDraft = readSeededLaunchDraftSeed()
-      const classification = classifyMobileNativeChatSend(agent, text)
       const typesCodexCommand =
         agent === 'codex' &&
         classification !== 'chat' &&
@@ -247,6 +272,7 @@ export function useMobileNativeChatMessageSend(args: {
       handleRef,
       holdUnconfirmedSend,
       onSendError,
+      queueSubmit,
       readSeededLaunchDraftSeed,
       restoreRejectedDraft
     ]

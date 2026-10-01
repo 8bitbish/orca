@@ -10,6 +10,7 @@ import type { MobileNativeChatController } from './use-mobile-native-chat-contro
 import { useMobileNativeChatStreamingBubble } from './use-mobile-native-chat-streaming-bubble'
 import { useMobileNativeChatThoughtSeconds } from './use-mobile-native-chat-thought-seconds'
 import { useMobileNativeChatThoughts } from './use-mobile-native-chat-thoughts'
+import { queuedImagesWithPreviews } from './mobile-terminal-message-queue-previews'
 
 type Props = {
   controller: MobileNativeChatController
@@ -80,6 +81,19 @@ export function MobileNativeChatOverlay({
     liveRowId:
       controller.nativeChatAgentWorking && streaming === null ? (folded.at(-1)?.id ?? null) : null
   })
+  const queue = controller.nativeChatQueue
+  const queueStack = useMemo(
+    () =>
+      queue && {
+        ...queue,
+        // The overlay owns the composer chips, so it puts a restored item's images back.
+        onRestore: (item: { id: string; text: string; imagePaths?: string[] }, orphan: boolean) => {
+          queue.onRestore(item, orphan)
+          images.restoreImages(queuedImagesWithPreviews(item.imagePaths))
+        }
+      },
+    [images, queue]
+  )
   if (!controller.showNativeChat) {
     return null
   }
@@ -147,6 +161,7 @@ export function MobileNativeChatOverlay({
           filePaths={controller.nativeChatFilePaths}
           onNeedFiles={controller.loadNativeChatFiles}
           sessionOptions={controller.nativeChatSessionOptions}
+          queue={{ stack: queueStack, willQueue: controller.nativeChatWillQueue }}
           keyboardInset={keyboardInset}
         />
       </MobileNativeChatProjectsProvider>
