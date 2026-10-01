@@ -18,6 +18,11 @@ const DOT_COLORS: Record<Exclude<AgentDotState, 'working' | 'monitoring'>, strin
 }
 const WORKING_COLOR = '#eab308'
 
+/** The dot's colour, for places that draw it as a text glyph (inline in prose). */
+export function agentStateDotColor(state: AgentDotState): string {
+  return state === 'working' || state === 'monitoring' ? WORKING_COLOR : DOT_COLORS[state]
+}
+
 export function AgentStateDot({ state }: { state: AgentDotState }) {
   const spinValue = useRef(new Animated.Value(0)).current
 

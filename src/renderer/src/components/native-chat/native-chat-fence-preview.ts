@@ -6,12 +6,11 @@
 // parse errors for source that is merely incomplete.
 
 import { createContext } from 'react'
+import { NATIVE_CHAT_PROJECT_CARD_FENCE } from '../../../../shared/native-chat-project-card-payload'
+
+export { NATIVE_CHAT_PROJECT_CARD_FENCE }
 
 export type NativeChatFenceRoute = 'mermaid' | 'html' | 'svg' | 'widget' | 'project-card' | 'code'
-
-/** The fence language for a live project card. The pipeline drops an info
- *  string's later words, so `widget project-card` would reach us as `widget`. */
-export const NATIVE_CHAT_PROJECT_CARD_FENCE = 'project-card'
 
 export type NativeChatFencePreviewScope = {
   /** Live HTML/SVG/widget previews and project cards; on for assistant replies only. */

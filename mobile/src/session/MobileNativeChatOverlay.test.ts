@@ -11,6 +11,9 @@ vi.mock('react-native', () => ({
 }))
 
 vi.mock('./MobileNativeChatView', () => ({ MobileNativeChatView: 'ChatView' }))
+vi.mock('./project-cards/MobileNativeChatProjectsProvider', () => ({
+  MobileNativeChatProjectsProvider: ({ children }: { children: unknown }) => children
+}))
 
 function assistantTurn(id: string, text: string): NativeChatMessage {
   return { id, role: 'assistant', blocks: [{ type: 'text', text }], timestamp: 0, source: 'hook' }
@@ -42,6 +45,9 @@ function overlayElement(tick: Tick): ReturnType<typeof createElement> {
   } as unknown as MobileNativeChatController
   return createElement(MobileNativeChatOverlay, {
     controller,
+    client: null,
+    hostId: 'host-a',
+    connState: 'connected',
     images: {} as never,
     onMicPress: vi.fn(),
     micActive: false,

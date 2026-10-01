@@ -15,6 +15,7 @@ export function MobileSessionActiveContent({
   controller: MobileSessionController
 }) {
   const {
+    hostId,
     worktreeId,
     insets,
     connState,
@@ -223,6 +224,9 @@ export function MobileSessionActiveContent({
       ))}
       <MobileNativeChatOverlay
         controller={nativeChatController}
+        client={client}
+        hostId={hostId}
+        connState={connState}
         onOpenFile={handleNativeChatFileTap}
         images={nativeChatImages}
         onMicPress={handleDictationToggle}

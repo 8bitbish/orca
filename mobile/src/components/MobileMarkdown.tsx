@@ -29,6 +29,10 @@ import { parseMobileMarkdown } from './mobile-markdown-parser'
 import { MermaidDiagram } from './pr-sidebar/MermaidDiagram'
 import { MobileMarkupPreview } from './markup-preview/MobileMarkupPreview'
 import { mobileMarkupPreviewKind } from './markup-preview/mobile-markup-preview-kind'
+import {
+  MobileMarkdownRenderersContext,
+  type MobileMarkdownLinkRenderer
+} from './mobile-markdown-renderers'
 
 type Props = {
   content?: string
@@ -103,7 +107,11 @@ function renderTextRun(
   })
 }
 
-function renderInline(text: string, onOpenFile?: (pathText: string) => void): ReactNode[] {
+function renderInline(
+  text: string,
+  onOpenFile?: (pathText: string) => void,
+  renderLink?: MobileMarkdownLinkRenderer
+): ReactNode[] {
   const parts: ReactNode[] = []
   const pattern = createMarkdownInlineMatcher(
     text,
@@ -132,6 +140,7 @@ function renderInline(text: string, onOpenFile?: (pathText: string) => void): Re
     const key = `${match.index}:${token}`
     const image = token.match(/^!\[([^\]]*)\]\(([^)]+)\)$/)
     const link = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+    const customLink = link && renderLink ? renderLink(link[2]!, link[1]!, key) : null
     if (image) {
       parts.push(
         <MarkdownText
@@ -142,6 +151,8 @@ function renderInline(text: string, onOpenFile?: (pathText: string) => void): Re
           {image[1] || 'image'}
         </MarkdownText>
       )
+    } else if (customLink) {
+      parts.push(customLink)
     } else if (link) {
       parts.push(
         <MarkdownText
@@ -220,6 +231,7 @@ function MobileMarkdownContent({
   onOpenFile,
   markupPreviews = false
 }: Props) {
+  const renderers = useContext(MobileMarkdownRenderersContext)
   const text = content?.trim() ?? ''
   const previewText = useMemo(() => normalizeMobileMarkdownPreviewHtml(text), [text])
   const blocks = useMemo(() => parseMobileMarkdown(previewText), [previewText])
@@ -249,7 +261,7 @@ function MobileMarkdownContent({
               selectable
               style={[styles.heading, block.level <= 2 ? styles.headingLarge : null]}
             >
-              {renderInline(block.text, onOpenFile)}
+              {renderInline(block.text, onOpenFile, renderers.renderLink)}
             </MarkdownText>
           )
         }
@@ -257,7 +269,7 @@ function MobileMarkdownContent({
           return (
             <View key={index} style={styles.quote}>
               <MarkdownText selectable style={styles.quoteText}>
-                {renderInline(block.text, onOpenFile)}
+                {renderInline(block.text, onOpenFile, renderers.renderLink)}
               </MarkdownText>
             </View>
           )
@@ -291,7 +303,7 @@ function MobileMarkdownContent({
               />
             )
           }
-          return (
+          const codeBlock = (
             <View key={index} style={styles.codeBlock}>
               {block.language ? (
                 <NativeText style={styles.codeLanguage}>{block.language}</NativeText>
@@ -301,6 +313,18 @@ function MobileMarkdownContent({
               </MarkdownText>
             </View>
           )
+          const fenceKey = `${block.language ?? ''}:${block.text}`
+          const occurrence = markupSourceOccurrences.get(fenceKey) ?? 0
+          markupSourceOccurrences.set(fenceKey, occurrence + 1)
+          const rendered =
+            markupPreviews && block.closed
+              ? renderers.renderFence?.(
+                  { language: block.language, text: block.text },
+                  codeBlock,
+                  `${fenceKey}:${occurrence}`
+                )
+              : null
+          return rendered ?? codeBlock
         }
         if (block.type === 'image') {
           return (
@@ -331,7 +355,7 @@ function MobileMarkdownContent({
                       selectable
                       style={[styles.tableCell, styles.tableHeader]}
                     >
-                      {renderInline(header, onOpenFile)}
+                      {renderInline(header, onOpenFile, renderers.renderLink)}
                     </MarkdownText>
                   ))}
                 </View>
@@ -339,7 +363,7 @@ function MobileMarkdownContent({
                   <View key={rowIndex} style={styles.tableRow}>
                     {visibleHeaders.map((_, cellIndex) => (
                       <MarkdownText key={cellIndex} selectable style={styles.tableCell}>
-                        {renderInline(row[cellIndex] ?? '', onOpenFile)}
+                        {renderInline(row[cellIndex] ?? '', onOpenFile, renderers.renderLink)}
                       </MarkdownText>
                     ))}
                   </View>
@@ -370,7 +394,7 @@ function MobileMarkdownContent({
                         : '[ ]'}
                   </NativeText>
                   <MarkdownText selectable style={[styles.listText, listScale]}>
-                    {renderInline(item.text, onOpenFile)}
+                    {renderInline(item.text, onOpenFile, renderers.renderLink)}
                   </MarkdownText>
                 </View>
               ))}
@@ -389,7 +413,7 @@ function MobileMarkdownContent({
             {block.text.split('\n').map((line, lineIndex) => (
               <Fragment key={lineIndex}>
                 {lineIndex > 0 ? '\n' : null}
-                {renderInline(line, onOpenFile)}
+                {renderInline(line, onOpenFile, renderers.renderLink)}
               </Fragment>
             ))}
           </MarkdownText>

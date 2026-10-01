@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, CornerDownLeft, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import type { NativeChatProjectCardAction } from './native-chat-project-card-payload'
+import type { NativeChatProjectCardAction } from '../../../../shared/native-chat-project-card-payload'
 import {
   deriveNativeChatProjectCardChoice,
   readNativeChatProjectCardReply,

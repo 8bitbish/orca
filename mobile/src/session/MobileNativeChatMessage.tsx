@@ -8,6 +8,7 @@ import { agentJournalItemSubagentId } from '../../../src/shared/agent-session-jo
 import { NATIVE_CHAT_SUBAGENT_ATTRIBUTION_COPY } from '../../../src/shared/native-chat-subagent-attribution'
 import type { NativeChatBlock, NativeChatMessage } from '../../../src/shared/native-chat-types'
 import { MobileMarkdown } from '../components/MobileMarkdown'
+import { MobileNativeChatMessageIdContext } from './project-cards/mobile-native-chat-project-context'
 import { MobileNativeChatTurnStatus } from './MobileNativeChatTurnStatus'
 import { ToolRun } from './MobileNativeChatToolRun'
 import type { NativeChatTurnStatus } from './use-mobile-native-chat-turn-status'
@@ -168,15 +169,17 @@ function MobileNativeChatMessageImpl({
               {subagentName}
             </NativeText>
           ) : null}
-          {prose.map((block, index) => (
-            <Prose
-              key={index}
-              block={block}
-              invert={isUser}
-              fontScale={fontScale}
-              onOpenFile={onOpenFile}
-            />
-          ))}
+          <MobileNativeChatMessageIdContext.Provider value={message.id}>
+            {prose.map((block, index) => (
+              <Prose
+                key={index}
+                block={block}
+                invert={isUser}
+                fontScale={fontScale}
+                onOpenFile={onOpenFile}
+              />
+            ))}
+          </MobileNativeChatMessageIdContext.Provider>
           {showToolRun ? (
             <ToolRun
               // Why: a global toggle intentionally resets all per-run/per-line

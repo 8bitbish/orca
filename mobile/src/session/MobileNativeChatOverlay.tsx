@@ -1,5 +1,8 @@
 import { useMemo } from 'react'
 import { StyleSheet, View } from 'react-native'
+import type { RpcClient } from '../transport/rpc-client'
+import type { ConnectionState } from '../transport/types'
+import { MobileNativeChatProjectsProvider } from './project-cards/MobileNativeChatProjectsProvider'
 import { MobileNativeChatView, type MobileNativeChatInputLockReason } from './MobileNativeChatView'
 import { foldMobileNativeChatMessages } from './mobile-native-chat-render-data'
 import type { MobileNativeChatImageAttachments } from './use-mobile-native-chat-image-attachments'
@@ -8,6 +11,10 @@ import { useMobileNativeChatStreamingBubble } from './use-mobile-native-chat-str
 
 type Props = {
   controller: MobileNativeChatController
+  /** Project chips and cards read the host's repos and workspaces through these. */
+  client: RpcClient | null
+  hostId: string
+  connState: ConnectionState
   /** Opens a tapped file reference (worktree-relative or absolute, optional
    *  :line(:col) suffix) through the shared tap-to-open flow. */
   onOpenFile: (pathText: string) => void
@@ -37,6 +44,9 @@ type Props = {
  *  the chat list below it does not. */
 export function MobileNativeChatOverlay({
   controller,
+  client,
+  hostId,
+  connState,
   onOpenFile,
   images,
   onMicPress,
@@ -64,61 +74,70 @@ export function MobileNativeChatOverlay({
   }
   return (
     <View style={styles.overlay}>
-      <MobileNativeChatView
+      <MobileNativeChatProjectsProvider
+        client={client}
+        hostId={hostId}
+        connState={connState}
         messages={session.messages}
-        folded={folded}
-        status={session.status}
-        error={session.error}
-        agent={controller.nativeChatAgent}
-        agentWorking={controller.nativeChatAgentWorking}
-        canStop={controller.nativeChatCanStop}
-        structuredActivityUi={controller.nativeChatStructured}
-        turnIndicator={controller.nativeChatTurnIndicator}
-        workingStartedAt={controller.nativeChatWorkingStartedAt}
-        settledTurns={controller.nativeChatSettledTurns}
-        activeTurnOpenedBy={controller.nativeChatActiveTurnOpenedBy}
-        turnKeysByItemId={controller.nativeChatTurnKeysByItemId}
-        streaming={streaming}
-        onStop={controller.handleNativeChatStop}
-        ask={controller.nativeChatAsk}
-        askKey={controller.nativeChatAskKey}
-        onDismissAsk={controller.dismissNativeChatAsk}
-        onAnswerAsk={controller.handleNativeChatAnswerAsk}
-        onCancelAsk={controller.handleNativeChatCancelAsk}
-        onCancelPrompt={controller.handleNativeChatCancelPrompt}
-        question={controller.nativeChatQuestion}
-        onAnswerQuestion={controller.handleNativeChatQuestionAnswer}
-        permission={controller.nativeChatPermission}
-        onRespondPermission={controller.handleNativeChatRespondPermission}
-        onOpenFile={onOpenFile}
-        hasMore={session.hasMore}
-        loadingEarlier={session.loadingEarlier}
-        onLoadEarlier={session.loadEarlier}
-        onSend={images.sendNativeChat}
-        sendSurfaceId={sendSurfaceId}
-        getSendCompletionGeneration={getSendCompletionGeneration}
-        getComposerEditGeneration={controller.getChatComposerEditGeneration}
-        pending={controller.chatPending}
-        imagePreviewsByMessageId={controller.chatImagePreviewsByMessageId}
-        composerText={controller.chatComposerText}
-        onComposerTextChange={controller.setChatComposerText}
-        onAttachImage={() => void images.attachImage('library')}
-        attachments={images.attachments}
-        onRemoveAttachment={images.removeAttachment}
-        isAttaching={images.isAttaching}
-        onMicPress={onMicPress}
-        micActive={micActive}
-        dictationMode={dictationMode}
-        onMicPressIn={onMicPressIn}
-        onMicPressOut={onMicPressOut}
-        inputLockReason={inputLockReason}
-        sendErrorMessage={sendErrorMessage}
-        onClearSendError={onClearSendError}
-        filePaths={controller.nativeChatFilePaths}
-        onNeedFiles={controller.loadNativeChatFiles}
-        sessionOptions={controller.nativeChatSessionOptions}
-        keyboardInset={keyboardInset}
-      />
+        send={controller.handleNativeChatSend}
+        canSend={inputLockReason === null}
+      >
+        <MobileNativeChatView
+          messages={session.messages}
+          folded={folded}
+          status={session.status}
+          error={session.error}
+          agent={controller.nativeChatAgent}
+          agentWorking={controller.nativeChatAgentWorking}
+          canStop={controller.nativeChatCanStop}
+          structuredActivityUi={controller.nativeChatStructured}
+          turnIndicator={controller.nativeChatTurnIndicator}
+          workingStartedAt={controller.nativeChatWorkingStartedAt}
+          settledTurns={controller.nativeChatSettledTurns}
+          activeTurnOpenedBy={controller.nativeChatActiveTurnOpenedBy}
+          turnKeysByItemId={controller.nativeChatTurnKeysByItemId}
+          streaming={streaming}
+          onStop={controller.handleNativeChatStop}
+          ask={controller.nativeChatAsk}
+          askKey={controller.nativeChatAskKey}
+          onDismissAsk={controller.dismissNativeChatAsk}
+          onAnswerAsk={controller.handleNativeChatAnswerAsk}
+          onCancelAsk={controller.handleNativeChatCancelAsk}
+          onCancelPrompt={controller.handleNativeChatCancelPrompt}
+          question={controller.nativeChatQuestion}
+          onAnswerQuestion={controller.handleNativeChatQuestionAnswer}
+          permission={controller.nativeChatPermission}
+          onRespondPermission={controller.handleNativeChatRespondPermission}
+          onOpenFile={onOpenFile}
+          hasMore={session.hasMore}
+          loadingEarlier={session.loadingEarlier}
+          onLoadEarlier={session.loadEarlier}
+          onSend={images.sendNativeChat}
+          sendSurfaceId={sendSurfaceId}
+          getSendCompletionGeneration={getSendCompletionGeneration}
+          getComposerEditGeneration={controller.getChatComposerEditGeneration}
+          pending={controller.chatPending}
+          imagePreviewsByMessageId={controller.chatImagePreviewsByMessageId}
+          composerText={controller.chatComposerText}
+          onComposerTextChange={controller.setChatComposerText}
+          onAttachImage={() => void images.attachImage('library')}
+          attachments={images.attachments}
+          onRemoveAttachment={images.removeAttachment}
+          isAttaching={images.isAttaching}
+          onMicPress={onMicPress}
+          micActive={micActive}
+          dictationMode={dictationMode}
+          onMicPressIn={onMicPressIn}
+          onMicPressOut={onMicPressOut}
+          inputLockReason={inputLockReason}
+          sendErrorMessage={sendErrorMessage}
+          onClearSendError={onClearSendError}
+          filePaths={controller.nativeChatFilePaths}
+          onNeedFiles={controller.loadNativeChatFiles}
+          sessionOptions={controller.nativeChatSessionOptions}
+          keyboardInset={keyboardInset}
+        />
+      </MobileNativeChatProjectsProvider>
     </View>
   )
 }

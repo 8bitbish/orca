@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import { NativeChatFencePreviewContext } from './native-chat-fence-preview'
-import { parseNativeChatProjectCardPayload } from './native-chat-project-card-payload'
+import { parseNativeChatProjectCardPayload } from '../../../../shared/native-chat-project-card-payload'
 import { nativeChatProjectCardKey } from './native-chat-project-card-choice'
 import { NativeChatProjectReplyContext } from './native-chat-project-reply-context'
 import {

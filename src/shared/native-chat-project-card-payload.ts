@@ -1,6 +1,10 @@
 // The JSON body of a ```project-card fence. Anything that does not match this
 // shape exactly is rejected, and the fence then shows as the raw block it is.
 
+/** The fence language for a live project card. The pipeline drops an info
+ *  string's later words, so `widget project-card` would reach us as `widget`. */
+export const NATIVE_CHAT_PROJECT_CARD_FENCE = 'project-card'
+
 export type NativeChatProjectCardActionStyle = 'primary' | 'secondary'
 
 export type NativeChatProjectCardAction = {

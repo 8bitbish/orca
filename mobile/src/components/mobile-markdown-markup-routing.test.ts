@@ -2,6 +2,7 @@ import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MobileMarkdown } from './MobileMarkdown'
+import { MobileMarkdownRenderersContext } from './mobile-markdown-renderers'
 
 vi.mock('react-native', () => ({
   Linking: { openURL: vi.fn() },
@@ -31,7 +32,7 @@ function previews(
     renderer = create(createElement(MobileMarkdown, { content, markupPreviews }))
   })
   return renderer!.root
-    .findAll((node) => node.type === 'MobileMarkupPreview')
+    .findAll((node) => String(node.type) === 'MobileMarkupPreview')
     .map((node) => ({ source: node.props.source, kind: node.props.kind }))
 }
 
@@ -52,5 +53,41 @@ describe('MobileMarkdown markup preview routing', () => {
 
   it('keeps markup as code outside agent replies', () => {
     expect(previews('```html\n<p>a</p>\n```', false)).toEqual([])
+  })
+
+  it('hands closed fences and links to the provided renderers', () => {
+    const fences: string[] = []
+    const links: string[] = []
+    act(() => {
+      renderer = create(
+        createElement(
+          MobileMarkdownRenderersContext.Provider,
+          {
+            value: {
+              renderFence: (fence) => {
+                fences.push(`${fence.language}:${fence.text}`)
+                return createElement('Card')
+              },
+              renderLink: (href) => {
+                links.push(href)
+                return href.startsWith('orca-worktree:')
+                  ? createElement('Chip', { key: href })
+                  : null
+              }
+            }
+          },
+          createElement(MobileMarkdown, {
+            content:
+              'See [orca](orca-worktree:orca/cards) and [docs](https://x.dev).\n\n```project-card\n{"worktree":"orca"}\n```\n\n```ts\nopen',
+            markupPreviews: true
+          })
+        )
+      )
+    })
+    expect(fences).toEqual(['project-card:{"worktree":"orca"}'])
+    expect(links).toEqual(['orca-worktree:orca/cards', 'https://x.dev'])
+    const types = renderer!.root.findAll(() => true).map((node) => String(node.type))
+    expect(types).toContain('Card')
+    expect(types).toContain('Chip')
   })
 })
