@@ -27,7 +27,10 @@ sha=$(git rev-parse --short HEAD)
 cd mobile
 pnpm install --frozen-lockfile
 npx expo prebuild --platform android --clean --no-install
-(cd android && ./gradlew --no-daemon assembleRelease)
+# Every current Android phone is arm64; one ABI quarters the native build. The default
+# metaspace runs out on a cold build and stalls the daemon.
+(cd android && ./gradlew --no-daemon -PreactNativeArchitectures=arm64-v8a \
+  '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g' assembleRelease)
 
 version=$(node -p 'require("./app.json").expo.version')
 mkdir -p "$out_dir"
