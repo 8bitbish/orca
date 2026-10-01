@@ -7,6 +7,7 @@ import {
   nativeChatProjectStatusLabel
 } from './native-chat-project-status'
 import { parseNativeChatWorktreeHref } from './native-chat-project-target'
+import { isNativeChatSlackHref } from '../../../../shared/native-chat-slack-href'
 import { focusNativeChatProject, useNativeChatProject } from './use-native-chat-project'
 import { useNativeChatProjectLiveStatus } from './use-native-chat-project-live-status'
 
@@ -61,13 +62,18 @@ export function NativeChatProjectChip({
   )
 }
 
-/** Stable renderer for CommentMarkdown's `renderWorktreeLink`. */
-export function renderNativeChatWorktreeLink({
+/** Stable renderer for CommentMarkdown's `renderChatLink`. */
+export function renderNativeChatLink({
   href,
   children
 }: {
   href: string
   children?: React.ReactNode
 }): React.JSX.Element {
-  return <NativeChatProjectChip href={href}>{children}</NativeChatProjectChip>
+  // Slack chips are not drawn yet; until they are, a Slack link reads as its plain text.
+  return isNativeChatSlackHref(href) ? (
+    <span data-native-chat-slack-chip="plain">{children}</span>
+  ) : (
+    <NativeChatProjectChip href={href}>{children}</NativeChatProjectChip>
+  )
 }

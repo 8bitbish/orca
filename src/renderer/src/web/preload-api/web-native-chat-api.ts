@@ -1,5 +1,8 @@
 import type { NativeChatApi, NativeChatAppendedMessages } from '../../../../preload/api-types'
 import { buildNativeChatUnsubscribe } from '../../../../shared/native-chat-stream-unsubscribe'
+import { parseNativeChatSlackHref } from '../../../../shared/native-chat-slack-href'
+import { parseNativeChatSlackImageResult } from '../../../../shared/native-chat-slack-image-contract'
+import { buildNativeChatSlackLinks } from '../../../../shared/native-chat-slack-links'
 import {
   parseRuntimeNativeChatReadSessionResult,
   parseRuntimeNativeChatTurnLifecycle
@@ -10,6 +13,20 @@ import { getClientForEnvironment, requireActiveEnvironmentOrNull } from './web-r
 
 export function createWebNativeChatApi(): NativeChatApi {
   return {
+    // Any failure, including an older host without the method, reads as no image.
+    slackImage: async (request) =>
+      parseNativeChatSlackImageResult(
+        await callRuntimeResult<unknown>('nativeChat.slackImage', request).catch(() => null)
+      ),
+    openSlack: async (href) => {
+      const target = parseNativeChatSlackHref(href)
+      if (!target) {
+        return false
+      }
+      // The Slack app runs where this browser does, not on the paired host.
+      window.open(buildNativeChatSlackLinks(target).primary, '_blank', 'noopener')
+      return true
+    },
     readSession: async (agent, sessionId, limit, transcriptPath) =>
       parseRuntimeNativeChatReadSessionResult(
         await callRuntimeResult<unknown>('nativeChat.readSession', {

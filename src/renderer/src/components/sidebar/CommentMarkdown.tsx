@@ -10,13 +10,14 @@ import {
   createCompactCommentMarkdownComponents,
   createDocumentCommentMarkdownComponents,
   documentCommentMarkdownComponents,
-  isOrcaWorktreeHref,
+  isChatLinkHref,
   isTrustedCompactImageSrc,
   type CommentMarkdownLinkClickHandler,
   type DocumentCodeBlockRenderer,
-  type WorktreeLinkRenderer
+  type ChatLinkRenderer
 } from './comment-markdown-element-renderers'
 import { remarkNativeChatFileLinks } from './comment-markdown-native-chat-file-links'
+import { NATIVE_CHAT_SLACK_LINK_PROTOCOLS } from '../../../../shared/native-chat-slack-href'
 
 export type { CommentMarkdownLinkClickHandler } from './comment-markdown-element-renderers'
 
@@ -53,10 +54,10 @@ const commentMarkdownUrlTransform: UrlTransform = (value, key, node) => {
   return defaultUrlTransform(value)
 }
 
-// Why: only a surface that draws worktree chips keeps the scheme; everywhere else it is stripped.
-function withWorktreeLinks(transform: UrlTransform): UrlTransform {
+// Why: only a surface that draws chat chips keeps their schemes; everywhere else they are stripped.
+function withChatLinks(transform: UrlTransform): UrlTransform {
   return (value, key, node) =>
-    key === 'href' && node?.tagName === 'a' && isOrcaWorktreeHref(value)
+    key === 'href' && node?.tagName === 'a' && isChatLinkHref(value)
       ? value
       : transform(value, key, node)
 }
@@ -180,9 +181,14 @@ const commentMarkdownSanitizeSchema = {
   },
   protocols: {
     ...defaultSchema.protocols,
-    // Why: native chat opts into file URI and worktree links after sanitize; the
-    // URL transform below still strips them for all other markdown surfaces.
-    href: [...(defaultSchema.protocols?.href ?? []), 'file', 'orca-worktree'],
+    // Why: native chat opts into file URI, worktree and Slack chip links after sanitize;
+    // the URL transform below still strips them for all other markdown surfaces.
+    href: [
+      ...(defaultSchema.protocols?.href ?? []),
+      'file',
+      'orca-worktree',
+      ...NATIVE_CHAT_SLACK_LINK_PROTOCOLS
+    ],
     src: [...(defaultSchema.protocols?.src ?? []), 'data', 'blob']
   }
 }
@@ -200,8 +206,8 @@ type CommentMarkdownProps = React.ComponentPropsWithoutRef<'div'> & {
   linkifyFilePaths?: boolean
   expandImages?: boolean
   renderCodeBlock?: DocumentCodeBlockRenderer
-  /** Document variant only: keeps `orca-worktree:` links and draws them with this. */
-  renderWorktreeLink?: WorktreeLinkRenderer
+  /** Document variant only: keeps `orca-worktree:` and Slack chip links and draws them with this. */
+  renderChatLink?: ChatLinkRenderer
 }
 
 // Why forwardRef + rest props: Radix's HoverCardTrigger asChild merges a ref
@@ -219,7 +225,7 @@ const CommentMarkdown = React.memo(
       linkifyFilePaths = false,
       expandImages = false,
       renderCodeBlock,
-      renderWorktreeLink,
+      renderChatLink,
       ...rest
     },
     ref
@@ -227,27 +233,23 @@ const CommentMarkdown = React.memo(
     const components = React.useMemo(() => {
       if (!onLinkClick) {
         return variant === 'document'
-          ? renderCodeBlock || renderWorktreeLink
-            ? createDocumentCommentMarkdownComponents(
-                undefined,
-                renderCodeBlock,
-                renderWorktreeLink
-              )
+          ? renderCodeBlock || renderChatLink
+            ? createDocumentCommentMarkdownComponents(undefined, renderCodeBlock, renderChatLink)
             : documentCommentMarkdownComponents
           : expandImages
             ? createCompactCommentMarkdownComponents(undefined, true)
             : compactCommentMarkdownComponents
       }
       return variant === 'document'
-        ? createDocumentCommentMarkdownComponents(onLinkClick, renderCodeBlock, renderWorktreeLink)
+        ? createDocumentCommentMarkdownComponents(onLinkClick, renderCodeBlock, renderChatLink)
         : createCompactCommentMarkdownComponents(onLinkClick, expandImages)
-    }, [expandImages, renderCodeBlock, renderWorktreeLink, variant, onLinkClick])
+    }, [expandImages, renderCodeBlock, renderChatLink, variant, onLinkClick])
     const urlTransform = React.useMemo(() => {
       const base = allowFileUriLinks
         ? commentMarkdownFileUriUrlTransform
         : commentMarkdownUrlTransform
-      return renderWorktreeLink && variant === 'document' ? withWorktreeLinks(base) : base
-    }, [allowFileUriLinks, renderWorktreeLink, variant])
+      return renderChatLink && variant === 'document' ? withChatLinks(base) : base
+    }, [allowFileUriLinks, renderChatLink, variant])
     const activeRemarkPlugins = React.useMemo(() => {
       const plugins = linkifyFilePaths
         ? [...remarkPlugins, remarkNativeChatFileLinks]

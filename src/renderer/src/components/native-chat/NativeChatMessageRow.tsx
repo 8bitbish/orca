@@ -20,7 +20,7 @@ import { NativeChatCopyButton } from './NativeChatCopyButton'
 import { NativeChatMessageTimestamp } from './NativeChatMessageTimestamp'
 import { isNativeChatThoughtMarker } from '../../../../shared/native-chat-thought-marker'
 import { NativeChatThoughtRow } from './NativeChatThoughtRow'
-import { renderNativeChatWorktreeLink } from './NativeChatProjectChip'
+import { renderNativeChatLink } from './NativeChatProjectChip'
 import {
   NativeChatFencePreviewContext,
   nativeChatFences,
@@ -318,9 +318,7 @@ export const MessageRow = memo(function MessageRow({
             className="text-sm"
             renderCodeBlock={NativeChatCodeBlock}
             // Project chips belong to replies; reasoning and system asides keep plain links.
-            renderWorktreeLink={
-              message.role === 'assistant' ? renderNativeChatWorktreeLink : undefined
-            }
+            renderChatLink={message.role === 'assistant' ? renderNativeChatLink : undefined}
             onLinkClick={onLinkClick}
             allowFileUriLinks={allowFileUriLinks}
             linkifyFilePaths={onLinkClick !== undefined}

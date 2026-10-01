@@ -3,6 +3,10 @@ import type {
   NativeChatMessage,
   NativeChatTurnLifecycle
 } from '../../shared/native-chat-types'
+import type {
+  NativeChatSlackImageRequest,
+  NativeChatSlackImageResult
+} from '../../shared/native-chat-slack-image-contract'
 
 // notFound marks a not-yet-on-disk miss (retry-worthy) vs a real read/parse error (#8401).
 export type NativeChatReadSessionResult =
@@ -71,4 +75,9 @@ export type NativeChatApi = {
     args: NativeChatSubscribeArgs,
     onFrame: (frame: NativeChatSubscriptionFrame) => void
   ) => () => void
+  /** A Slack card image from the slack-mcp cache on the chat's host; null when refused,
+   *  missing, or the host predates the call. */
+  slackImage: (request: NativeChatSlackImageRequest) => Promise<NativeChatSlackImageResult | null>
+  /** Opens a Slack chip href (`slack-user:` etc.) in Slack; false when nothing opened. */
+  openSlack: (href: string) => Promise<boolean>
 }

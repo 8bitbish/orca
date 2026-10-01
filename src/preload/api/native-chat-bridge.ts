@@ -6,6 +6,7 @@ import type {
   PreloadApi
 } from '../api-types'
 import type { AgentType } from '../../shared/native-chat-types'
+import type { NativeChatSlackImageRequest } from '../../shared/native-chat-slack-image-contract'
 
 export const nativeChatApi = {
   readSession: (
@@ -37,5 +38,8 @@ export const nativeChatApi = {
       ipcRenderer.removeListener('nativeChat:appended', listener)
       ipcRenderer.send('nativeChat:unsubscribe', { subscriptionId: args.subscriptionId })
     }
-  }
+  },
+  slackImage: (request: NativeChatSlackImageRequest) =>
+    ipcRenderer.invoke('nativeChat:slackImage', request),
+  openSlack: (href: string): Promise<boolean> => ipcRenderer.invoke('nativeChat:openSlack', href)
 } satisfies PreloadApi['nativeChat']

@@ -31,6 +31,7 @@ import { LINEAR_AGENT_ACCESS_METHODS } from './linear-agent-access'
 import { JIRA_METHODS } from './jira'
 import { SSH_METHODS } from './ssh'
 import { SPEECH_METHODS } from './speech'
+import { NATIVE_CHAT_SLACK_METHODS } from './native-chat-slack'
 import { CLIENT_UI_METHODS } from './client-ui'
 import { CLIENT_EVENT_METHODS } from './client-events'
 import { WORKSPACE_PORT_METHODS } from './workspace-ports'
@@ -81,6 +82,7 @@ export const ALL_RPC_METHODS = [
   ...COMPUTER_METHODS,
   ...SESSION_TAB_METHODS,
   ...NATIVE_CHAT_METHODS,
+  ...NATIVE_CHAT_SLACK_METHODS,
   ...FILE_METHODS,
   ...GIT_METHODS,
   ...GITHUB_METHODS,

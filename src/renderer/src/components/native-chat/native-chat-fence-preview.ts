@@ -7,6 +7,10 @@
 
 import { createContext } from 'react'
 import { NATIVE_CHAT_PROJECT_CARD_FENCE } from '../../../../shared/native-chat-project-card-payload'
+import {
+  NATIVE_CHAT_SLACK_DRAFT_FENCE,
+  NATIVE_CHAT_SLACK_MESSAGE_FENCE
+} from '../../../../shared/native-chat-slack-card-payload'
 import { nativeChatShellRunBlock } from '../../../../shared/native-chat-shell-run-block'
 
 export { NATIVE_CHAT_PROJECT_CARD_FENCE }
@@ -17,11 +21,13 @@ export type NativeChatFenceRoute =
   | 'svg'
   | 'widget'
   | 'project-card'
+  | 'slack-message'
+  | 'slack-draft'
   | 'shell-run'
   | 'code'
 
 export type NativeChatFencePreviewScope = {
-  /** Live HTML/SVG/widget previews and project cards; on for assistant replies only. */
+  /** Live HTML/SVG/widget previews, project and Slack cards; on for assistant replies only. */
   markupPreviews: boolean
   /** Body of the message's trailing unclosed fence, or null when every fence closed. */
   openFenceBody: string | null
@@ -102,7 +108,9 @@ export function nativeChatFenceRoute({
     normalized !== 'html' &&
     normalized !== 'svg' &&
     normalized !== 'widget' &&
-    normalized !== NATIVE_CHAT_PROJECT_CARD_FENCE
+    normalized !== NATIVE_CHAT_PROJECT_CARD_FENCE &&
+    normalized !== NATIVE_CHAT_SLACK_MESSAGE_FENCE &&
+    normalized !== NATIVE_CHAT_SLACK_DRAFT_FENCE
   ) {
     return scope.shellRuns === true && nativeChatShellRunBlock(language, code) !== null
       ? 'shell-run'

@@ -7,7 +7,7 @@ import type { Repo } from '../../../../shared/repo-types'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
 import { useAppStore } from '@/store'
 import { makeWorktree } from '../../store/slices/store-test-helpers'
-import { renderNativeChatWorktreeLink } from './NativeChatProjectChip'
+import { renderNativeChatLink } from './NativeChatProjectChip'
 import type { NativeChatProjectLiveStatus } from './use-native-chat-project-live-status'
 
 const mocks = vi.hoisted(() => {
@@ -41,11 +41,7 @@ const personal = makeWorktree({
 
 function renderReply(content: string) {
   return render(
-    <CommentMarkdown
-      content={content}
-      variant="document"
-      renderWorktreeLink={renderNativeChatWorktreeLink}
-    />
+    <CommentMarkdown content={content} variant="document" renderChatLink={renderNativeChatLink} />
   )
 }
 
@@ -96,6 +92,13 @@ describe('NativeChatProjectChip', () => {
     renderReply('See [the old one](orca-worktree:orca-personal/gone).')
     expect(screen.queryByRole('button')).toBeNull()
     expect(screen.getByText('the old one')).toBeInTheDocument()
+    expect(document.querySelector('a')).toBeNull()
+  })
+
+  it('reads a Slack chip link as plain text until Slack chips are drawn', () => {
+    renderReply('Ask [Sam](slack-user:TFAKE0001/UFAKE0002) first.')
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getByText('Sam')).toHaveAttribute('data-native-chat-slack-chip', 'plain')
     expect(document.querySelector('a')).toBeNull()
   })
 })

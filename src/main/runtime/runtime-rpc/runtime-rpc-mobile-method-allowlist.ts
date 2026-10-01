@@ -235,6 +235,7 @@ export const MOBILE_RPC_METHOD_ALLOWLIST = new Set([
   'agentSession.hold',
   'agentSession.release',
   'nativeChat.readSession',
+  'nativeChat.slackImage',
   'nativeChat.subscribe',
   'nativeChat.unsubscribe',
   'settings.get',

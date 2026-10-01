@@ -1,11 +1,12 @@
-// Which of a project card's actions was taken. Transcripts belong to the agent CLI
-// and Orca only reads them, so the choice is not stored in the message: a later user
-// message equal to an action's reply is that action, chosen. Free-text replies
-// cannot be matched that way, so each platform keeps their text in a small local record.
+// Which of a card's actions was taken; project and Slack cards share it. Transcripts
+// belong to the agent CLI and Orca only reads them, so the choice is not stored in
+// the message: a later user message equal to an action's reply is that action,
+// chosen. Free-text replies cannot be matched that way, so each platform keeps
+// their text in a small local record.
 
 import type { NativeChatMessage } from './native-chat-types'
 import { deriveNativeChatRowContent } from './native-chat-row-content'
-import type { NativeChatProjectCardAction } from './native-chat-project-card-payload'
+import type { NativeChatCardAction } from './native-chat-card-actions'
 
 export type NativeChatProjectCardChoice = { actionIndex: number; text: string }
 
@@ -28,7 +29,7 @@ function normalizedReply(text: string): string {
 }
 
 export function deriveNativeChatProjectCardChoice(args: {
-  actions: readonly NativeChatProjectCardAction[]
+  actions: readonly NativeChatCardAction[]
   messages: readonly NativeChatMessage[]
   messageId: string | undefined
   recordedInput: string | null

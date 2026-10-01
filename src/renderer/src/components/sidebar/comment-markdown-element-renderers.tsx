@@ -1,6 +1,7 @@
 import React from 'react'
 import type { Components } from 'react-markdown'
 import { NATIVE_CHAT_FILE_HREF_PREFIX } from '../../../../shared/native-chat-href-routing'
+import { isNativeChatSlackHref } from '../../../../shared/native-chat-slack-href'
 import { isMermaidFence, isMermaidPre, renderMermaidFence } from './comment-mermaid-fence'
 import {
   GitHubUserAttachmentImage,
@@ -22,8 +23,9 @@ export type DocumentCodeBlockRenderer = (props: {
   language?: string
 }) => React.JSX.Element
 
-/** Draws an `orca-worktree:` link; only native chat passes one, so only it keeps the scheme. */
-export type WorktreeLinkRenderer = (props: {
+/** Draws an `orca-worktree:` or Slack chip link; only native chat passes one, so only it keeps
+ *  those schemes. */
+export type ChatLinkRenderer = (props: {
   href: string
   children?: React.ReactNode
 }) => React.JSX.Element
@@ -32,6 +34,11 @@ const ORCA_WORKTREE_HREF = /^\s*orca-worktree:/i
 
 export function isOrcaWorktreeHref(href: string | undefined): href is string {
   return href !== undefined && ORCA_WORKTREE_HREF.test(href)
+}
+
+/** The chat-only schemes: project chips and Slack chips. */
+export function isChatLinkHref(href: string | undefined): href is string {
+  return isOrcaWorktreeHref(href) || isNativeChatSlackHref(href)
 }
 
 function extractCodeFenceLanguage(children: React.ReactNode): string | undefined {
@@ -252,13 +259,13 @@ export function createCompactCommentMarkdownComponents(
 export function createDocumentCommentMarkdownComponents(
   onLinkClick?: CommentMarkdownLinkClickHandler,
   renderCodeBlock?: DocumentCodeBlockRenderer,
-  renderWorktreeLink?: WorktreeLinkRenderer
+  renderChatLink?: ChatLinkRenderer
 ): Components {
   return {
     p: ({ children }) => <p className="my-2 first:mt-0 last:mb-0">{children}</p>,
     a: ({ href, children }) =>
-      renderWorktreeLink && isOrcaWorktreeHref(href) ? (
-        renderWorktreeLink({ href, children })
+      renderChatLink && isChatLinkHref(href) ? (
+        renderChatLink({ href, children })
       ) : isGitHubUserAttachmentVideoLink(href, children) ? (
         // Why: GitHub's API returns uploaded videos as bare attachment links;
         // GitHub.com upgrades them to media embeds in its own renderer.
