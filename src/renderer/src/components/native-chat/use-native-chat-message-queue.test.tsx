@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type {
   TerminalMessageQueueEvent,
   TerminalMessageQueueSnapshot
@@ -11,8 +11,8 @@ type ClientState = {
   emit: ((event: TerminalMessageQueueEvent) => void) | null
   close: (() => void) | null
   subscribeCalls: number
-  submit: ReturnType<typeof vi.fn>
-  stop: ReturnType<typeof vi.fn>
+  submit: Mock<(...args: unknown[]) => unknown>
+  stop: Mock<(...args: unknown[]) => unknown>
 }
 
 const client = vi.hoisted((): ClientState => ({
