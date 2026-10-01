@@ -14,6 +14,11 @@ Why it is built this way: [DECISIONS.md](DECISIONS.md).
    merge → type check + tests → signed `pnpm build:mac` → push `personal` → GitHub release.
    Conflicts and failures stop the script with a code the agent acts on.
 3. A notification says the build is ready; Orca's update prompt installs it.
+4. Just before its report, the session starts `close-session-later.sh`. When the turn ends and
+   Orca has saved the report to the run history, the script closes the session's terminal, so
+   no idle `claude` is left behind. A failed or blocked run stays open. Orca closes a finished
+   run's tab by itself only if nobody opened or typed in it during the run; this covers the
+   runs you watched.
 
 Logs: `~/Library/Logs/orca-personal-sync/`. Run history: Orca → Automations.
 
