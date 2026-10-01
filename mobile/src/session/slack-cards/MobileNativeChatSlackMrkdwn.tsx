@@ -95,28 +95,30 @@ function renderNode(node: SlackMrkdwnNode, key: string, workspace: Workspace): R
   }
 }
 
-type Segment = { kind: 'inline'; nodes: SlackMrkdwnNode[] } | { kind: 'pre'; text: string }
+// `key` is the segment's position in a parse that never reorders.
+type Segment = { key: string } & (
+  | { kind: 'inline'; nodes: SlackMrkdwnNode[] }
+  | { kind: 'pre'; text: string }
+)
 
 function segments(nodes: readonly SlackMrkdwnNode[]): Segment[] {
   const out: Segment[] = []
   for (const node of nodes) {
     if (node.type === 'pre') {
-      out.push({ kind: 'pre', text: node.text })
+      out.push({ key: `s${out.length}`, kind: 'pre', text: node.text })
       continue
     }
     const last = out.at(-1)
     if (last?.kind === 'inline') {
       last.nodes.push(node)
     } else {
-      out.push({ kind: 'inline', nodes: [node] })
+      out.push({ key: `s${out.length}`, kind: 'inline', nodes: [node] })
     }
   }
   // A code block's own line breaks are not text; drop the ones beside it.
   return out
     .map((segment) =>
-      segment.kind === 'pre'
-        ? segment
-        : { kind: 'inline' as const, nodes: trimBreaks(segment.nodes) }
+      segment.kind === 'pre' ? segment : { ...segment, nodes: trimBreaks(segment.nodes) }
     )
     .filter((segment) => segment.kind === 'pre' || segment.nodes.length > 0)
 }
@@ -156,9 +158,9 @@ export function MobileNativeChatSlackMrkdwn({
   const shown = clamped ? parts.slice(0, 1) : parts
   return (
     <View style={styles.root}>
-      {shown.map((segment, index) =>
+      {shown.map((segment) =>
         segment.kind === 'pre' ? (
-          <View key={index} style={styles.pre}>
+          <View key={segment.key} style={styles.pre}>
             <Text
               selectable
               style={styles.code}
@@ -170,12 +172,12 @@ export function MobileNativeChatSlackMrkdwn({
         ) : (
           // Not selectable: Android's selectable text swallows the chips' taps.
           <Text
-            key={index}
+            key={segment.key}
             style={styles.prose}
             numberOfLines={clamped ? COLLAPSED_LINES : undefined}
           >
             {segment.nodes.map((node, nodeIndex) =>
-              renderNode(node, `${index}.${nodeIndex}`, workspace)
+              renderNode(node, `${segment.key}.${nodeIndex}`, workspace)
             )}
           </Text>
         )

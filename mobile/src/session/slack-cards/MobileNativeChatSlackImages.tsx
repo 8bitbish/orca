@@ -120,6 +120,18 @@ function FullSize({
   )
 }
 
+/** Keys from the path, counted so a card naming one file twice still keys uniquely. */
+function keyedImages(
+  images: readonly NativeChatSlackImage[]
+): { key: string; image: NativeChatSlackImage; index: number }[] {
+  const seen = new Map<string, number>()
+  return images.map((image, index) => {
+    const count = seen.get(image.path) ?? 0
+    seen.set(image.path, count + 1)
+    return { key: `${image.path}#${count}`, image, index }
+  })
+}
+
 /** A Slack card's images as thumbnails from the chat's host; a tap opens one full size. */
 export function MobileNativeChatSlackImages({
   images
@@ -135,12 +147,8 @@ export function MobileNativeChatSlackImages({
   const opened = open === null ? undefined : images[open.index]
   return (
     <View style={styles.row}>
-      {images.map((image, index) => (
-        <Thumbnail
-          key={`${index}:${image.path}`}
-          image={image}
-          onOpen={(thumbnail) => setOpen({ index, thumbnail })}
-        />
+      {keyedImages(images).map(({ key, image, index }) => (
+        <Thumbnail key={key} image={image} onOpen={(thumbnail) => setOpen({ index, thumbnail })} />
       ))}
       {open && opened ? (
         <FullSize image={opened} thumbnail={open.thumbnail} onClose={() => setOpen(null)} />
