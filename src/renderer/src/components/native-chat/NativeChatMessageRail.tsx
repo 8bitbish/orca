@@ -188,18 +188,20 @@ export const NativeChatMessageRail = memo(function NativeChatMessageRail({
           }}
           // The rail overlays the transcript without being inside it, so a wheel
           // here would otherwise land on nothing and freeze the scroll. Deltas
-          // arrive in lines or pages on some platforms, not only in pixels.
+          // arrive in lines or pages on some platforms, not only in pixels. The
+          // scroller's own `zoom` puts its offsets in unzoomed px; a page already is.
           onWheel={(event) => {
             const element = scrollRef.current
             if (!element) {
               return
             }
+            const zoom = Number.parseFloat(getComputedStyle(element).zoom) || 1
             const scale =
               event.deltaMode === WHEEL_DELTA_LINE
-                ? WHEEL_LINE_PX
+                ? WHEEL_LINE_PX / zoom
                 : event.deltaMode === WHEEL_DELTA_PAGE
                   ? element.clientHeight
-                  : 1
+                  : 1 / zoom
             element.scrollTop += event.deltaY * scale
             onReaderScroll?.()
           }}
