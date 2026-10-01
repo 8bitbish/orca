@@ -78,7 +78,7 @@ describe('MobileMarkdown markup preview routing', () => {
           },
           createElement(MobileMarkdown, {
             content:
-              'See [orca](orca-worktree:orca/cards) and [docs](https://x.dev).\n\n```project-card\n{"worktree":"orca"}\n```\n\n```ts\nopen',
+              'See **[orca](orca-worktree:orca/cards):** and [docs](https://x.dev).\n\n```project-card\n{"worktree":"orca"}\n```\n\n```ts\nopen',
             markupPreviews: true
           })
         )
@@ -89,5 +89,21 @@ describe('MobileMarkdown markup preview routing', () => {
     const types = renderer!.root.findAll(() => true).map((node) => String(node.type))
     expect(types).toContain('Card')
     expect(types).toContain('Chip')
+  })
+
+  it('turns selection off for every run when asked', () => {
+    act(() => {
+      renderer = create(
+        createElement(MobileMarkdown, {
+          content: '# Head\n\nBody **bold**\n\n```ts\ncode\n```\n\n- item',
+          rangeSelectable: true,
+          selectable: false
+        })
+      )
+    })
+    const selectable = renderer!.root.findAll(
+      (node) => String(node.type) === 'Text' && node.props.selectable === true
+    )
+    expect(selectable).toHaveLength(0)
   })
 })

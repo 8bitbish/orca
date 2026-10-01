@@ -45,35 +45,38 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
           </Text>
         </ScrollView>
       ) : (
-        <WebView
-          style={[styles.webview, { height: height || 120 }]}
-          originWhitelist={['*']}
-          source={{ html }}
-          javaScriptEnabled
-          scrollEnabled={false}
-          // Diagram is self-contained; any navigation attempt means something is
-          // wrong, so treat it as a render failure and fall back to source.
-          onShouldStartLoadWithRequest={(request) => {
-            if (request.url === 'about:blank' || request.url.startsWith('data:')) {
-              return true
-            }
-            setFailed(true)
-            return false
-          }}
-          onError={() => setFailed(true)}
-          onHttpError={() => setFailed(true)}
-          onMessage={(event) => {
-            const data = event.nativeEvent.data
-            if (data === 'error') {
+        // The diagram never scrolls itself, so a drag starting on it scrolls the page.
+        <View pointerEvents="none">
+          <WebView
+            style={[styles.webview, { height: height || 120 }]}
+            originWhitelist={['*']}
+            source={{ html }}
+            javaScriptEnabled
+            scrollEnabled={false}
+            // Diagram is self-contained; any navigation attempt means something is
+            // wrong, so treat it as a render failure and fall back to source.
+            onShouldStartLoadWithRequest={(request) => {
+              if (request.url === 'about:blank' || request.url.startsWith('data:')) {
+                return true
+              }
               setFailed(true)
-              return
-            }
-            const parsed = Number(data)
-            if (Number.isFinite(parsed) && parsed > 0) {
-              setHeight(Math.ceil(parsed))
-            }
-          }}
-        />
+              return false
+            }}
+            onError={() => setFailed(true)}
+            onHttpError={() => setFailed(true)}
+            onMessage={(event) => {
+              const data = event.nativeEvent.data
+              if (data === 'error') {
+                setFailed(true)
+                return
+              }
+              const parsed = Number(data)
+              if (Number.isFinite(parsed) && parsed > 0) {
+                setHeight(Math.ceil(parsed))
+              }
+            }}
+          />
+        </View>
       )}
     </View>
   )

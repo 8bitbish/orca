@@ -5,7 +5,10 @@ import { useRouteHandoff } from '../../navigation/route-handoff'
 import type { RpcClient } from '../../transport/rpc-client'
 import type { ConnectionState } from '../../transport/types'
 import { MOBILE_NATIVE_CHAT_MARKDOWN_RENDERERS } from './mobile-native-chat-markdown-renderers'
-import { resolveMobileNativeChatProject } from './mobile-native-chat-project'
+import {
+  pendingMobileNativeChatProject,
+  resolveMobileNativeChatProject
+} from './mobile-native-chat-project'
 import {
   mobileNativeChatMentionsProject,
   MobileNativeChatProjectsContext,
@@ -50,8 +53,14 @@ export function MobileNativeChatProjectsProvider({
 
   const value = useMemo<MobileNativeChatProjects>(
     () => ({
-      resolve: (target) => resolveMobileNativeChatProject(target, catalog, now),
+      // Until the host lists its workspaces, a target is pending rather than unknown.
+      resolve: (target) =>
+        resolveMobileNativeChatProject(target, catalog, now) ??
+        (catalog.loaded ? null : pendingMobileNativeChatProject(target)),
       open: (project) => {
+        if (!project.worktreeId) {
+          return
+        }
         const name = project.workspace ?? project.name
         router.push(
           `/h/${encodeURIComponent(hostId)}/session/${encodeURIComponent(project.worktreeId)}?name=${encodeURIComponent(name)}`

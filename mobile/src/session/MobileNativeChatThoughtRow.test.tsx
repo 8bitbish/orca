@@ -6,6 +6,10 @@ import {
   mobileNativeChatThoughtLabel
 } from './MobileNativeChatThoughtRow'
 
+vi.mock('./MobileNativeChatProseCopy', () => ({
+  MobileNativeChatProseCopy: ({ children }: { children: unknown }) => children,
+  NATIVE_CHAT_TEXT_SELECTABLE: true
+}))
 vi.mock('react-native', () => ({
   Pressable: 'Pressable',
   StyleSheet: { create: (styles: unknown) => styles },

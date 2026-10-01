@@ -60,32 +60,35 @@ export const MobileMarkupPreview = memo(function MobileMarkupPreview({
           </Text>
         </ScrollView>
       ) : (
-        <WebView
-          style={[styles.webview, { height }]}
-          originWhitelist={['about:blank']}
-          source={{ html }}
-          scrollEnabled={height >= NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX}
-          nestedScrollEnabled
-          onShouldStartLoadWithRequest={(request) =>
-            request.url === 'about:blank' || request.url.startsWith('data:')
-          }
-          setSupportMultipleWindows={false}
-          javaScriptCanOpenWindowsAutomatically={false}
-          allowFileAccess={false}
-          allowFileAccessFromFileURLs={false}
-          allowUniversalAccessFromFileURLs={false}
-          mixedContentMode="never"
-          incognito
-          cacheEnabled={false}
-          allowsLinkPreview={false}
-          mediaPlaybackRequiresUserAction
-          onMessage={(event) => {
-            const next = previewHeight(event)
-            if (next !== null) {
-              setHeight(next)
+        // A drag starting on a static preview scrolls the chat; only one at its height cap scrolls itself.
+        <View pointerEvents={height >= NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX ? 'auto' : 'none'}>
+          <WebView
+            style={[styles.webview, { height }]}
+            originWhitelist={['about:blank']}
+            source={{ html }}
+            scrollEnabled={height >= NATIVE_CHAT_MARKUP_MAX_HEIGHT_PX}
+            nestedScrollEnabled
+            onShouldStartLoadWithRequest={(request) =>
+              request.url === 'about:blank' || request.url.startsWith('data:')
             }
-          }}
-        />
+            setSupportMultipleWindows={false}
+            javaScriptCanOpenWindowsAutomatically={false}
+            allowFileAccess={false}
+            allowFileAccessFromFileURLs={false}
+            allowUniversalAccessFromFileURLs={false}
+            mixedContentMode="never"
+            incognito
+            cacheEnabled={false}
+            allowsLinkPreview={false}
+            mediaPlaybackRequiresUserAction
+            onMessage={(event) => {
+              const next = previewHeight(event)
+              if (next !== null) {
+                setHeight(next)
+              }
+            }}
+          />
+        </View>
       )}
     </View>
   )

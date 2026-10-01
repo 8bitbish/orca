@@ -106,17 +106,19 @@ export function MobileNativeChatProjectCard({
         messageId={messageId}
         chat={projects}
       />
-      <View style={styles.footer}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${title}`}
-          onPress={() => projects.open(project)}
-          style={({ pressed }) => [styles.openButton, pressed ? styles.pressed : null]}
-        >
-          <ArrowUpRight size={14} color={colors.textPrimary} />
-          <Text style={styles.openText}>Open</Text>
-        </Pressable>
-      </View>
+      {project.worktreeId ? (
+        <View style={styles.footer}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${title}`}
+            onPress={() => projects.open(project)}
+            style={({ pressed }) => [styles.openButton, pressed ? styles.pressed : null]}
+          >
+            <ArrowUpRight size={14} color={colors.textPrimary} />
+            <Text style={styles.openText}>Open</Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   )
 }

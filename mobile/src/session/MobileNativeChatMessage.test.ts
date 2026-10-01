@@ -4,6 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MAX_TOOL_DETAIL_LENGTH } from '../../../src/shared/native-chat-tool-summary'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 
+vi.mock('./MobileNativeChatProseCopy', () => ({
+  MobileNativeChatProseCopy: ({ children }: { children: unknown }) => children,
+  NATIVE_CHAT_TEXT_SELECTABLE: true
+}))
 vi.mock('react-native', async () => {
   const React = await import('react')
   const Text = ({ children, ...props }: { children?: unknown }): unknown =>

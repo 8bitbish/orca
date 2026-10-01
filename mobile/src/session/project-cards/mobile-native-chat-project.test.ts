@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Worktree } from '../../worktree/workspace-list-types'
 import {
+  pendingMobileNativeChatProject,
   resolveMobileNativeChatProject,
   type MobileNativeChatProjectCatalog
 } from './mobile-native-chat-project'
@@ -27,7 +28,7 @@ function row(overrides: Partial<Worktree>): Worktree {
 }
 
 function catalog(worktrees: Worktree[], hostReachable = true): MobileNativeChatProjectCatalog {
-  return { repos: [{ id: 'r1', displayName: 'orca' }], worktrees, hostReachable }
+  return { repos: [{ id: 'r1', displayName: 'orca' }], worktrees, hostReachable, loaded: true }
 }
 
 describe('resolveMobileNativeChatProject', () => {
@@ -100,5 +101,14 @@ describe('resolveMobileNativeChatProject', () => {
     expect(
       resolveMobileNativeChatProject('orca', catalog([row({ status: 'done' })], false), NOW)
     ).toMatchObject({ status: 'unverifiable', liveLine: { time: null } })
+  })
+
+  it('names a not-yet-listed target as the reply wrote it, with nothing to open', () => {
+    expect(pendingMobileNativeChatProject('orca-personal/personal')).toMatchObject({
+      worktreeId: '',
+      name: 'orca-personal',
+      workspace: 'personal',
+      status: 'unverifiable'
+    })
   })
 })

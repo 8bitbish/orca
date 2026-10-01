@@ -13,6 +13,7 @@ import {
   MobileNativeChatThoughtRow,
   type MobileNativeChatThought
 } from './MobileNativeChatThoughtRow'
+import { MobileNativeChatProseCopy, NATIVE_CHAT_TEXT_SELECTABLE } from './MobileNativeChatProseCopy'
 import { MobileNativeChatTurnStatus } from './MobileNativeChatTurnStatus'
 import { ToolRun } from './MobileNativeChatToolRun'
 import type { NativeChatTurnStatus } from './use-mobile-native-chat-turn-status'
@@ -35,7 +36,10 @@ function Prose({
     // markdown renderer's light-on-dark palette.
     if (invert) {
       return (
-        <Text selectable style={[styles.userText, { fontSize: TEXT_SIZE * fontScale }]}>
+        <Text
+          selectable={NATIVE_CHAT_TEXT_SELECTABLE}
+          style={[styles.userText, { fontSize: TEXT_SIZE * fontScale }]}
+        >
           {block.text}
         </Text>
       )
@@ -44,6 +48,7 @@ function Prose({
       <MobileMarkdown
         content={block.text}
         rangeSelectable
+        selectable={NATIVE_CHAT_TEXT_SELECTABLE}
         textScale={1.25 * fontScale}
         onOpenFile={onOpenFile}
         markupPreviews
@@ -188,17 +193,21 @@ function MobileNativeChatMessageImpl({
               onOpenFile={onOpenFile}
             />
           ) : (
-            <MobileNativeChatMessageIdContext.Provider value={message.id}>
-              {prose.map((block, index) => (
-                <Prose
-                  key={index}
-                  block={block}
-                  invert={isUser}
-                  fontScale={fontScale}
-                  onOpenFile={onOpenFile}
-                />
-              ))}
-            </MobileNativeChatMessageIdContext.Provider>
+            <MobileNativeChatProseCopy
+              text={prose.map((block) => (isTextBlock(block) ? block.text : '')).join('\n\n')}
+            >
+              <MobileNativeChatMessageIdContext.Provider value={message.id}>
+                {prose.map((block, index) => (
+                  <Prose
+                    key={index}
+                    block={block}
+                    invert={isUser}
+                    fontScale={fontScale}
+                    onOpenFile={onOpenFile}
+                  />
+                ))}
+              </MobileNativeChatMessageIdContext.Provider>
+            </MobileNativeChatProseCopy>
           )}
           {showToolRun ? (
             <ToolRun

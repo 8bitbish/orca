@@ -32,6 +32,8 @@ export type MobileNativeChatProjectCatalog = {
   worktrees: readonly Worktree[]
   /** False while the host cannot be asked; the catalog is then the last one it gave. */
   hostReachable: boolean
+  /** False until the host has listed its workspaces; until then no target can be judged unknown. */
+  loaded: boolean
 }
 
 export type MobileNativeChatProjectStatus =
@@ -169,5 +171,21 @@ export function resolveMobileNativeChatProject(
     repo: resolved.repo,
     status,
     liveLine: liveLine(top, status, now)
+  }
+}
+
+/** A card or chip whose workspace cannot be looked up yet: named as the reply names it,
+ *  with nothing to open and a status nobody has verified. */
+export function pendingMobileNativeChatProject(target: string): MobileNativeChatProject {
+  const slash = target.indexOf('/')
+  const name = (slash === -1 ? target : target.slice(0, slash)).trim() || target
+  const workspace = slash === -1 ? null : target.slice(slash + 1).trim() || null
+  return {
+    worktreeId: '',
+    name,
+    workspace,
+    repo: { id: '', displayName: name },
+    status: 'unverifiable',
+    liveLine: { text: "Waiting for the desktop's workspace list", time: null }
   }
 }
