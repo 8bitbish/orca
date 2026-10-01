@@ -273,6 +273,30 @@ describe('message rail interaction', () => {
     expect(element.scrollTop).toBe(expected)
   })
 
+  it.each([
+    [0, 8],
+    [1, 128],
+    [2, 4000]
+  ])("forwards wheel delta mode %i in the zoomed transcript's own px", (deltaMode, expected) => {
+    const element = document.createElement('div')
+    element.style.zoom = '1.25'
+    document.body.append(element)
+    Object.defineProperty(element, 'clientHeight', { value: 400 })
+    render(
+      <NativeChatMessageRail
+        rail={{ items, ticks: items, activeId: null, visible: true }}
+        scrollRef={{ current: element }}
+        onSelect={vi.fn()}
+      />
+    )
+    fireEvent.wheel(screen.getByRole('button', { name: 'Your messages' }), {
+      deltaY: 10,
+      deltaMode
+    })
+    expect(element.scrollTop).toBe(expected)
+    element.remove()
+  })
+
   // happy-dom has no layout, so these pin which row the panel scrolls to, not
   // the resulting offset. The offset itself only exists in a real browser.
   describe('opening position', () => {

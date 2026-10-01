@@ -414,6 +414,22 @@ export function NativeChatMessageList({
                 ) : null}
               </div>
             </div>
+            {showJump ? (
+              // Inside the scroller, so a wheel over the button scrolls the transcript
+              // natively and reaches the reader-scroll input above; zero height adds
+              // no scroll range.
+              <div className="sticky bottom-0 z-10 h-0">
+                <button
+                  type="button"
+                  onClick={jumpToLatest}
+                  aria-label={translate('components.native-chat.jumpToLatest', 'Jump to latest')}
+                  className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <ArrowDown className="size-3.5" />
+                  <span>{translate('components.native-chat.jumpToLatest', 'Jump to latest')}</span>
+                </button>
+              </div>
+            ) : null}
           </div>
           <NativeChatMessageRail
             rail={rail}
@@ -422,17 +438,6 @@ export function NativeChatMessageList({
             onReaderScroll={beginNavigation}
             pendingId={railHistoryJump.pendingId}
           />
-          {showJump ? (
-            <button
-              type="button"
-              onClick={jumpToLatest}
-              aria-label={translate('components.native-chat.jumpToLatest', 'Jump to latest')}
-              className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <ArrowDown className="size-3.5" />
-              <span>{translate('components.native-chat.jumpToLatest', 'Jump to latest')}</span>
-            </button>
-          ) : null}
         </div>
         {taskListState.list && taskListState.list.tasks.length > 0 ? (
           <div className="shrink-0 px-3 pb-2 sm:px-4">
