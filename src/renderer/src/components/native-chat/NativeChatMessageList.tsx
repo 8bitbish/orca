@@ -43,11 +43,8 @@ import { nativeChatSessionThoughtSeconds } from './native-chat-thought-duration'
 import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
 import { isStructuredAgentSessionThinking } from '../../../../shared/structured-agent-session-live-turn'
 import { nativeChatSubagentLabels } from '../../../../shared/native-chat-subagent-attribution'
-import {
-  selectNativeChatActiveTurnKey,
-  type NativeChatSettledTurns
-} from '../../../../shared/native-chat-turn-status'
-import { nativeChatRowTurnKeys } from '../../../../shared/native-chat-turn-grouping'
+import type { NativeChatSettledTurns } from '../../../../shared/native-chat-turn-status'
+import { useNativeChatRowTurns } from './use-native-chat-row-turns'
 import {
   nativeChatTurnDiffs,
   type NativeChatDiffReveal,
@@ -164,12 +161,12 @@ export function NativeChatMessageList({
   const subagentLabels = useMemo(() => nativeChatSubagentLabels(messages), [messages])
   const taskListPredecessors = useMemo(() => nativeChatTaskListPredecessors(messages), [messages])
   const taskListState = useMemo(() => nativeChatTaskListState(messages), [messages])
-  // Resolve each row's owning turn once. Prefix slice/findLast in the render
-  // loop becomes quadratic for long transcripts.
-  const turnKeys = useMemo(
-    () => nativeChatRowTurnKeys(messages, turnKeysByItemId),
-    [messages, turnKeysByItemId]
-  )
+  const { turnKeys, activeTurnKey } = useNativeChatRowTurns({
+    sessionMessages: session.messages,
+    messages,
+    turnKeysByItemId,
+    activeTurnOpenedBy
+  })
   const turnDiffs = useMemo(
     () =>
       journalItems
@@ -183,9 +180,9 @@ export function NativeChatMessageList({
     () => (journalItems ? isStructuredAgentSessionThinking(journalItems) : false),
     [journalItems]
   )
-  const activeTurnKey = selectNativeChatActiveTurnKey(messages, activeTurnOpenedBy)
   const turnStatuses = useNativeChatTurnStatus({
     messages,
+    turnKeys,
     activeTurnKey,
     isWorking,
     workingStartedAt,

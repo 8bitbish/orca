@@ -69,6 +69,31 @@ export function isKnownHarnessInjectedUserTurnText(text: string): boolean {
   return HARNESS_INJECTED_TURN_PREFIXES.some((prefix) => normalized.startsWith(prefix))
 }
 
+// Harness deliveries that open a fresh turn the agent answers. Each one is pinned to a real
+// transcript where it landed after the previous turn settled and drew its own reply:
+// background-task notifications, prompt slash commands (`<command-message>` first; local
+// commands lead with `<command-name>` and get no reply), `!` shell commands, and peer-session
+// hand-backs. A `<system-reminder>` lands mid-turn and must never split one, so it is not here.
+const HARNESS_TURN_OPENER_TAG_NAMES = new Set([
+  'task-notification',
+  'command-message',
+  'bash-input'
+])
+const HARNESS_TURN_OPENER_PREFIXES = ['another claude session sent a message']
+
+/** True for a harness delivery that opens a turn of its own (a subset of the injected turns). */
+export function isHarnessTurnOpenerText(text: string): boolean {
+  const normalized = normalizedHarnessTurnHead(text)
+  if (!normalized) {
+    return false
+  }
+  const tagName = LEADING_TAG_NAME.exec(normalized)?.[1]
+  if (tagName && HARNESS_TURN_OPENER_TAG_NAMES.has(tagName)) {
+    return true
+  }
+  return HARNESS_TURN_OPENER_PREFIXES.some((prefix) => normalized.startsWith(prefix))
+}
+
 /** True only for the observed post-compaction continuation prompt. */
 export function isCompactContinuationUserTurnText(text: string): boolean {
   return normalizedHarnessTurnHead(text).startsWith(COMPACT_CONTINUATION_PREFIX)

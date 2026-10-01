@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { readNativeChatTranscript } from './transcript-reader'
+import { isNoiseMessage } from '../../shared/native-chat-noise'
 import {
   nativeChatLineDecoderForAgent,
   readNativeChatTranscriptTail,
@@ -122,7 +123,7 @@ describe('readNativeChatTranscript (claude)', () => {
         timestamp: '2026-06-01T10:00:01.000Z',
         message: {
           role: 'user',
-          content: 'Another Claude session sent a message:\n<agent-message from="reviewer">hi'
+          content: "<system-reminder>\nThe session's working directory has changed"
         }
       },
       {
@@ -173,6 +174,53 @@ describe('readNativeChatTranscript (claude)', () => {
       role: 'tool',
       blocks: [{ type: 'tool-result', output: 'mixed result' }]
     })
+  })
+
+  // Shapes from a Claude Code 2.1.281 transcript: a subagent's hand-back is a meta turn the
+  // agent answers, and a meta turn the agent need not answer gets a synthetic filler reply.
+  it('keeps a meta peer hand-back as a turn boundary and drops the synthetic filler reply', async () => {
+    const filePath = await writeFixture('orca-native-chat-claude-peer-', [
+      {
+        type: 'user',
+        uuid: 'u-peer',
+        isMeta: true,
+        origin: { kind: 'peer' },
+        timestamp: '2026-06-01T10:00:00.000Z',
+        message: {
+          role: 'user',
+          content: 'Another Claude session sent a message:\n<agent-message from="a41">report'
+        }
+      },
+      {
+        type: 'assistant',
+        uuid: 'a-filler',
+        timestamp: '2026-06-01T10:00:01.000Z',
+        message: {
+          role: 'assistant',
+          model: '<synthetic>',
+          content: [{ type: 'text', text: 'No response requested.' }]
+        }
+      },
+      {
+        type: 'assistant',
+        uuid: 'a-synthetic-error',
+        timestamp: '2026-06-01T10:00:02.000Z',
+        message: {
+          role: 'assistant',
+          model: '<synthetic>',
+          content: [{ type: 'text', text: "You've hit your org's monthly spend limit" }]
+        }
+      }
+    ])
+    const result = await readNativeChatTranscript('claude', 'sess', { filePath })
+    if (!('messages' in result)) {
+      throw new Error('expected messages')
+    }
+    expect(result.messages.map((m) => [m.id, m.role])).toEqual([
+      ['u-peer', 'user'],
+      ['a-synthetic-error', 'assistant']
+    ])
+    expect(isNoiseMessage(result.messages[0])).toBe(true)
   })
 
   it('marks thinking-only assistant content as a reasoning surface', async () => {

@@ -10,7 +10,7 @@ import {
 } from './native-chat-types'
 import { agentJournalItemSubagentId } from './agent-session-journal-producer'
 import { isKnownHarnessInjectedUserTurnText } from './harness-injected-user-turns'
-import { isNoiseMessage } from './native-chat-noise'
+import { isHarnessTurnOpenerMessage, isNoiseMessage } from './native-chat-noise'
 
 function isToolOnlyMessage(message: NativeChatMessage): boolean {
   return (
@@ -132,7 +132,10 @@ export function foldToolMessages(messages: readonly NativeChatMessage[]): Native
     } else if (
       !isSubagentRosterMessage(message) &&
       !isBackgroundTaskMessage(message) &&
-      (!isNoiseMessage(message) || isInterruptionBoundary(message))
+      // A delivery that opens a turn ends the run: its calls are that turn's work.
+      (!isNoiseMessage(message) ||
+        isInterruptionBoundary(message) ||
+        isHarnessTurnOpenerMessage(message))
     ) {
       mutableAssistantIndex = -1
       clonedAssistantIndex = -1

@@ -1,4 +1,7 @@
-import { isKnownHarnessInjectedUserTurnText } from './harness-injected-user-turns'
+import {
+  isHarnessTurnOpenerText,
+  isKnownHarnessInjectedUserTurnText
+} from './harness-injected-user-turns'
 import { isTextBlock, type NativeChatMessage } from './native-chat-types'
 
 function messageText(message: NativeChatMessage): string {
@@ -18,6 +21,15 @@ export function isNoiseMessage(message: NativeChatMessage): boolean {
     return false
   }
   return isKnownHarnessInjectedUserTurnText(messageText(message))
+}
+
+/** A harness delivery that opens a turn: it draws nothing, but its reply is its own turn. */
+export function isHarnessTurnOpenerMessage(message: NativeChatMessage): boolean {
+  return (
+    message.role === 'user' &&
+    isNoiseMessage(message) &&
+    isHarnessTurnOpenerText(messageText(message))
+  )
 }
 
 export function stripNoiseMessages(messages: readonly NativeChatMessage[]): NativeChatMessage[] {
