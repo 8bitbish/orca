@@ -1,0 +1,194 @@
+[
+  {
+    "id": "00000000-0000-4000-8000-000000000002",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Human prompt 1"
+      }
+    ],
+    "timestamp": 1790845201000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000003",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "tool-call",
+        "name": "Bash",
+        "input": {
+          "command": "sleep 30"
+        },
+        "callId": "toolu_1"
+      }
+    ],
+    "timestamp": 1790845202000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000004",
+    "role": "tool",
+    "blocks": [
+      {
+        "type": "tool-result",
+        "output": "done"
+      }
+    ],
+    "timestamp": 1790845205000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000005",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Mid-turn prompt, current shape"
+      }
+    ],
+    "timestamp": 1790845203000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000007",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Reply to the mid-turn prompt."
+      }
+    ],
+    "timestamp": 1790845207000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000009",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Human prompt 2"
+      }
+    ],
+    "timestamp": 1790845210000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000010",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "tool-call",
+        "name": "Bash",
+        "input": {
+          "command": "sleep 30"
+        },
+        "callId": "toolu_2"
+      }
+    ],
+    "timestamp": 1790845211000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000011",
+    "role": "tool",
+    "blocks": [
+      {
+        "type": "tool-result",
+        "output": "done"
+      }
+    ],
+    "timestamp": 1790845213000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000012",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "[Image #1] Mid-turn prompt with an image"
+      }
+    ],
+    "timestamp": 1790845212000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000013",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Reply to the image prompt."
+      }
+    ],
+    "timestamp": 1790845215000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000014",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Human prompt 3"
+      }
+    ],
+    "timestamp": 1790845220000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000015",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "tool-call",
+        "name": "Bash",
+        "input": {
+          "command": "sleep 30"
+        },
+        "callId": "toolu_3"
+      }
+    ],
+    "timestamp": 1790845221000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000016",
+    "role": "tool",
+    "blocks": [
+      {
+        "type": "tool-result",
+        "output": "done"
+      }
+    ],
+    "timestamp": 1790845223000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000017",
+    "role": "user",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Mid-turn prompt, older shape"
+      }
+    ],
+    "timestamp": 1790845222000,
+    "source": "transcript"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000020",
+    "role": "assistant",
+    "blocks": [
+      {
+        "type": "text",
+        "text": "Reply to the older-shape prompt."
+      }
+    ],
+    "timestamp": 1790845225000,
+    "source": "transcript"
+  }
+]

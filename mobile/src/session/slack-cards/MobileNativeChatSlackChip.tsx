@@ -1,9 +1,9 @@
-import { StyleSheet, Text } from 'react-native'
+import { Text } from 'react-native'
+import { MobileInlinePill } from '../../components/MobileInlinePill'
 import {
   parseNativeChatSlackHref,
   type NativeChatSlackTarget
 } from '../../../../src/shared/native-chat-slack-href'
-import { colors } from '../../theme/mobile-theme'
 import { openMobileNativeChatSlackTarget } from './mobile-native-chat-slack-open'
 
 const KIND_LABEL: Record<NativeChatSlackTarget['kind'], string> = {
@@ -19,25 +19,26 @@ const KIND_LABEL: Record<NativeChatSlackTarget['kind'], string> = {
 export function MobileNativeChatSlackTargetChip({
   target,
   label,
-  raised = false
+  raised = false,
+  textSize
 }: {
   target: NativeChatSlackTarget
   label: string
   raised?: boolean
+  /** The size of the text the chip sits in, when that is not chat prose. */
+  textSize?: number
 }): React.JSX.Element {
   const message = target.kind === 'message'
   const text = message && !label.trimEnd().endsWith('↗') ? `${label} ↗` : label
-  // Non-breaking padding, so a wrap never strands an empty pill at a line's end.
   return (
-    <Text
-      accessibilityRole="link"
+    <MobileInlinePill
+      label={text}
+      tone={message ? 'link' : 'default'}
+      raised={raised}
+      proseSize={textSize}
       accessibilityLabel={`${KIND_LABEL[target.kind]} ${label}, opens in Slack`}
-      suppressHighlighting
       onPress={() => void openMobileNativeChatSlackTarget(target)}
-      style={[styles.chip, raised ? styles.chipRaised : null, message ? styles.message : null]}
-    >
-      {`\u00a0${text}\u00a0`}
-    </Text>
+    />
   )
 }
 
@@ -57,9 +58,3 @@ export function MobileNativeChatSlackChip({
     <Text>{label}</Text>
   )
 }
-
-const styles = StyleSheet.create({
-  chip: { backgroundColor: colors.bgRaised, color: colors.textPrimary, fontWeight: '600' },
-  chipRaised: { backgroundColor: colors.bgPanel },
-  message: { color: colors.accentBlue, fontWeight: '500' }
-})

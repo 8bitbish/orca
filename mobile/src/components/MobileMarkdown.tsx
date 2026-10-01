@@ -19,11 +19,13 @@ import { isMobileMermaidLanguage } from './mobile-mermaid-language'
 import { parseMobileMarkdown } from './mobile-markdown-parser'
 import { MermaidDiagram } from './pr-sidebar/MermaidDiagram'
 import {
+  MarkdownProseSizeContext,
   MarkdownSelectableContext,
   MarkdownText,
   MarkdownTextContext
 } from './mobile-markdown-text'
 import { MobileMarkupPreview } from './markup-preview/MobileMarkupPreview'
+import { MobileInlineCode } from './MobileInlineCode'
 import { mobileMarkupPreviewKind } from './markup-preview/mobile-markup-preview-kind'
 import {
   MobileMarkdownRenderersContext,
@@ -172,23 +174,15 @@ function renderInline(
       }
     } else if (token.startsWith('`')) {
       const code = token.slice(1, -1)
-      if (onOpenFile && isFilePathCodeSpan(code)) {
-        parts.push(
-          <MarkdownText
-            key={key}
-            style={[styles.inlineCode, styles.inlineCodeLink]}
-            onPress={() => onOpenFile(normalizeFilePath(code.trim()))}
-          >
-            {code}
-          </MarkdownText>
-        )
-      } else {
-        parts.push(
-          <MarkdownText key={key} style={styles.inlineCode}>
-            {code}
-          </MarkdownText>
-        )
-      }
+      const filePath =
+        onOpenFile && isFilePathCodeSpan(code) ? normalizeFilePath(code.trim()) : null
+      parts.push(
+        <MobileInlineCode
+          key={key}
+          code={code}
+          onPress={filePath && onOpenFile ? () => onOpenFile(filePath) : undefined}
+        />
+      )
     } else if (token.startsWith('~~')) {
       parts.push(
         <MarkdownText key={key} style={styles.strike}>
@@ -421,7 +415,9 @@ function MobileMarkdownInner(props: Props): React.JSX.Element | null {
   return (
     <MarkdownTextContext.Provider value={TextComponent}>
       <MarkdownSelectableContext.Provider value={props.selectable !== false}>
-        <MobileMarkdownContent {...props} />
+        <MarkdownProseSizeContext.Provider value={13 * (props.textScale ?? 1)}>
+          <MobileMarkdownContent {...props} />
+        </MarkdownProseSizeContext.Provider>
       </MarkdownSelectableContext.Provider>
     </MarkdownTextContext.Provider>
   )

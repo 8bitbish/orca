@@ -17,6 +17,7 @@ import { imageSourcePathFromText } from '../../shared/native-chat-image-transcri
 import { isHarnessTurnOpenerText } from '../../shared/harness-injected-user-turns'
 import { claudeContentBlocks, claudeThinkingOnlyBlocks } from './transcript-record-blocks'
 import { claudeInterruptedMessageId } from './transcript-turn-markers'
+import { claudeAbsorbedPromptBlocks } from './transcript-claude-absorbed-prompt'
 
 const MAX_EDIT_PATCH_HUNKS = 40
 const MAX_EDIT_PATCH_HUNK_LINES = 400
@@ -80,6 +81,18 @@ export function decodeClaudeTranscriptLine(
     return null
   }
   const role = record.type
+  if (role === 'attachment') {
+    const absorbed = claudeAbsorbedPromptBlocks(record)
+    return absorbed
+      ? {
+          id: extractString(record.uuid) ?? fallbackId,
+          role: 'user',
+          blocks: absorbed,
+          timestamp: parseTimestamp(record.timestamp),
+          source: 'transcript'
+        }
+      : null
+  }
   if (role !== 'user' && role !== 'assistant') {
     return null
   }
