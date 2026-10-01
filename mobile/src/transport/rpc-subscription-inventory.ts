@@ -75,6 +75,13 @@ export const RPC_SUBSCRIPTION_SITES: readonly RpcSubscriptionSite[] = [
     method: 'runtime.clientEvents.subscribe',
     coverage: { kind: 'recorded', family: 'live-worktree-name' }
   },
+  // A terminal chat's host-held queue of mid-turn prompts. Plain JSON frames read through a schema;
+  // nothing structural stops a recording, only the scenario is unwritten.
+  {
+    file: 'src/session/mobile-terminal-message-queue-subscription.ts',
+    method: 'terminalMessageQueue.subscribe',
+    coverage: { kind: 'unwritten-scenario' }
+  },
   {
     file: 'src/session/use-mobile-native-chat-session.ts',
     method: 'nativeChat.subscribe',

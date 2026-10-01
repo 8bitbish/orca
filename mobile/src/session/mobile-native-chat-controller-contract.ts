@@ -15,6 +15,8 @@ import type { MobileNativeChatSendOutcome } from './mobile-native-chat-send'
 import type { MobileNativeChatPendingMessage } from './use-mobile-native-chat-drafts'
 import type { useMobileNativeChatSession } from './use-mobile-native-chat-session'
 import type { MobileNativeChatSessionOptionPickersProps } from './MobileNativeChatSessionOptionPickers'
+import type { MobileNativeChatQueueStackProps } from './MobileNativeChatQueuedMessages'
+import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
 
 export type MobileNativeChatController = {
   /** Whether a tab's effective view is chat (per-tab override, else the default). */
@@ -95,4 +97,13 @@ export type MobileNativeChatController = {
   /** Model/session-option pickers for the composer, or null when the active
    *  agent has no session-option catalog. */
   nativeChatSessionOptions: MobileNativeChatSessionOptionPickersProps | null
+  /** The host's queue of mid-turn prompts for a terminal chat; null when there is none to show. */
+  nativeChatQueue: MobileNativeChatQueueStackProps | null
+  /** A send now would be held by the host until the agent's turn ends. */
+  nativeChatWillQueue: boolean
+  /** Offers an image send to the host queue before its paste; 'direct' sends as before. */
+  queueNativeChatImageSend: (
+    text: string,
+    images: readonly PendingNativeChatImage[]
+  ) => Promise<'queued' | 'direct' | 'rejected'>
 }

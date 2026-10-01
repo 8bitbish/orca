@@ -41,6 +41,9 @@ import type { MobileChatPermission } from './mobile-native-chat-permission'
 import type { MobileChatQuestion } from './mobile-native-chat-question'
 import type { MobileNativeChatSessionOptionPickersProps } from './MobileNativeChatSessionOptionPickers'
 import { MobileNativeChatMessage, type MobileNativeChatThoughtFor } from './MobileNativeChatMessage'
+import { MobileNativeChatQueuedMessages } from './MobileNativeChatQueuedMessages'
+import type { MobileNativeChatQueueSurface } from './MobileNativeChatQueuedMessages'
+import { mobileNativeChatComposerPlaceholder } from './mobile-native-chat-composer-placeholder'
 import type { MobileNativeChatStatus } from './use-mobile-native-chat-session'
 
 /** Why the composer input is locked: the transport is disconnected, or the
@@ -140,6 +143,9 @@ type Props = {
   onRespondPermission?: (send: string) => Promise<boolean>
   /** Open a worktree file tapped in agent markdown. */
   onOpenFile?: (relativePath: string) => void
+  /** Prompts the host holds until the agent's turn ends (terminal chats on a queue host), and
+   *  whether a send now would join them rather than be typed into the running turn. */
+  queue?: MobileNativeChatQueueSurface
   /** Pixels to lift the composer by when the soft keyboard is open. The route
    *  owns keyboard tracking (the app uses manual lift, not KeyboardAvoidingView). */
   keyboardInset?: number
@@ -199,6 +205,7 @@ export function MobileNativeChatView({
   permission,
   onRespondPermission,
   onOpenFile,
+  queue,
   keyboardInset = 0
 }: Props): React.JSX.Element {
   const insets = useSafeAreaInsets()
@@ -396,6 +403,7 @@ export function MobileNativeChatView({
         question={question}
         onAnswerQuestion={onAnswerQuestion}
       />
+      {queue?.stack ? <MobileNativeChatQueuedMessages {...queue.stack} /> : null}
       <View style={styles.chromeRow}>
         <View style={styles.chromeLeft}>
           {agentWorking && !structuredActivityUi ? <MobileAgentWorkingIndicator /> : null}
@@ -455,13 +463,7 @@ export function MobileNativeChatView({
         onMicPressIn={onMicPressIn}
         onMicPressOut={onMicPressOut}
         disabled={lockReason !== null}
-        placeholder={
-          lockReason === 'disconnected'
-            ? 'Reconnecting…'
-            : lockReason === 'waiting'
-              ? 'Waiting for terminal…'
-              : 'Message, @files, /commands'
-        }
+        placeholder={mobileNativeChatComposerPlaceholder(lockReason, queue?.willQueue === true)}
         filePaths={filePaths}
         onNeedFiles={onNeedFiles}
       />

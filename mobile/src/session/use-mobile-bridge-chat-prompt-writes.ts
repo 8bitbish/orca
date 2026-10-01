@@ -20,6 +20,8 @@ export function useMobileBridgeChatPromptWrites(args: {
   sessionId: string | null
   streamIdentity: string
   onSendError: (message: string) => void
+  /** Stop through the host's message queue when it holds one for this terminal. */
+  hostStop?: (() => Promise<'host' | 'fallback' | 'unknown'>) | null
 }): {
   answerAsk: MobileNativeChatAnswerSend['answerAsk']
   cancelAsk: () => Promise<boolean>
@@ -59,7 +61,8 @@ export function useMobileBridgeChatPromptWrites(args: {
     deviceTokenRef,
     streamIdentity,
     cancelPending,
-    onSendError
+    onSendError,
+    hostStop: args.hostStop
   })
   return { answerAsk, cancelAsk, respondPermission, stop }
 }
