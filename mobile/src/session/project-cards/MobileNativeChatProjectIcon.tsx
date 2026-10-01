@@ -8,13 +8,16 @@ import type { MobileNativeChatProjectRepo } from './mobile-native-chat-project'
 export function MobileNativeChatProjectIcon({
   repo,
   payloadIcon,
-  size
+  size,
+  round = false
 }: {
   repo: MobileNativeChatProjectRepo
   payloadIcon?: string
   size: number
+  /** A circle, for the rounded end of an inline pill. */
+  round?: boolean
 }): React.JSX.Element {
-  const box = { width: size, height: size, borderRadius: size / 4 }
+  const box = { width: size, height: size, borderRadius: round ? size / 2 : size / 4 }
   if (payloadIcon) {
     return (
       <View style={[styles.box, box]}>

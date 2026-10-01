@@ -2,7 +2,7 @@ import { useContext } from 'react'
 import { Text } from 'react-native'
 import { parseNativeChatWorktreeHref } from '../../../../src/shared/native-chat-project-target'
 import { agentStateDotColor } from '../../components/AgentStateDot'
-import { MobileInlinePill } from '../../components/MobileInlinePill'
+import { MobileInlinePill, mobileInlinePillIconSize } from '../../components/MobileInlinePill'
 import { MarkdownProseSizeContext } from '../../components/mobile-markdown-text'
 import { MOBILE_NATIVE_CHAT_PROJECT_STATUS_LABEL } from './mobile-native-chat-project'
 import { MobileNativeChatProjectsContext } from './mobile-native-chat-project-context'
@@ -34,7 +34,13 @@ export function MobileNativeChatProjectChip({
     <MobileInlinePill
       label={project.name}
       detail={project.workspace}
-      leading={<MobileNativeChatProjectIcon repo={project.repo} size={Math.round(proseSize)} />}
+      leading={
+        <MobileNativeChatProjectIcon
+          repo={project.repo}
+          size={mobileInlinePillIconSize(proseSize)}
+          round
+        />
+      }
       dotColor={agentStateDotColor(mobileNativeChatProjectStatusDot(project.status))}
       accessibilityLabel={`Open ${title}, ${status}`}
       onPress={() => projects.open(project)}

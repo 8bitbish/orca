@@ -3,6 +3,15 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors } from '../theme/mobile-theme'
 import { MarkdownProseSizeContext } from './mobile-markdown-text'
 
+function pillFontSize(proseSize: number): number {
+  return Math.round(proseSize * 0.82)
+}
+
+/** A leading icon's size: the pill's text line, so a round icon fills the pill's rounded end. */
+export function mobileInlinePillIconSize(proseSize: number): number {
+  return pillFontSize(proseSize) + 6
+}
+
 /**
  * A rounded pill that sits inline in prose, as desktop's project and Slack chips do. A View,
  * not a styled run of text: Android draws a nested Text's background as a flat highlight,
@@ -31,7 +40,8 @@ export function MobileInlinePill({
   onPress?: () => void
 }): React.JSX.Element {
   const proseSize = useContext(MarkdownProseSizeContext)
-  const fontSize = Math.round(proseSize * 0.85)
+  const fontSize = pillFontSize(proseSize)
+  const lineHeight = mobileInlinePillIconSize(proseSize)
   return (
     <Pressable
       accessibilityRole="link"
@@ -40,6 +50,8 @@ export function MobileInlinePill({
       hitSlop={4}
       style={({ pressed }) => [
         styles.pill,
+        // A leading icon sits in the pill's rounded end, so that side needs no inset of its own.
+        { paddingLeft: leading ? 2 : 9, paddingRight: dotColor ? 7 : 9 },
         raised ? styles.raised : null,
         pressed ? styles.pressed : null,
         // Lifts the pill onto the prose's text line; Android seats inline views on the baseline.
@@ -49,16 +61,12 @@ export function MobileInlinePill({
       {leading}
       <Text
         numberOfLines={1}
-        style={[
-          styles.label,
-          { fontSize, lineHeight: fontSize + 4 },
-          tone === 'link' ? styles.link : null
-        ]}
+        style={[styles.label, { fontSize, lineHeight }, tone === 'link' ? styles.link : null]}
       >
         {label}
       </Text>
       {detail ? (
-        <Text numberOfLines={1} style={[styles.detail, { fontSize, lineHeight: fontSize + 4 }]}>
+        <Text numberOfLines={1} style={[styles.detail, { fontSize, lineHeight }]}>
           {detail}
         </Text>
       ) : null}
@@ -83,10 +91,8 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     maxWidth: 260,
-    paddingLeft: 3,
-    paddingRight: 7,
     paddingVertical: 1,
     marginHorizontal: 2,
     borderRadius: 999,
@@ -96,7 +102,7 @@ const styles = StyleSheet.create({
   },
   raised: { backgroundColor: colors.bgPanel },
   pressed: { opacity: 0.7 },
-  label: { flexShrink: 1, color: colors.textPrimary, fontWeight: '600' },
+  label: { flexShrink: 1, color: colors.textPrimary, fontWeight: '500' },
   link: { color: colors.accentBlue, fontWeight: '500' },
   detail: { flexShrink: 1, color: colors.textSecondary },
   dot: { marginLeft: 1 }
