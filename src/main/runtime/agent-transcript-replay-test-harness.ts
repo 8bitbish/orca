@@ -10,7 +10,13 @@ import { buildTerminalWaitText } from './terminal-wait-tail-state'
 
 const DEFAULT_CHUNK_CHARS = 64
 
-export type TranscriptReplayFrame = { screenLines: string[]; waitText: string }
+export type TranscriptReplayFrame = {
+  screenLines: string[]
+  waitText: string
+  /** What a screen read reports from the composer: typed text, or the agent's dim suggestion. */
+  draft?: string
+  suggestion?: string
+}
 
 export function readRuntimeFixture(name: string): string {
   return readFileSync(join(__dirname, '__fixtures__', `${name}.txt`), 'utf8')
@@ -37,9 +43,12 @@ export async function* replayTranscript(
       lines = tail.lines
       partialLine = tail.partialLine
       redrawCursor = tail.redrawCursor
+      const projection = projectTerminalVisibleLines(emulator)
       yield {
-        screenLines: projectTerminalVisibleLines(emulator).lines,
-        waitText: buildTerminalWaitText(lines, partialLine, buildPreview(lines, partialLine))
+        screenLines: projection.lines,
+        waitText: buildTerminalWaitText(lines, partialLine, buildPreview(lines, partialLine)),
+        ...(projection.draft === undefined ? {} : { draft: projection.draft }),
+        ...(projection.suggestion === undefined ? {} : { suggestion: projection.suggestion })
       }
     }
   } finally {

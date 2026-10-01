@@ -481,7 +481,9 @@ describe('OrcaRuntimeService', () => {
     })
   })
 
-  it('separates composer draft text from rendered terminal output', async () => {
+  // Deliberately reverses 419e3b4496: Claude Code's dim (SGR 2) prompt suggestion is the agent's,
+  // so a read reports it as `suggestion`, never as the typed `draft`, and keeps it out of `tail`.
+  it('separates a dim composer suggestion from rendered terminal output', async () => {
     const runtime = new OrcaRuntimeService(store)
     runtime.setPtyController({
       write: () => true,
@@ -502,11 +504,38 @@ describe('OrcaRuntimeService', () => {
     expect(read).toMatchObject({
       source: 'screen',
       tail: ['Build passed', '────────', '❯'],
-      draft: 'proceed with the release\nand close the pull request'
+      suggestion: 'proceed with the release\nand close the pull request'
     })
+    expect(read.draft).toBeUndefined()
   })
 
-  it('keeps renderer-fallback composer drafts separate from terminal output', async () => {
+  it('reports only the typed text of a composer draft, not its dim completion', async () => {
+    const runtime = new OrcaRuntimeService(store)
+    runtime.setPtyController({
+      write: () => true,
+      kill: () => true,
+      getForegroundProcess: async () => null,
+      hasRendererSerializer: () => false
+    })
+    syncSinglePty(runtime)
+    runtime.onPtyData(
+      'pty-1',
+      '\x1b[?1049hBuild passed\r\n────────\r\n❯ /comp\x1b[2mact\x1b[22m\x1b[8G',
+      100
+    )
+    const [terminal] = (await runtime.listTerminals()).terminals
+
+    const read = await runtime.readTerminal(terminal.handle)
+
+    expect(read).toMatchObject({
+      source: 'screen',
+      tail: ['Build passed', '────────', '❯'],
+      draft: '/comp'
+    })
+    expect(read.suggestion).toBeUndefined()
+  })
+
+  it('keeps renderer-fallback composer suggestions separate from terminal output', async () => {
     const serializeBuffer = vi.fn().mockResolvedValue({
       data: '\x1b[?1049hBuild passed\r\n────────\r\n❯ \x1b[2mproceed with the release\x1b[22m\x1b[3G',
       cols: 80,
@@ -529,14 +558,15 @@ describe('OrcaRuntimeService', () => {
     expect(read).toMatchObject({
       source: 'screen',
       tail: ['Build passed', '────────', '❯'],
-      draft: 'proceed with the release'
+      suggestion: 'proceed with the release'
     })
+    expect(read.draft).toBeUndefined()
     expect(serializeBuffer).toHaveBeenCalledWith('pty-1', {
       scrollbackRows: 0
     })
   })
 
-  it('separates composer drafts from provider-owned terminal screens', async () => {
+  it('separates composer suggestions from provider-owned terminal screens', async () => {
     const serializeProviderBuffer = vi.fn().mockResolvedValue({
       data: '\x1b[?1049hBuild passed\r\n────────\r\n❯ \x1b[2mproceed with the release\x1b[22m\x1b[3G',
       cols: 80,
@@ -566,8 +596,9 @@ describe('OrcaRuntimeService', () => {
     expect(read).toMatchObject({
       source: 'screen',
       tail: ['Build passed', '────────', '❯'],
-      draft: 'proceed with the release'
+      suggestion: 'proceed with the release'
     })
+    expect(read.draft).toBeUndefined()
     expect(serializeProviderBuffer).toHaveBeenCalledOnce()
   })
 

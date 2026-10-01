@@ -268,6 +268,30 @@ describe('exact orchestration worker output', () => {
     expect(JSON.stringify(result)).not.toContain(capability)
   })
 
+  it('redacts dispatch capabilities from a composer suggestion too', async () => {
+    const capability = `dcap_${'B'.repeat(43)}`
+    readTerminal.mockResolvedValue({
+      handle: 'term_worker',
+      status: 'running',
+      tail: ['safe output'],
+      suggestion: `send --dispatch-capability ${capability}`,
+      truncated: false,
+      nextCursor: '9'
+    })
+    providerSession = null
+
+    const result = await read()
+
+    expect(result).toMatchObject({
+      source: 'terminal',
+      terminal: {
+        tail: ['safe output'],
+        suggestion: 'send --dispatch-capability [dispatch capability redacted]'
+      }
+    })
+    expect(JSON.stringify(result)).not.toContain(capability)
+  })
+
   it('rejects an old cursor after the exact provider session changes', async () => {
     const initial = await read()
     if (initial.source !== 'transcript') {

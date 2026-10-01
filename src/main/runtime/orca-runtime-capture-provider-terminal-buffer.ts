@@ -111,7 +111,7 @@ export class OrcaRuntimeWithCaptureProviderTerminalBuffer extends OrcaRuntimeWit
           read,
           providerProjection.lines,
           opts.limit,
-          providerProjection.draft
+          providerProjection
         )
       }
     }
@@ -143,7 +143,7 @@ export class OrcaRuntimeWithCaptureProviderTerminalBuffer extends OrcaRuntimeWit
     if (projection.lines.length === 0) {
       return read
     }
-    return buildVisibleSnapshotReadFallback(read, projection.lines, opts.limit, projection.draft)
+    return buildVisibleSnapshotReadFallback(read, projection.lines, opts.limit, projection)
   }
 
   protected async readProviderTerminalTailLines(

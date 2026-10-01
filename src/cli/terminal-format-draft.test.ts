@@ -18,4 +18,21 @@ describe('formatTerminalRead draft separation', () => {
     expect(output).toContain('draft: "proceed with the release"')
     expect(output).toContain('\n\nBuild passed\n❯')
   })
+
+  it('labels an agent suggestion apart from a typed draft', () => {
+    const output = formatTerminalRead({
+      terminal: {
+        handle: 'term_1',
+        status: 'running',
+        tail: ['Build passed', '❯'],
+        truncated: false,
+        nextCursor: null,
+        source: 'screen',
+        suggestion: 'now write the full README'
+      }
+    })
+
+    expect(output).toContain('suggestion: "now write the full README"')
+    expect(output).not.toContain('draft:')
+  })
 })

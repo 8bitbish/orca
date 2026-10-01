@@ -120,6 +120,7 @@ export type RuntimeHeadlessTerminal = {
 export type RuntimeVisibleTerminalState = {
   lines: string[]
   draft?: string
+  suggestion?: string
   isAlternateScreen: boolean
   sequence: number
   generation: number

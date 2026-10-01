@@ -163,12 +163,15 @@ async function readTerminalOutput(
     cursor: cursor?.source === 'terminal' ? cursor.position : undefined,
     limit: args.limit
   })
+  // Everything the read carries is redacted together, the composer fields included.
   const redactedTerminal = redactWorkerTerminalLines([
     ...terminal.tail,
-    ...(terminal.draft ? [terminal.draft] : [])
+    terminal.draft ?? '',
+    terminal.suggestion ?? ''
   ])
   const redactedTail = redactedTerminal.lines.slice(0, terminal.tail.length)
-  const redactedDraft = terminal.draft ? redactedTerminal.lines.at(-1) : undefined
+  const redactedDraft = terminal.draft ? redactedTerminal.lines.at(-2) : undefined
+  const redactedSuggestion = terminal.suggestion ? redactedTerminal.lines.at(-1) : undefined
   const position =
     terminal.nextCursor !== null && /^\d+$/.test(terminal.nextCursor)
       ? Number.parseInt(terminal.nextCursor, 10)
@@ -184,7 +187,8 @@ async function readTerminalOutput(
     terminal: {
       ...terminal,
       tail: redactedTail,
-      ...(redactedDraft ? { draft: redactedDraft } : {})
+      draft: redactedDraft,
+      suggestion: redactedSuggestion
     },
     cursor: nextCursor,
     status: {
