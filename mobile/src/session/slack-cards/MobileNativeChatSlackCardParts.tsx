@@ -64,7 +64,12 @@ export function MobileNativeChatSlackPersonName({
 }): React.JSX.Element {
   const target = nativeChatSlackPersonTarget(card, person)
   return target ? (
-    <MobileNativeChatSlackTargetChip raised target={target} label={person.name} />
+    <MobileNativeChatSlackTargetChip
+      raised
+      textSize={typography.metaSize}
+      target={target}
+      label={person.name}
+    />
   ) : (
     <Text style={styles.bold}>{person.name}</Text>
   )
@@ -89,6 +94,7 @@ export function MobileNativeChatSlackConversationChip({
   return (
     <MobileNativeChatSlackTargetChip
       raised
+      textSize={typography.metaSize}
       target={nativeChatSlackConversationTarget(card, conversation)}
       label={mobileNativeChatSlackConversationLabel(conversation)}
     />

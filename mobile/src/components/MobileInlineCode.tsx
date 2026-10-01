@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text } from 'react-native'
 import { colors, typography } from '../theme/mobile-theme'
 import { styles as markdownStyles } from './mobile-markdown-styles'
 import {
+  inlineViewBaselineShift,
   MarkdownProseSizeContext,
   MarkdownSelectableContext,
   MarkdownText
@@ -42,7 +43,10 @@ export function MobileInlineCode({
       disabled={!onPress}
       onPress={onPress}
       accessibilityRole={onPress ? 'link' : undefined}
-      style={[styles.box, { transform: [{ translateY: Math.round(fontSize * 0.24) }] }]}
+      style={[
+        styles.box,
+        { transform: [{ translateY: inlineViewBaselineShift(fontSize + 5, proseSize) }] }
+      ]}
     >
       <Text
         numberOfLines={1}

@@ -19,11 +19,14 @@ const KIND_LABEL: Record<NativeChatSlackTarget['kind'], string> = {
 export function MobileNativeChatSlackTargetChip({
   target,
   label,
-  raised = false
+  raised = false,
+  textSize
 }: {
   target: NativeChatSlackTarget
   label: string
   raised?: boolean
+  /** The size of the text the chip sits in, when that is not chat prose. */
+  textSize?: number
 }): React.JSX.Element {
   const message = target.kind === 'message'
   const text = message && !label.trimEnd().endsWith('↗') ? `${label} ↗` : label
@@ -32,6 +35,7 @@ export function MobileNativeChatSlackTargetChip({
       label={text}
       tone={message ? 'link' : 'default'}
       raised={raised}
+      proseSize={textSize}
       accessibilityLabel={`${KIND_LABEL[target.kind]} ${label}, opens in Slack`}
       onPress={() => void openMobileNativeChatSlackTarget(target)}
     />

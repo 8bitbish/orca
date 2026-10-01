@@ -1,7 +1,7 @@
 import { useContext, type ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors } from '../theme/mobile-theme'
-import { MarkdownProseSizeContext } from './mobile-markdown-text'
+import { inlineViewBaselineShift, MarkdownProseSizeContext } from './mobile-markdown-text'
 
 function pillFontSize(proseSize: number): number {
   return Math.round(proseSize * 0.82)
@@ -25,7 +25,8 @@ export function MobileInlinePill({
   tone = 'default',
   raised = false,
   accessibilityLabel,
-  onPress
+  onPress,
+  proseSize: textSize
 }: {
   label: string
   /** A quieter second part, such as a workspace name. */
@@ -38,8 +39,11 @@ export function MobileInlinePill({
   raised?: boolean
   accessibilityLabel: string
   onPress?: () => void
+  /** The surrounding text's size, where it is not chat prose (a card's meta line). */
+  proseSize?: number
 }): React.JSX.Element {
-  const proseSize = useContext(MarkdownProseSizeContext)
+  const contextSize = useContext(MarkdownProseSizeContext)
+  const proseSize = textSize ?? contextSize
   const fontSize = pillFontSize(proseSize)
   const lineHeight = mobileInlinePillIconSize(proseSize)
   return (
@@ -54,8 +58,7 @@ export function MobileInlinePill({
         { paddingLeft: leading ? 2 : 9, paddingRight: dotColor ? 7 : 9 },
         raised ? styles.raised : null,
         pressed ? styles.pressed : null,
-        // Lifts the pill onto the prose's text line; Android seats inline views on the baseline.
-        { transform: [{ translateY: Math.round(fontSize * 0.28) }] }
+        { transform: [{ translateY: inlineViewBaselineShift(lineHeight + 2, proseSize) }] }
       ]}
     >
       {leading}
