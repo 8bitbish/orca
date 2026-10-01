@@ -81,7 +81,7 @@ describe('transcript slots', () => {
   it("marks only the working turn's newest thought live and carries its duration", () => {
     const messages = [text('u', 'go', 'user'), text('r1', 'plan', 'reasoning')]
     const working = build(messages, {
-      currentTurnKey: 'u',
+      activeTurnKey: 'u',
       isWorking: true,
       thoughtSeconds: new Map([['r1', 7]])
     })
@@ -91,7 +91,7 @@ describe('transcript slots', () => {
     })
 
     const answered = build([...messages, text('a', 'Done.')], {
-      currentTurnKey: 'u',
+      activeTurnKey: 'u',
       isWorking: true
     })
     expect(answered.find((slot) => slot.message.id === 'r1')).toMatchObject({
@@ -99,7 +99,7 @@ describe('transcript slots', () => {
       thoughtSeconds: null
     })
 
-    const idle = build(messages, { currentTurnKey: 'u', isWorking: false })
+    const idle = build(messages, { activeTurnKey: 'u', isWorking: false })
     expect(idle.find((slot) => slot.message.id === 'r1')?.thoughtLive).toBe(false)
   })
 
