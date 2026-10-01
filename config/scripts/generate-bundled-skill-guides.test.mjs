@@ -271,8 +271,10 @@ describe('bundled skill guide generator', () => {
   // Why: `skills get` already ran on a resolved executable, so guide bodies point back at the
   // stub's resolution instead of carrying another copy of the ladder the stubs own.
   it('points every guide at the executable the stub resolved', async () => {
-    // orchestration.md is rewritten to this contract by its own PR (#16904).
-    for (const name of CANONICAL_GUIDE_NAMES.filter((name) => name !== 'orchestration')) {
+    // orchestration.md is rewritten to this contract by its own PR (#16904). visualize ships
+    // its full guide with no stub because it never runs the Orca CLI.
+    const stubless = new Set(['orchestration', 'visualize'])
+    for (const name of CANONICAL_GUIDE_NAMES.filter((name) => !stubless.has(name))) {
       const source = await readFile(path.join(projectDir, 'skill-guides', `${name}.md`), 'utf8')
 
       expect(source.replace(/\s+/gu, ' '), name).toContain(

@@ -20,7 +20,8 @@ const CANONICAL_GUIDE_NAMES = [
   'orca-emulator-android',
   'orca-linear',
   'orca-per-workspace-env',
-  'orchestration'
+  'orchestration',
+  'visualize'
 ]
 
 // Why: old discovery stubs can outlive a rename indefinitely, so aliases are
@@ -33,7 +34,8 @@ const GUIDE_ALIASES = {
   'orca-emulator-android': [],
   'orca-linear': [],
   'orca-per-workspace-env': [],
-  orchestration: []
+  orchestration: [],
+  visualize: []
 }
 
 // Why: a stubbed topic ships a hybrid discovery stub as its installable projection while

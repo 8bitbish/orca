@@ -10,6 +10,7 @@ keywords:
   - orca-linear skill
   - orca-emulator skill
   - orca-emulator-android skill
+  - visualize skill
 ---
 
 Orca ships **skills** that agents install into their skill directories. Public install packages are **hybrid discovery stubs**: short `SKILL.md` files that tell the agent _when_ to engage Orca and how to load the full guide from the running CLI. Command flags live in the binary so they cannot drift from the app version.
@@ -18,15 +19,16 @@ Orca ships **skills** that agents install into their skill directories. Public i
 
 Use `npx skills add` with the public Orca repo and the skill name. Default agent setup usually installs `orca-cli`, `computer-use`, and `orchestration`.
 
-| Skill                                               | Install                                                                                   | Use it for                                                    |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| [`orca-cli`](#orca-cli)                             | `npx skills add https://github.com/stablyai/orca --skill orca-cli --global`               | Worktrees, terminals, files, automations, embedded browser.   |
-| [`orchestration`](#orchestration)                   | `npx skills add https://github.com/stablyai/orca --skill orchestration --global`          | Multi-agent Runs, tasks, supervised workers, messages, gates. |
-| [`computer-use`](#computer-use)                     | `npx skills add https://github.com/stablyai/orca --skill computer-use --global`           | Desktop apps via accessibility trees and safe UI actions.     |
-| [`orca-linear`](#orca-linear)                       | `npx skills add https://github.com/stablyai/orca --skill orca-linear --global`            | Linear ticket read/write through `orca linear`.               |
-| [`orca-emulator`](#orca-emulator)                   | `npx skills add https://github.com/stablyai/orca --skill orca-emulator --global`          | iOS Simulator control.                                        |
-| [`orca-emulator-android`](#orca-emulator-android)   | `npx skills add https://github.com/stablyai/orca --skill orca-emulator-android --global`  | Android emulator/device via adb.                              |
-| [`orca-per-workspace-env`](#orca-per-workspace-env) | `npx skills add https://github.com/stablyai/orca --skill orca-per-workspace-env --global` | Per-workspace environment recipes (`orca.yaml`).              |
+| Skill                                               | Install                                                                                    | Use it for                                                    |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| [`orca-cli`](#orca-cli)                             | `npx skills add https://github.com/stablyai/orca --skill orca-cli --global`                | Worktrees, terminals, files, automations, embedded browser.   |
+| [`orchestration`](#orchestration)                   | `npx skills add https://github.com/stablyai/orca --skill orchestration --global`           | Multi-agent Runs, tasks, supervised workers, messages, gates. |
+| [`computer-use`](#computer-use)                     | `npx skills add https://github.com/stablyai/orca --skill computer-use --global`            | Desktop apps via accessibility trees and safe UI actions.     |
+| [`orca-linear`](#orca-linear)                       | `npx skills add https://github.com/stablyai/orca --skill orca-linear --global`             | Linear ticket read/write through `orca linear`.               |
+| [`orca-emulator`](#orca-emulator)                   | `npx skills add https://github.com/stablyai/orca --skill orca-emulator --global`           | iOS Simulator control.                                        |
+| [`orca-emulator-android`](#orca-emulator-android)   | `npx skills add https://github.com/stablyai/orca --skill orca-emulator-android --global`   | Android emulator/device via adb.                              |
+| [`orca-per-workspace-env`](#orca-per-workspace-env) | `npx skills add https://github.com/stablyai/orca --skill orca-per-workspace-env --global`  | Per-workspace environment recipes (`orca.yaml`).              |
+| [`visualize`](#visualize)                           | `npx skills add https://github.com/8bitbish/orca/tree/personal --skill visualize --global` | Static `widget` visuals in Chat UI replies.                   |
 
 ## Hybrid stubs vs the live guide
 
@@ -158,6 +160,14 @@ npx skills add https://github.com/stablyai/orca --skill orca-per-workspace-env -
 ```
 
 Use when setting up or debugging per-workspace environment recipes in `orca.yaml`. See [Ways to run Orca](/docs/ways-to-run#4-cloud-vms-per-workspace-environments).
+
+## visualize
+
+```bash
+npx skills add https://github.com/8bitbish/orca/tree/personal --skill visualize --global
+```
+
+Teaches the agent to answer with a static `widget` fence when a visual beats prose: option cards with costs, comparisons, timelines, screen layouts with measurements. It carries the style kit's class vocabulary and worked examples, and tells the agent to draw widgets only in Chat UI (`ORCA_STRUCTURED_SESSION` is set) and use Mermaid or prose elsewhere. It ships its full guide, with no stub, because it never runs the Orca CLI. See [Chat UI replies](/docs/agents/native-chat#replies).
 
 ## Discovery sources
 

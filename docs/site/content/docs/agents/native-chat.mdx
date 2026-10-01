@@ -29,6 +29,7 @@ When Claude shows an **AskUserQuestion** (or similar structured permission/quest
 
 - The agent's reasoning folds to one line: **Thinking…** while it is the turn's newest output, then **Thought for 12s** (or **Thought** when no duration can be derived from the session's timestamps). Click it, or focus it and press Enter or Space, to read the full reasoning.
 - A reply can include diagrams as fenced blocks. A `mermaid` fence renders as a diagram in the app's colors. `html` and `svg` fences render as a live preview in a sandboxed frame, which has no network access and cannot run the reply's scripts. Each diagram has a **Code** toggle to show its source and a copy button. A fence renders once it is complete; while it is still streaming it shows as code.
+- A `widget` fence renders as a static visual, the way Claude.ai shows its inline widgets: a quiet **Widget** line whose chevron reveals the source, a copy button, and the visual on a rounded card. It uses the same sandboxed frame, so nothing in it runs or reaches the network. Every preview carries a built-in style kit that follows the app theme in light and dark: cards (with an accent for the recommended option), badges, key-value price rows, totals and deltas, legends, Gantt timelines, callouts, device frames, dashed guides and measurement arrows. The [`visualize` skill](/docs/cli/skills#visualize) teaches Claude the class names and when a visual beats prose.
 
 ## Availability
 
