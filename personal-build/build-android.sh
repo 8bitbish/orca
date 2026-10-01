@@ -41,6 +41,8 @@ apk="$out_dir/orca-personal-$version-$ORCA_MOBILE_VERSION_CODE-$sha.apk"
 "$build_tools/apksigner" verify "$apk"
 rm -f "$apk.idsig"
 ln -sf "$(basename "$apk")" "$out_dir/orca-personal-latest.apk"
+# The Mac is short on disk; prebuild regenerates this (~1 GB) on the next build.
+rm -rf android
 echo "APK: $apk"
 
 if [ "${1:-}" = --install ]; then

@@ -20,6 +20,12 @@ Toolchain (nothing extra installed): Android Studio's bundled JDK 21, the SDK at
 `~/Library/Android/sdk` (platform 36, build-tools 36, NDK 27.1), Node 22 from
 `/opt/homebrew/opt/node@22`. The script sets `JAVA_HOME`, `ANDROID_HOME` and `PATH` itself.
 
+Disk: the script deletes the generated `mobile/android` (~1 GB) after each build. Gradle keeps
+~3 GB in `~/.gradle/caches/9.0.0` and `~/.gradle/wrapper/dists/gradle-9.0.0-bin`; with it a
+rebuild takes ~3 minutes, without it the next build re-downloads and takes ~10. Delete both to
+reclaim the space. `mobile/node_modules` (~2.7 GB, mostly hard links into the pnpm store) is
+reinstalled by the script in under a minute.
+
 ## Signing key
 
 - Keystore: `~/.orca-personal/android/orca-personal-release.jks` (alias `orca-personal`),
