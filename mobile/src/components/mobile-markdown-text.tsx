@@ -11,3 +11,14 @@ export function MarkdownText(props: TextProps): React.JSX.Element {
   const selectable = useContext(MarkdownSelectableContext)
   return createElement(TextComponent, selectable ? props : { ...props, selectable: false })
 }
+
+/** The prose font size around an inline element, which Android does not pass into a View
+ *  nested in text; inline pills size themselves from it. */
+export const MarkdownProseSizeContext = createContext(14)
+
+/** How far to lower an inline view of `height` so it centres on prose of `proseSize`:
+ *  Android seats an inline view's bottom on the baseline, and the text's visual middle
+ *  sits about 0.36em above it. */
+export function inlineViewBaselineShift(height: number, proseSize: number): number {
+  return Math.round(height / 2 - proseSize * 0.36)
+}

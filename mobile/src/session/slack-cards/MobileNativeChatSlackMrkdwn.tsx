@@ -74,6 +74,7 @@ function renderNode(node: SlackMrkdwnNode, key: string, workspace: Workspace): R
         <MobileNativeChatSlackTargetChip
           key={key}
           raised
+          textSize={typography.bodySize}
           label={`@${node.label ?? node.userId}`}
           target={{ kind: 'user', teamId: workspace.teamId, userId: node.userId, ...domain }}
         />
@@ -83,6 +84,7 @@ function renderNode(node: SlackMrkdwnNode, key: string, workspace: Workspace): R
         <MobileNativeChatSlackTargetChip
           key={key}
           raised
+          textSize={typography.bodySize}
           label={`#${node.label ?? node.channelId}`}
           target={{
             kind: 'channel',
