@@ -46,12 +46,16 @@ const FORBIDDEN_TAGS = [
   'frame',
   'frameset',
   'iframe',
+  // Form controls outlive a stripped <form> as inert boxes; a static reply has no use for them.
+  'input',
   'link',
   'meta',
   'noscript',
   'object',
   'portal',
-  'script'
+  'script',
+  'select',
+  'textarea'
 ]
 
 const LINK_ATTRIBUTES = ['href', 'xlink:href']
