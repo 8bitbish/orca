@@ -191,6 +191,37 @@ describe('RpcClientStreamRegistry', () => {
     expect(sent.filter((request) => request.method === 'agentSession.unsubscribe')).toHaveLength(1)
   })
 
+  it('ends one terminal queue stream by its frame id, leaving a sibling on the same socket', () => {
+    const { registry, sent } = createRegistry()
+    const params = { terminal: 'term-1', capabilities: { unsubscribe: 1 } }
+    const disposeFirst = registry.subscribe('terminalMessageQueue.subscribe', params, () => {})
+    registry.subscribe(
+      'terminalMessageQueue.subscribe',
+      { ...params, terminal: 'term-2' },
+      () => {}
+    )
+    const [first] = sent
+
+    disposeFirst()
+    expect(sent.at(-1)).toMatchObject({
+      method: 'terminalMessageQueue.unsubscribe',
+      params: { subscriptionId: first!.id }
+    })
+    expect(sent.filter((r) => r.method === 'terminalMessageQueue.unsubscribe')).toHaveLength(1)
+  })
+
+  it('sends no queue unsubscribe for a subscribe made against a host that lacks it', () => {
+    const { registry, sent } = createRegistry()
+    const dispose = registry.subscribe(
+      'terminalMessageQueue.subscribe',
+      { terminal: 'term-1' },
+      () => {}
+    )
+
+    dispose()
+    expect(sent.map((request) => request.method)).toEqual(['terminalMessageQueue.subscribe'])
+  })
+
   it('names the terminal request it sent when unsubscribing, and keeps the slot for older hosts', () => {
     const { registry, sent } = createRegistry()
     const dispose = registry.subscribe(

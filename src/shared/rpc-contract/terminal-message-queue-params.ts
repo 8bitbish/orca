@@ -30,6 +30,21 @@ export const TerminalMessageQueueTarget = z
   })
   .refine(requireTarget, TARGET_REQUIRED)
 
+// `capabilities.unsubscribe` is the client saying it will end this stream with
+// `terminalMessageQueue.unsubscribe`; it is sent only to a host that advertised that method.
+export const TerminalMessageQueueSubscribe = z
+  .object({
+    ...TerminalMessageQueueTargetFields,
+    session: TerminalMessageQueueSessionSchema.optional(),
+    capabilities: z.object({ unsubscribe: z.literal(1).optional() }).optional()
+  })
+  .refine(requireTarget, TARGET_REQUIRED)
+
+// `subscriptionId` is the frame id of the subscribe it ends; the host scopes it to the caller's socket.
+export const TerminalMessageQueueUnsubscribe = z.object({
+  subscriptionId: z.string().min(1).max(512)
+})
+
 export const TerminalMessageQueueSubmit = z
   .object({
     ...TerminalMessageQueueTargetFields,

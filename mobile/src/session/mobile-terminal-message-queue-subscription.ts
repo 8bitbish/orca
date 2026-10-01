@@ -9,11 +9,15 @@ import { decodeTerminalMessageQueueEvent } from './mobile-terminal-message-queue
  * Opens one terminal's queue stream. The transport replays the subscribe after a reconnect, and the
  * host answers each (re)subscribe with a fresh snapshot first, so a reconnect needs nothing here.
  * `onClosed` fires when the host ends the stream or refuses it; the caller decides when to retry.
+ * Disposing ends the host's listener too when `hostUnsubscribes`; otherwise it lives until the
+ * socket closes, as it always has against an older host.
  */
 export function subscribeMobileTerminalMessageQueue(
   client: Pick<RpcClient, 'subscribe'>,
   terminal: string,
   session: TerminalMessageQueueSession | null,
+  /** The host advertised terminal.message-queue-unsubscribe.v1: ending the stream tells it to. */
+  hostUnsubscribes: boolean,
   handlers: {
     onEvent: (event: Exclude<TerminalMessageQueueEvent, { type: 'end' }>) => void
     onClosed: () => void
@@ -28,7 +32,11 @@ export function subscribeMobileTerminalMessageQueue(
   }
   const unsubscribe = client.subscribe(
     'terminalMessageQueue.subscribe',
-    { terminal, ...(session ? { session } : {}) },
+    {
+      terminal,
+      ...(session ? { session } : {}),
+      ...(hostUnsubscribes ? { capabilities: { unsubscribe: 1 } } : {})
+    },
     (raw) => {
       if (closed) {
         return

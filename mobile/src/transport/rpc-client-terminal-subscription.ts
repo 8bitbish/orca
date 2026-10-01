@@ -61,6 +61,18 @@ export function buildStreamUnsubscribe(
       ? { method: 'agentSession.unsubscribe', params: { sessionId, subscriptionId: requestId } }
       : null
   }
+  if (method === 'terminalMessageQueue.subscribe') {
+    // Only a subscribe made against a host that advertised the method carries the marker.
+    const capabilities = 'capabilities' in params ? params.capabilities : null
+    const marked =
+      typeof capabilities === 'object' &&
+      capabilities !== null &&
+      'unsubscribe' in capabilities &&
+      capabilities.unsubscribe === 1
+    return marked && requestId
+      ? { method: 'terminalMessageQueue.unsubscribe', params: { subscriptionId: requestId } }
+      : null
+  }
   if (method === 'nativeChat.subscribe') {
     const subscriptionId = (params as { subscriptionId?: unknown }).subscriptionId
     if (typeof subscriptionId === 'string') {

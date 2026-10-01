@@ -6,5 +6,6 @@ export const TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS = [
   'terminalMessageQueue.edit',
   'terminalMessageQueue.stop',
   'terminalMessageQueue.sendNext',
-  'terminalMessageQueue.subscribe'
+  'terminalMessageQueue.subscribe',
+  'terminalMessageQueue.unsubscribe'
 ] as const

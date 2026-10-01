@@ -11,6 +11,7 @@ type ClientState = {
   emit: ((event: TerminalMessageQueueEvent) => void) | null
   close: (() => void) | null
   subscribeCalls: number
+  unsubscribes: Mock<() => void>[]
   submit: Mock<(...args: unknown[]) => unknown>
   stop: Mock<(...args: unknown[]) => unknown>
 }
@@ -20,6 +21,7 @@ const client = vi.hoisted((): ClientState => ({
   emit: null,
   close: null,
   subscribeCalls: 0,
+  unsubscribes: [],
   submit: vi.fn(),
   stop: vi.fn()
 }))
@@ -38,7 +40,9 @@ vi.mock('@/runtime/terminal-message-queue-client', () => ({
     client.subscribeCalls += 1
     client.emit = handlers.onEvent
     client.close = handlers.onClose
-    return { unsubscribe: vi.fn() }
+    const unsubscribe = vi.fn()
+    client.unsubscribes.push(unsubscribe)
+    return { unsubscribe }
   },
   terminalMessageQueueClient: {
     submit: (...args: unknown[]) => client.submit(...args),
@@ -81,6 +85,7 @@ beforeEach(() => {
   client.supported = true
   client.emit = null
   client.subscribeCalls = 0
+  client.unsubscribes = []
   client.submit.mockReset()
   client.stop.mockReset()
   clearQueueOrphansForTests()
@@ -91,6 +96,21 @@ afterEach(() => {
 })
 
 describe('useNativeChatMessageQueue', () => {
+  // Ending the subscription is what releases the host listener: an IPC abort locally, and the
+  // stream's own socket for a paired runtime.
+  it('ends its subscription when the pane moves to another terminal and on unmount', async () => {
+    const { rerender, unmount } = mount()
+    await waitFor(() => expect(client.unsubscribes).toHaveLength(1))
+    const [first] = client.unsubscribes
+
+    rerender({ ptyId: 'pty-2' })
+    await waitFor(() => expect(client.unsubscribes).toHaveLength(2))
+    expect(first).toHaveBeenCalledTimes(1)
+
+    unmount()
+    expect(client.unsubscribes[1]).toHaveBeenCalledTimes(1)
+  })
+
   it('stays inactive against a host without the queue, so sends stay direct', async () => {
     client.supported = false
     const { result } = mount()

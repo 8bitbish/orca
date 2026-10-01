@@ -61,6 +61,8 @@ export function useMobileNativeChatMessageQueue(args: {
   client: RpcClient | null
   /** The host advertised terminal.message-queue.v1. */
   supported: boolean
+  /** The host advertised terminal.message-queue-unsubscribe.v1. */
+  unsubscribeSupported?: boolean
   /** Runtime handle of the chat's terminal; null when there is none to queue for. */
   terminal: string | null
   /** The chat tab this queue belongs to; lost items are kept per scope. */
@@ -71,6 +73,7 @@ export function useMobileNativeChatMessageQueue(args: {
   onDelivered: (item: TerminalQueuedMessage) => void
 }): MobileNativeChatMessageQueue {
   const { client, supported, terminal, scopeKey } = args
+  const unsubscribeSupported = args.unsubscribeSupported === true
   const sessionIdentity = sessionKey(args.session)
   const latest = useRef(args)
   useLayoutEffect(() => {
@@ -143,30 +146,37 @@ export function useMobileNativeChatMessageQueue(args: {
     let retryTimer: ReturnType<typeof setTimeout> | null = null
     let unsubscribe = (): void => {}
     const start = (): void => {
-      unsubscribe = subscribeMobileTerminalMessageQueue(client, terminal, latest.current.session, {
-        onEvent: (event) => {
-          if (event.type === 'snapshot') {
-            attempt = 0
-            applySnapshot(event.snapshot, true)
-            setConnected(true)
-          } else if (event.type === 'delivered') {
-            retiredIdsRef.current.add(event.item.id)
-            setLastStop(null)
-            latest.current.onDelivered(event.item)
-          } else {
-            retiredIdsRef.current.add(event.itemId)
+      const session = latest.current.session
+      unsubscribe = subscribeMobileTerminalMessageQueue(
+        client,
+        terminal,
+        session,
+        unsubscribeSupported,
+        {
+          onEvent: (event) => {
+            if (event.type === 'snapshot') {
+              attempt = 0
+              applySnapshot(event.snapshot, true)
+              setConnected(true)
+            } else if (event.type === 'delivered') {
+              retiredIdsRef.current.add(event.item.id)
+              setLastStop(null)
+              latest.current.onDelivered(event.item)
+            } else {
+              retiredIdsRef.current.add(event.itemId)
+            }
+          },
+          onClosed: () => {
+            if (disposed) {
+              return
+            }
+            setConnected(false)
+            const delay = Math.min(RESUBSCRIBE_BASE_MS * 2 ** attempt, RESUBSCRIBE_MAX_MS)
+            attempt += 1
+            retryTimer = setTimeout(start, delay)
           }
-        },
-        onClosed: () => {
-          if (disposed) {
-            return
-          }
-          setConnected(false)
-          const delay = Math.min(RESUBSCRIBE_BASE_MS * 2 ** attempt, RESUBSCRIBE_MAX_MS)
-          attempt += 1
-          retryTimer = setTimeout(start, delay)
         }
-      })
+      )
     }
     start()
     return () => {
@@ -176,7 +186,7 @@ export function useMobileNativeChatMessageQueue(args: {
       }
       unsubscribe()
     }
-  }, [applySnapshot, client, sessionIdentity, supported, terminal])
+  }, [applySnapshot, client, sessionIdentity, supported, terminal, unsubscribeSupported])
 
   const active = supported && connected && client !== null && terminal !== null
   const rpc = useMemo(

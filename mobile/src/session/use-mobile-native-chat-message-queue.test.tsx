@@ -67,6 +67,7 @@ function fakeHost(replies: Record<string, (params: Record<string, unknown>) => u
 type HarnessProps = {
   client: RpcClient | null
   supported: boolean
+  unsubscribeSupported?: boolean
   terminal: string | null
   onDeliveryStarted?: (item: TerminalQueuedMessage) => void
   onDelivered?: (item: TerminalQueuedMessage) => void
@@ -80,6 +81,7 @@ describe('useMobileNativeChatMessageQueue', () => {
     queue = useMobileNativeChatMessageQueue({
       client: props.client,
       supported: props.supported,
+      unsubscribeSupported: props.unsubscribeSupported,
       terminal: props.terminal,
       scopeKey: 'host\0wt\0tab-1',
       session: { agent: 'claude', sessionId: 'session-1' },
@@ -365,6 +367,29 @@ describe('useMobileNativeChatMessageQueue', () => {
     await update({ client: host.client, supported: true, terminal: 'term-1' })
     await emit(host.live(), { type: 'snapshot', snapshot: snap(9, []) })
     expect(queue?.orphans).toEqual([])
+  })
+
+  it('marks its subscribe for the host to end, and ends it on terminal change and unmount', async () => {
+    const host = fakeHost({})
+    const props = { client: host.client, supported: true, unsubscribeSupported: true }
+    await mount({ ...props, terminal: 'term-1' })
+    const first = host.live()
+    expect(first.params).toMatchObject({ terminal: 'term-1', capabilities: { unsubscribe: 1 } })
+
+    await update({ ...props, terminal: 'term-2' })
+    expect(first.closed).toBe(true)
+    const second = host.live()
+    expect(second.params).toMatchObject({ terminal: 'term-2', capabilities: { unsubscribe: 1 } })
+
+    act(() => renderer?.unmount())
+    renderer = null
+    expect(second.closed).toBe(true)
+  })
+
+  it('leaves the marker off against a host without the unsubscribe', async () => {
+    const host = fakeHost({})
+    await mount({ client: host.client, supported: true, terminal: 'term-1' })
+    expect(host.live().params).not.toHaveProperty('capabilities')
   })
 
   it('ignores a frame it cannot read', async () => {

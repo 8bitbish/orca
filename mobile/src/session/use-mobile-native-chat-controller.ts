@@ -161,6 +161,7 @@ export function useMobileNativeChatController(args: {
   const terminalQueue = useMobileNativeChatTerminalQueue({
     client,
     supported: agentSessionHostSupport?.terminalMessageQueue === true,
+    unsubscribeSupported: agentSessionHostSupport?.terminalMessageQueueUnsubscribe === true,
     resolution: activeChatStructured ? null : activeChatResolution,
     terminal: activeHandle,
     scopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId),

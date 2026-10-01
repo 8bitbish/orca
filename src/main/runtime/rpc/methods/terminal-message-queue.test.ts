@@ -3,15 +3,18 @@ import { RpcDispatcher } from '../dispatcher'
 import type { RpcRequest } from '../core'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import { MOBILE_RPC_METHOD_ALLOWLIST } from '../../runtime-rpc/runtime-rpc-mobile-method-allowlist'
+import { RUNTIME_CAPABILITIES } from '../../../../shared/protocol-version'
 import {
-  RUNTIME_CAPABILITIES,
-  TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY
-} from '../../../../shared/protocol-version'
+  TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY,
+  TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY
+} from '../../../../shared/terminal-message-queue-capability'
 import { TerminalMessageQueueHost } from '../../../terminal-message-queue/terminal-message-queue-host'
+import { createSubscriptionRegistryDouble } from '../subscription-registry-test-double'
 import { ALL_RPC_METHODS } from './index'
 import { TERMINAL_MESSAGE_QUEUE_METHODS } from './terminal-message-queue'
 
 const METHOD_NAMES = [
+  'terminalMessageQueue.unsubscribe',
   'terminalMessageQueue.submit',
   'terminalMessageQueue.list',
   'terminalMessageQueue.remove',
@@ -23,7 +26,7 @@ const METHOD_NAMES = [
 
 let working = true
 
-function createDispatcher(): { dispatcher: RpcDispatcher; host: TerminalMessageQueueHost } {
+function createDispatcher() {
   const host = new TerminalMessageQueueHost({
     resolveTarget: (ref) =>
       ref.ptyId === 'pty-1' || ref.terminal === 'term_1'
@@ -47,22 +50,37 @@ function createDispatcher(): { dispatcher: RpcDispatcher; host: TerminalMessageQ
     ],
     subscribe: () => () => {}
   })
-  const cleanups = new Map<string, () => void>()
+  const registry = createSubscriptionRegistryDouble()
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: these methods read only the queue host, the runtime id and the subscription registry.
   const runtime = {
     getRuntimeId: () => 'test-runtime',
     terminalMessageQueue: host,
-    registerSubscriptionCleanup: (id: string, cleanup: () => void) => cleanups.set(id, cleanup),
-    cleanupSubscription: (id: string) => {
-      const cleanup = cleanups.get(id)
-      cleanups.delete(id)
-      cleanup?.()
-    }
+    ...registry
   } as unknown as OrcaRuntimeService
+  let liveListeners = 0
+  const subscribe = host.subscribe.bind(host)
+  vi.spyOn(host, 'subscribe').mockImplementation((ref, session, listener) => {
+    const dispose = subscribe(ref, session, listener)
+    liveListeners += 1
+    let disposed = false
+    return () => {
+      if (!disposed) {
+        disposed = true
+        liveListeners -= 1
+      }
+      dispose()
+    }
+  })
   return {
     dispatcher: new RpcDispatcher({ runtime, methods: TERMINAL_MESSAGE_QUEUE_METHODS }),
-    host
+    host,
+    registry,
+    liveListeners: () => liveListeners
   }
+}
+
+function socket(connectionId: string) {
+  return { clientId: 'phone', clientKind: 'mobile' as const, connectionId }
 }
 
 function request(method: string, params: unknown): RpcRequest {
@@ -80,6 +98,7 @@ afterEach(() => {
 describe('terminalMessageQueue RPC', () => {
   it('is registered, advertised by the host, and open to paired phones', () => {
     expect(RUNTIME_CAPABILITIES).toContain(TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY)
+    expect(RUNTIME_CAPABILITIES).toContain(TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY)
     for (const name of METHOD_NAMES) {
       expect(ALL_RPC_METHODS.some((method) => method.name === name)).toBe(true)
       expect(MOBILE_RPC_METHOD_ALLOWLIST.has(name)).toBe(true)
@@ -142,5 +161,70 @@ describe('terminalMessageQueue RPC', () => {
     expect(frames[0]).toMatchObject({ ok: true, result: { type: 'snapshot' } })
     controller.abort()
     expect(frames.at(-1)).toMatchObject({ result: { type: 'end' } })
+  })
+
+  async function open(
+    dispatcher: RpcDispatcher,
+    frameId: string,
+    connectionId: string,
+    frames: unknown[] = []
+  ): Promise<unknown[]> {
+    await dispatcher.dispatchStreaming(
+      {
+        id: frameId,
+        authToken: 'tok',
+        method: 'terminalMessageQueue.subscribe',
+        params: { terminal: 'term_1', capabilities: { unsubscribe: 1 } }
+      },
+      (frame) => frames.push(JSON.parse(frame)),
+      socket(connectionId)
+    )
+    return frames
+  }
+
+  it('drops the listener a client unsubscribes and keeps its sibling on the same socket', async () => {
+    const { dispatcher, liveListeners } = createDispatcher()
+    const ended = await open(dispatcher, 'frame-a', 'socket-1')
+    const kept = await open(dispatcher, 'frame-b', 'socket-1')
+    expect(liveListeners()).toBe(2)
+
+    const reply = await dispatcher.dispatch(
+      request('terminalMessageQueue.unsubscribe', { subscriptionId: 'frame-a' }),
+      socket('socket-1')
+    )
+    expect(reply).toMatchObject({ ok: true, result: { unsubscribed: true } })
+    expect(liveListeners()).toBe(1)
+    expect(ended.at(-1)).toMatchObject({ result: { type: 'end' } })
+    expect(kept.at(-1)).not.toMatchObject({ result: { type: 'end' } })
+  })
+
+  it('cannot end a stream another socket owns', async () => {
+    const { dispatcher, liveListeners } = createDispatcher()
+    await open(dispatcher, 'frame-a', 'socket-1')
+    await dispatcher.dispatch(
+      request('terminalMessageQueue.unsubscribe', { subscriptionId: 'frame-a' }),
+      socket('socket-2')
+    )
+    expect(liveListeners()).toBe(1)
+  })
+
+  it('drops every listener a socket carried when it closes', async () => {
+    const { dispatcher, registry, liveListeners } = createDispatcher()
+    await open(dispatcher, 'frame-a', 'socket-1')
+    await open(dispatcher, 'frame-b', 'socket-1')
+    await open(dispatcher, 'frame-c', 'socket-2')
+    expect(liveListeners()).toBe(3)
+
+    registry.cleanupSubscriptionsForConnection('socket-1')
+    expect(liveListeners()).toBe(1)
+  })
+
+  it('answers an unsubscribe for a stream that already ended', async () => {
+    const { dispatcher } = createDispatcher()
+    const reply = await dispatcher.dispatch(
+      request('terminalMessageQueue.unsubscribe', { subscriptionId: 'gone' }),
+      socket('socket-1')
+    )
+    expect(reply).toMatchObject({ ok: true, result: { unsubscribed: true } })
   })
 })

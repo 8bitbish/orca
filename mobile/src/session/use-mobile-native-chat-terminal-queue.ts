@@ -31,6 +31,7 @@ const ORPHAN_GRACE_MS = 4_000
 export function useMobileNativeChatTerminalQueue(args: {
   client: RpcClient | null
   supported: boolean
+  unsubscribeSupported?: boolean
   /** The terminal chat's transcript identity; null when the active chat is not terminal-backed. */
   resolution: MobileNativeChatResolution | null
   terminal: string | null
@@ -90,6 +91,7 @@ export function useMobileNativeChatTerminalQueue(args: {
   const queue = useMobileNativeChatMessageQueue({
     client: args.client,
     supported: args.supported && resolution !== null,
+    unsubscribeSupported: args.unsubscribeSupported === true,
     terminal: resolution ? args.terminal : null,
     scopeKey: args.scopeKey,
     session,

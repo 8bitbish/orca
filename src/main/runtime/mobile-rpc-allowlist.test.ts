@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ALL_RPC_METHODS } from './rpc/methods'
+import { TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS } from './runtime-rpc/runtime-rpc-mobile-terminal-message-queue-methods'
 
 const MOBILE_DYNAMIC_RPC_METHODS = [
   // Why: computed sendRequest method names do not appear as literals in the
@@ -54,7 +55,8 @@ const MOBILE_STREAMING_CLEANUP_RPC_METHODS = [
   'runtime.clientEvents.unsubscribe',
   'session.tabs.unsubscribe',
   'session.tabs.unsubscribeAll',
-  'terminal.unsubscribe'
+  'terminal.unsubscribe',
+  'terminalMessageQueue.unsubscribe'
 ]
 
 function listSourceFiles(root: string): string[] {
@@ -109,7 +111,11 @@ function mobileRpcAllowlist(): Set<string> {
   if (!allowlist) {
     throw new Error('MOBILE_RPC_METHOD_ALLOWLIST not found')
   }
-  return new Set([...allowlist[1]!.matchAll(/'([^']+)'/g)].map((match) => match[1]!))
+  // The source scan sees only literals, so the spread-in method lists are added by import.
+  return new Set([
+    ...[...allowlist[1]!.matchAll(/'([^']+)'/g)].map((match) => match[1]!),
+    ...TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS
+  ])
 }
 
 function registeredRuntimeMethods(): Set<string> {

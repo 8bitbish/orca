@@ -8,7 +8,9 @@ import {
   TerminalMessageQueueEdit,
   TerminalMessageQueueRemove,
   TerminalMessageQueueSubmit,
-  TerminalMessageQueueTarget
+  TerminalMessageQueueSubscribe,
+  TerminalMessageQueueTarget,
+  TerminalMessageQueueUnsubscribe
 } from '../../../../shared/rpc-contract/terminal-message-queue-params'
 import { bindStructuredAgentSessionStream } from './structured-agent-session-status-stream'
 
@@ -20,6 +22,12 @@ function targetOf(params: { terminal?: string; ptyId?: string }): {
     ...(params.terminal ? { terminal: params.terminal } : {}),
     ...(params.ptyId ? { ptyId: params.ptyId } : {})
   }
+}
+
+// One per stream: a paired phone multiplexes every chat's stream over one socket, so the frame id
+// keeps one unsubscribe from ending a sibling's stream.
+function subscriptionIdFor(ctx: RpcContext, frameId: string): string {
+  return `terminalMessageQueue:${ctx.connectionId ?? 'local'}:${frameId}`
 }
 
 function queueOf(ctx: RpcContext): RpcContext['runtime']['terminalMessageQueue'] {
@@ -69,9 +77,9 @@ export const TERMINAL_MESSAGE_QUEUE_METHODS = [
   }),
   defineStreamingMethod({
     name: 'terminalMessageQueue.subscribe',
-    params: TerminalMessageQueueTarget,
+    params: TerminalMessageQueueSubscribe,
     handler: async (params, ctx, emit) => {
-      const subscriptionId = `terminalMessageQueue:${ctx.connectionId ?? 'local'}:${ctx.requestId ?? randomUUID()}`
+      const subscriptionId = subscriptionIdFor(ctx, ctx.requestId ?? randomUUID())
       let dispose = (): void => {}
       const stream = bindStructuredAgentSessionStream(ctx, subscriptionId, () => {
         dispose()
@@ -84,6 +92,16 @@ export const TERMINAL_MESSAGE_QUEUE_METHODS = [
       if (stream.isClosed()) {
         dispose()
       }
+    }
+  }),
+  // Gated by TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY. A socket close still ends every
+  // stream it carried; this ends one while the socket stays up.
+  defineMethod({
+    name: 'terminalMessageQueue.unsubscribe',
+    params: TerminalMessageQueueUnsubscribe,
+    handler: async (params, ctx) => {
+      ctx.runtime.cleanupSubscription(subscriptionIdFor(ctx, params.subscriptionId))
+      return { unsubscribed: true }
     }
   })
 ]

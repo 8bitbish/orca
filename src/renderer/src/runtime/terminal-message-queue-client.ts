@@ -1,5 +1,5 @@
 import type { RuntimeRpcResponse } from '../../../shared/runtime-rpc-envelope'
-import { TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
+import { TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY } from '../../../shared/terminal-message-queue-capability'
 import type {
   TerminalMessageQueueEditResult,
   TerminalMessageQueueEvent,

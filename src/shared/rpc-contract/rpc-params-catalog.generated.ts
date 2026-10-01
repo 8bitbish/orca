@@ -489,7 +489,9 @@ import {
   TerminalMessageQueueEdit,
   TerminalMessageQueueRemove,
   TerminalMessageQueueSubmit,
-  TerminalMessageQueueTarget
+  TerminalMessageQueueSubscribe,
+  TerminalMessageQueueTarget,
+  TerminalMessageQueueUnsubscribe
 } from './terminal-message-queue-params'
 import { TerminalAdoptOrphans } from './terminal-orphan-params'
 import { TerminalQuickCommandsUpdate } from './terminal-quick-command-params'
@@ -1169,7 +1171,8 @@ export const RPC_PARAMS_BY_METHOD = {
   'terminalMessageQueue.sendNext': TerminalMessageQueueTarget,
   'terminalMessageQueue.stop': TerminalMessageQueueTarget,
   'terminalMessageQueue.submit': TerminalMessageQueueSubmit,
-  'terminalMessageQueue.subscribe': TerminalMessageQueueTarget,
+  'terminalMessageQueue.subscribe': TerminalMessageQueueSubscribe,
+  'terminalMessageQueue.unsubscribe': TerminalMessageQueueUnsubscribe,
   'ui.get': null,
   'ui.recordFeatureInteraction': FeatureInteractionIdParam,
   'ui.set': UiUpdate,
