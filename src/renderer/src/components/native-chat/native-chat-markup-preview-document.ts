@@ -7,11 +7,14 @@
 //    before the markup reaches the frame;
 //  - the CSP meta parses before any of that markup and forbids all network
 //    (default-src 'none'), allowing inline styles and data: images/fonts only;
+//  - the built-in style kit (native-chat-markup-style-kit.ts) is plain CSS, so a
+//    reply looks finished with classes alone and never needs a script to;
 //  - the one script allowed is the sizing script below, pinned by its hash, so
 //    `allow-scripts` admits exactly that and nothing the agent wrote. It posts
 //    the content height so the card can fit it; nothing else crosses the frame.
 
 import DOMPurify from 'dompurify'
+import { NATIVE_CHAT_MARKUP_STYLE_KIT } from './native-chat-markup-style-kit'
 
 export const NATIVE_CHAT_MARKUP_SIZE_MESSAGE = 'orca-native-chat-markup-size'
 
@@ -109,7 +112,7 @@ export function sanitizeNativeChatMarkup(source: string): string {
 const BASE_STYLES = `
 :where(html){color-scheme:inherit}
 :where(html,body){margin:0;background:transparent;color:var(--foreground,CanvasText)}
-:where(body){padding:12px;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow-x:auto}
+:where(body){padding:12px;overflow-x:auto}
 :where(img,svg){max-width:100%;height:auto}
 :where(pre,code){font-family:ui-monospace,Menlo,Consolas,monospace}
 `
@@ -139,7 +142,7 @@ export function buildNativeChatMarkupPreviewDocument({
     `<html class="${colorScheme}"><head><meta charset="utf-8">` +
     `<meta http-equiv="Content-Security-Policy" content="${NATIVE_CHAT_MARKUP_PREVIEW_CSP}">` +
     `<meta name="color-scheme" content="${colorScheme}">` +
-    `<style>:root{${tokenCss}}${BASE_STYLES}${KIND_STYLES[kind]}</style>` +
+    `<style>:root{${tokenCss}}${BASE_STYLES}${NATIVE_CHAT_MARKUP_STYLE_KIT}${KIND_STYLES[kind]}</style>` +
     `<script>${NATIVE_CHAT_MARKUP_SIZE_SCRIPT}</script>` +
     `</head><body>${body}</body></html>`
   )

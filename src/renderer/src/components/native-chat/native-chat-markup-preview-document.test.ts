@@ -8,10 +8,12 @@ import {
   NATIVE_CHAT_MARKUP_PREVIEW_SANDBOX,
   NATIVE_CHAT_MARKUP_SIZE_SCRIPT,
   NATIVE_CHAT_MARKUP_SIZE_SCRIPT_HASH,
-  stripNativeChatMarkupNetworkRefs
+  stripNativeChatMarkupNetworkRefs,
+  type NativeChatMarkupKind
 } from './native-chat-markup-preview-document'
+import { NATIVE_CHAT_MARKUP_STYLE_KIT } from './native-chat-markup-style-kit'
 
-function build(source: string, kind: 'html' | 'svg' = 'html'): string {
+function build(source: string, kind: NativeChatMarkupKind = 'html'): string {
   return buildNativeChatMarkupPreviewDocument({
     source,
     kind,
@@ -76,5 +78,32 @@ describe('native chat markup preview document', () => {
     const doc = build('<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>', 'svg')
     expect(doc).toContain('<circle')
     expect(doc).toContain('justify-content:center')
+  })
+
+  it.each(['html', 'svg', 'widget'] as const)(
+    'carries the style kit into every %s preview, ahead of the reply',
+    (kind) => {
+      const doc = build('<style>.card{color:red}</style><div class="card">x</div>', kind)
+      expect(doc).toContain(NATIVE_CHAT_MARKUP_STYLE_KIT)
+      expect(doc.indexOf(NATIVE_CHAT_MARKUP_STYLE_KIT)).toBeLessThan(
+        doc.indexOf('.card{color:red}')
+      )
+    }
+  )
+
+  it('embeds the app font inline, since the frame can load nothing else', () => {
+    expect(NATIVE_CHAT_MARKUP_STYLE_KIT).toMatch(/@font-face\{font-family:'Geist';src:url\(data:/)
+    expect(NATIVE_CHAT_MARKUP_STYLE_KIT).not.toMatch(/url\((?!data:)/)
+  })
+
+  it('keeps every kit rule at zero specificity so reply CSS wins', () => {
+    const rules = NATIVE_CHAT_MARKUP_STYLE_KIT.split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith('@font-face'))
+    expect(rules.length).toBeGreaterThan(40)
+    for (const rule of rules) {
+      // Theme variables are declared on :root; everything that styles markup is :where().
+      expect(rule).toMatch(/^(:root(\.dark)?\{--|:where\()/)
+    }
   })
 })

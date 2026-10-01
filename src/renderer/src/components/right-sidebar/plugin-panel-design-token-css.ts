@@ -6,10 +6,12 @@ import { PANEL_DESIGN_TOKEN_ALLOWLIST } from '../../../../shared/plugins/plugin-
  * computed styles (trusted origin) but still stripped of structural CSS
  * characters before landing inside the shell's <style> block.
  */
-export function buildPanelDesignTokenCss(): string {
+export function buildPanelDesignTokenCss(
+  tokens: readonly string[] = PANEL_DESIGN_TOKEN_ALLOWLIST
+): string {
   const styles = getComputedStyle(document.documentElement)
   const declarations: string[] = []
-  for (const token of PANEL_DESIGN_TOKEN_ALLOWLIST) {
+  for (const token of tokens) {
     const value = styles.getPropertyValue(token).trim()
     if (value.length > 0) {
       declarations.push(`${token}:${value.replaceAll(/[{}<>;]/g, '')}`)
