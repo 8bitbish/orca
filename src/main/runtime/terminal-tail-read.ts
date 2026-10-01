@@ -140,7 +140,7 @@ export function buildVisibleSnapshotReadFallback(
   read: RuntimeTerminalRead,
   visibleLines: string[],
   limit: number | undefined,
-  draft?: string
+  composer: Pick<RuntimeTerminalRead, 'draft' | 'suggestion'> = {}
 ): RuntimeTerminalRead {
   const lineLimit = terminalReadLimit(limit, DEFAULT_TERMINAL_READ_LIMIT)
   const lineBoundedTail = visibleLines.slice(-lineLimit)
@@ -155,7 +155,8 @@ export function buildVisibleSnapshotReadFallback(
       read.limited || lineBoundedTail.length < visibleLines.length || charBoundedTail.limited,
     returnedLineCount: charBoundedTail.tail.length,
     source: 'screen',
-    ...(draft ? { draft } : {})
+    ...(composer.draft ? { draft: composer.draft } : {}),
+    ...(composer.suggestion ? { suggestion: composer.suggestion } : {})
   }
 }
 

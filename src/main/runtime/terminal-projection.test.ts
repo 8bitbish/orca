@@ -26,11 +26,12 @@ describe('projectTerminalTailLines', () => {
 
     expect(projectTerminalTailLines(emulator, 2)).toEqual({
       lines: ['old output', 'tail output'],
-      draft: 'proceed'
+      suggestion: 'proceed'
     })
   })
 
-  it('backfills the prompt row when a small limit contains only draft continuations', () => {
+  // The dim suggestion's rows are masked like a draft's, but it is reported as `suggestion`.
+  it('backfills the prompt row when a small limit contains only suggestion continuations', () => {
     const context: TerminalCursorContext = {
       rows: ['────────', '❯ proceed'],
       typedRows: ['────────', '❯'],
@@ -53,7 +54,7 @@ describe('projectTerminalTailLines', () => {
 
     expect(projectTerminalTailLines(emulator, 2)).toEqual({
       lines: ['────────', '❯'],
-      draft: 'proceed with release'
+      suggestion: 'proceed with release'
     })
   })
 })

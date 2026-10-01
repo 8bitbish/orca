@@ -194,8 +194,11 @@ export type RuntimeTerminalRead = {
   latestCursor?: string
   returnedLineCount?: number
   source?: 'stream' | 'screen' | 'screen-unavailable'
-  /** UI-only composer text, excluded from `tail`. */
+  /** UI-only composer text the user typed, excluded from `tail`. */
   draft?: string
+  /** The dim suggestion an agent painted into its empty prompt, excluded from `tail`. Optional:
+   *  older hosts report it as `draft`. */
+  suggestion?: string
 }
 
 export type RuntimeTerminalRename = {

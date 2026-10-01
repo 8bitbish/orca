@@ -1,6 +1,9 @@
 import { Terminal } from '@xterm/headless'
 import { describe, expect, it } from 'vitest'
-import { detectTerminalComposerDraft } from '../../shared/terminal-composer-draft'
+import {
+  detectTerminalComposerDraft,
+  detectTerminalComposerPrompt
+} from '../../shared/terminal-composer-draft'
 import { HeadlessEmulator } from './headless-emulator'
 import { readTerminalCursorLineContext } from '../../shared/terminal-cursor-line-context'
 
@@ -27,7 +30,9 @@ describe('readTerminalCursorLineContext', () => {
       expect(context?.rawAfterCursor).toBe(cursorRowTail)
       expect(context?.rowsBelow).toEqual([continuation, '', '', ''])
       expect(context?.rowsBelowWrapped).toEqual([true, false, false, false])
-      expect(detectTerminalComposerDraft(context)?.text).toBe('proceed with the release')
+      // Dim text is the agent's suggestion, not a draft (deliberately reverses 419e3b4496).
+      expect(detectTerminalComposerDraft(context)).toBeNull()
+      expect(detectTerminalComposerPrompt(context)?.suggestion).toBe('proceed with the release')
       terminal.dispose()
     }
   )

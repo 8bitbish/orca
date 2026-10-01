@@ -61,6 +61,9 @@ const KNOWN_PREEXISTING_I2_FAILURES: Record<string, number> = {
   'codex-0-158-0-timed-turn': 20,
   'codex-0-158-0-trustprompt': 36,
   'claude-dialog-trust-workspace-answered': 13,
+  // Jittered resize: the live pen's 256-colour background leaks onto row 0's restored cells.
+  // Replayed against the previous build (`build-serialize-addon-at-ref.mjs`): I1 and I3 hold.
+  'claude-prompt-suggestion': 2,
   // DSH-TUI's whale intro paints whole rows of 24-bit background, and every one of this
   // transcript's divergences is the same shape: `visible-grid row=0`, a true-colour
   // background that the round trip does not restore to default. Verified as upstream, not a

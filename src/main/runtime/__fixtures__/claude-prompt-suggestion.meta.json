@@ -1,0 +1,9 @@
+{
+  "capturedAt": "2026-10-01T08:42:36.083Z",
+  "platform": "darwin",
+  "command": ["claude"],
+  "cols": 100,
+  "rows": 30,
+  "note": "Claude Code 2.1.286, macOS, Claude Team plan, Opus 5.5 (1M context). Stock Try placeholder, two replies, the dim post-reply prompt suggestion, typed text, cleared, then /comp with its completion menu. Two startup warnings about the operator's permission rules were blanked to same-length X runs before commit.",
+  "exitCode": 129
+}
