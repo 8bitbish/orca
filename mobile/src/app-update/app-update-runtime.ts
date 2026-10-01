@@ -10,7 +10,11 @@ import {
 import { appStoreUpdateSource } from './app-store-update-source'
 import { createAppUpdateChecker, type AppUpdateState } from './app-update-checker'
 import type { AppUpdateSource } from './app-update-source'
-import { githubReleaseUpdateSource } from './github-release-update-source'
+import {
+  createGithubReleaseUpdateSource,
+  githubReleaseUpdateSource,
+  type GithubReleaseChannel
+} from './github-release-update-source'
 
 /**
  * Invariant: this app does not use expo-updates, so `expoConfig` is the manifest embedded in the
@@ -19,10 +23,27 @@ import { githubReleaseUpdateSource } from './github-release-update-source'
  */
 export const installedAppVersion: string | null = Constants.expoConfig?.version ?? null
 
+function personalGithubChannel(value: unknown): GithubReleaseChannel | null {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('repo' in value) ||
+    !('tagPrefix' in value)
+  ) {
+    return null
+  }
+  const { repo, tagPrefix } = value
+  return typeof repo === 'string' && typeof tagPrefix === 'string' ? { repo, tagPrefix } : null
+}
+
 /** The channel that installed this binary. */
 function resolveAppUpdateSource(): AppUpdateSource | null {
   if (Platform.OS === 'android') {
-    return githubReleaseUpdateSource
+    // A personal build (app.config.js) installs beside the official app, so it updates from its own feed.
+    const channel = personalGithubChannel(Constants.expoConfig?.extra?.appUpdateGithub)
+    return channel
+      ? createGithubReleaseUpdateSource((input, init) => fetch(input, init), channel)
+      : githubReleaseUpdateSource
   }
   if (Platform.OS === 'ios') {
     return appStoreUpdateSource

@@ -11,22 +11,52 @@
 const APS_ENVIRONMENT =
   process.env.ORCA_IOS_APS_ENVIRONMENT === 'production' ? 'production' : 'development'
 
-module.exports = ({ config }) => ({
-  ...config,
-  ios: {
-    ...config.ios,
-    entitlements: { ...config.ios?.entitlements, 'aps-environment': APS_ENVIRONMENT }
-  },
-  plugins: (config.plugins ?? []).map((plugin) =>
-    plugin === 'expo-notifications'
-      ? [
-          'expo-notifications',
-          {
-            enableBackgroundRemoteNotifications: true,
-            mode: APS_ENVIRONMENT,
-            icon: './assets/notification-icon.png'
-          }
-        ]
-      : plugin
-  )
-})
+// Jake's personal build installs beside the official app, so it needs its own app ID. Its
+// Firebase client is registered only for the official package, so it ships without FCM.
+const PERSONAL = process.env.ORCA_MOBILE_VARIANT === 'personal'
+const PERSONAL_APP_ID = 'com.stably.orca.mobile.personal'
+
+function withPersonalVariant(config) {
+  if (!PERSONAL) {
+    return config
+  }
+  const { googleServicesFile: _official, ...android } = config.android ?? {}
+  return {
+    ...config,
+    name: 'Orca Personal',
+    ios: { ...config.ios, bundleIdentifier: PERSONAL_APP_ID },
+    android: {
+      ...android,
+      package: PERSONAL_APP_ID,
+      // build-android.sh passes a rising code so each build installs over the last.
+      versionCode: Number(process.env.ORCA_MOBILE_VERSION_CODE) || android.versionCode
+    },
+    extra: {
+      ...config.extra,
+      appUpdateGithub: { repo: '8bitbish/orca', tagPrefix: 'mobile-android-personal-v' }
+    }
+  }
+}
+
+module.exports = ({ config: baseConfig }) => {
+  const config = withPersonalVariant(baseConfig)
+  return {
+    ...config,
+    ios: {
+      ...config.ios,
+      entitlements: { ...config.ios?.entitlements, 'aps-environment': APS_ENVIRONMENT }
+    },
+    plugins: (config.plugins ?? []).map((plugin) =>
+      plugin === 'expo-notifications'
+        ? [
+            'expo-notifications',
+            {
+              enableBackgroundRemoteNotifications: true,
+              mode: APS_ENVIRONMENT,
+              icon: './assets/notification-icon.png'
+            }
+          ]
+        : plugin
+    )
+  }
+}
