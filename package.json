@@ -47,6 +47,7 @@
     "check:feature-wall-assets": "node config/scripts/check-feature-wall-assets.mjs",
     "generate:rpc-params-catalog": "node config/scripts/generate-rpc-params-catalog.mjs",
     "verify:rpc-params-catalog": "node config/scripts/generate-rpc-params-catalog.mjs --check",
+    "generate:slack-emoji-shortcodes": "node config/scripts/generate-slack-emoji-shortcodes.mjs",
     "generate:bundled-skill-guides": "node config/scripts/generate-bundled-skill-guides.mjs --write",
     "verify:bundled-skill-guides": "node config/scripts/generate-bundled-skill-guides.mjs --check",
     "generate:skill-bundle-manifest": "node config/scripts/generate-skill-bundle-manifest.mjs --write",

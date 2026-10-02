@@ -79,6 +79,17 @@ describe('NativeChatSlackDraftCard', () => {
     Reflect.deleteProperty(navigator, 'sendBeacon')
   })
 
+  it('draws Slack emoji codes in the draft text', () => {
+    renderSlackFence(
+      'slack-draft',
+      draft({ text: 'Thanks :wave::skin-tone-4: :heart: :custom_one:' }),
+      null
+    )
+    expect(document.querySelector('[data-slack-text]')).toHaveTextContent(
+      'Thanks 👋🏽 ❤️ :custom_one:'
+    )
+  })
+
   it('has no actions to take outside a chat that can answer', () => {
     renderSlackFence('slack-draft', draft(), null)
     for (const button of screen.getAllByRole('button', { name: /Sends|Type a reply/ })) {

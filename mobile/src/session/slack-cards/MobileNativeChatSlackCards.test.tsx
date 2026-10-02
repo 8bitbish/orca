@@ -241,6 +241,21 @@ describe('slack-message card', () => {
     ])
   })
 
+  it('draws Slack emoji codes in the summary and text, leaving code and custom codes', async () => {
+    const tree = await render(
+      fence('slack-message', {
+        ...MESSAGE,
+        summary: 'Happy with it :slightly_smiling_face: :+1::skin-tone-2:',
+        text: 'Ha :joy: :ok_hand::skin-tone-3: *nice :tada:* `:joy:` :partyparrot:'
+      })
+    )
+    const all = texts(tree).split('|')
+    expect(all).toContain('Happy with it 🙂 👍🏻')
+    expect(all).toContain('Ha 😂 👌🏼   :partyparrot:')
+    expect(all).toContain('nice 🎉')
+    expect(all).toContain(':joy:')
+  })
+
   it('sends an action’s exact text as the user’s message and keeps it chosen', async () => {
     const value = chat()
     const tree = await render(fence('slack-message', MESSAGE), value)
@@ -304,6 +319,13 @@ describe('slack-draft card', () => {
     expect(all).toContain('#design-review')
     expect(all).toContain('overlay')
     expect(all).toContain('Sends “Send the draft to Sam”')
+  })
+
+  it('draws Slack emoji codes in the draft text', async () => {
+    const tree = await render(
+      fence('slack-draft', { ...DRAFT, text: 'Thanks :wave::skin-tone-4: :heart: :custom_one:' })
+    )
+    expect(texts(tree).split('|')).toContain('Thanks 👋🏽 ❤️ :custom_one:')
   })
 
   it('only ever replies into the chat: nothing goes to Slack or the network', async () => {

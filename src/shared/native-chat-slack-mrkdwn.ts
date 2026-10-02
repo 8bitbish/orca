@@ -1,10 +1,12 @@
 // Slack mrkdwn, the format of a message's original text, read into a small tree
 // and written back out as CommonMark for the chat's markdown renderers. Only bold,
-// italic, strike, code, links and mentions carry over; every other character is
-// escaped, so a message can never inject markdown, HTML or a link of its own.
+// italic, strike, code, links and mentions carry over, and `:emoji:` codes become
+// emoji; every other character is escaped, so a message cannot inject markdown, HTML
+// or a link of its own.
 
 import { buildNativeChatSlackHref } from './native-chat-slack-href'
 import { isNativeChatSlackConversationId, isNativeChatSlackUserId } from './native-chat-slack-ids'
+import { replaceSlackEmojiShortcodes } from './slack-emoji-shortcodes'
 
 export type SlackMrkdwnNode =
   | { type: 'text'; text: string }
@@ -109,9 +111,9 @@ function parseAngle(token: string): SlackMrkdwnNode {
     return { type: 'text', text: label ?? `@${word}` }
   }
   const url = decodeEntities(target)
-  return SAFE_URL.test(url)
-    ? { type: 'link', url, label: label ?? url }
-    : { type: 'text', text: label ?? url }
+  // Only a written label gets emoji; a bare URL shown as its own label stays verbatim.
+  const shown = label === undefined ? url : replaceSlackEmojiShortcodes(label)
+  return SAFE_URL.test(url) ? { type: 'link', url, label: shown } : { type: 'text', text: shown }
 }
 
 function parseInline(source: string, depth: number): SlackMrkdwnNode[] {
@@ -119,7 +121,7 @@ function parseInline(source: string, depth: number): SlackMrkdwnNode[] {
   let text = ''
   const flush = (): void => {
     if (text !== '') {
-      nodes.push({ type: 'text', text: decodeEntities(text) })
+      nodes.push({ type: 'text', text: replaceSlackEmojiShortcodes(decodeEntities(text)) })
       text = ''
     }
   }

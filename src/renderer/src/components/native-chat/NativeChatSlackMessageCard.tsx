@@ -8,6 +8,7 @@ import {
   parseNativeChatSlackMessageCard,
   type NativeChatSlackMessageCard as SlackMessageCard
 } from '../../../../shared/native-chat-slack-card-payload'
+import { replaceSlackEmojiShortcodes } from '../../../../shared/slack-emoji-shortcodes'
 import { NativeChatFencePreviewContext } from './native-chat-fence-preview'
 import { nativeChatProjectCardKey } from './native-chat-project-card-choice'
 import { NativeChatProjectReplyContext } from './native-chat-project-reply-context'
@@ -120,7 +121,7 @@ export function NativeChatSlackMessageCard({
           ) : null}
         </div>
         <p data-slack-summary="" className="m-0 text-sm font-semibold leading-5">
-          {card.summary}
+          {replaceSlackEmojiShortcodes(card.summary)}
         </p>
         {card.text ? (
           <div className="border-l-2 border-border pl-2.5">

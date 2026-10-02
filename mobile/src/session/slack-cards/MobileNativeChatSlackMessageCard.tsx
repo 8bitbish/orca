@@ -6,6 +6,7 @@ import {
   parseNativeChatSlackMessageCard,
   type NativeChatSlackMessageCard
 } from '../../../../src/shared/native-chat-slack-card-payload'
+import { replaceSlackEmojiShortcodes } from '../../../../src/shared/slack-emoji-shortcodes'
 import {
   MobileNativeChatMessageIdContext,
   MobileNativeChatProjectsContext
@@ -67,7 +68,7 @@ export function MobileNativeChatSlackMessageCard({
             ) : null}
           </Text>
         </View>
-        <Text style={styles.summary}>{card.summary}</Text>
+        <Text style={styles.summary}>{replaceSlackEmojiShortcodes(card.summary)}</Text>
         {card.text ? (
           <View style={styles.quote}>
             <MobileNativeChatSlackMrkdwn source={card.text} workspace={workspace} collapsible />

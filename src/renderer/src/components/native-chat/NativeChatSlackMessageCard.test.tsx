@@ -64,6 +64,22 @@ describe('NativeChatSlackMessageCard', () => {
     await waitFor(() => expect(document.querySelector('[data-slack-image] img')).not.toBeNull())
   })
 
+  it('draws Slack emoji codes in the summary and text, leaving code and custom codes', () => {
+    renderSlackFence(
+      'slack-message',
+      card({
+        summary: 'Happy with it :slightly_smiling_face: :+1::skin-tone-2:',
+        text: 'Ha :joy: :ok_hand::skin-tone-3: *nice :tada:* `:joy:` :partyparrot:'
+      }),
+      null
+    )
+    expect(document.querySelector('[data-slack-summary]')).toHaveTextContent('Happy with it 🙂 👍🏻')
+    const text = document.querySelector('[data-slack-text]')
+    expect(text).toHaveTextContent('Ha 😂 👌🏼 nice 🎉 :joy: :partyparrot:')
+    expect(screen.getByText('nice 🎉').tagName).toBe('STRONG')
+    expect(screen.getByText(':joy:').tagName).toBe('CODE')
+  })
+
   it('says FYI for an fyi message and "you replied" once replied', () => {
     renderSlackFence(
       'slack-message',
