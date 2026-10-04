@@ -18035,23 +18035,6 @@
         "stopUnverifiable": "Couldn't confirm the agent stopped. Queued messages send when it finishes.",
         "sendNextNow": "Send next now"
       },
-      "slack": {
-        "directMessage": "Direct message",
-        "group": "Group",
-        "opensInSlack": "(opens in Slack)",
-        "to": "To",
-        "in": "in",
-        "inThread": "in thread",
-        "draftNotSent": "Draft, not sent",
-        "oneReply": "1 reply",
-        "replies": "{{value0}} replies",
-        "youReplied": "you replied",
-        "notReplied": "you haven’t replied",
-        "fyi": "FYI",
-        "openInSlack": "Open in Slack",
-        "less": "less ▴",
-        "more": "more ▾"
-      },
       "proof": {
         "videoMissing": "Recording not found",
         "imageMissing": "Screenshot not found",
@@ -18073,6 +18056,23 @@
         "kindFigma": "Figma",
         "kindCode": "Code",
         "checks": "Checks"
+      },
+      "slack": {
+        "directMessage": "Direct message",
+        "group": "Group",
+        "opensInSlack": "(opens in Slack)",
+        "to": "To",
+        "in": "in",
+        "inThread": "in thread",
+        "draftNotSent": "Draft, not sent",
+        "oneReply": "1 reply",
+        "replies": "{{value0}} replies",
+        "youReplied": "you replied",
+        "notReplied": "you haven’t replied",
+        "fyi": "FYI",
+        "openInSlack": "Open in Slack",
+        "less": "less ▴",
+        "more": "more ▾"
       }
     },
     "tab": {
