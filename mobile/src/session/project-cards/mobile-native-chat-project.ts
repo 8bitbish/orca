@@ -61,6 +61,8 @@ const AGENT_RANK: Record<AgentDotState, number> = {
   monitoring: 1,
   done: 2,
   interrupted: 2,
+  // An end the host could not prove ranks with the other finished states.
+  unconfirmed: 2,
   idle: 3
 }
 
