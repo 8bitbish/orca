@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { NativeChatMessage } from '../../../../src/shared/native-chat-types'
+import { useOptionalHostProtocolGates } from '../../components/HostProtocolGate'
 import { MobileMarkdownRenderersContext } from '../../components/mobile-markdown-renderers'
 import { useRouteHandoff } from '../../navigation/route-handoff'
 import type { RpcClient } from '../../transport/rpc-client'
@@ -15,12 +16,16 @@ import {
   type MobileNativeChatProjects
 } from './mobile-native-chat-project-context'
 import { useMobileNativeChatProjectCatalog } from './use-mobile-native-chat-project-catalog'
+import { MobileNativeChatProofMediaContext } from '../proof-cards/mobile-native-chat-proof-context'
+import { useMobileNativeChatProofMediaSource } from '../proof-cards/use-mobile-native-chat-proof-media-source'
 import { MobileNativeChatSlackContext } from '../slack-cards/mobile-native-chat-slack-context'
 import { useMobileNativeChatSlackImages } from '../slack-cards/use-mobile-native-chat-slack-images'
 
 const CLOCK_MS = 30_000
+const NO_CAPABILITIES: readonly string[] = []
 
-/** Gives a native chat's chips and cards the host's catalog, Slack images, a send and navigation. */
+/** Gives a native chat's chips and cards the host's catalog, Slack images, proof media, a send
+ *  and navigation. */
 export function MobileNativeChatProjectsProvider({
   client,
   hostId,
@@ -42,6 +47,13 @@ export function MobileNativeChatProjectsProvider({
   const enabled = useMemo(() => mobileNativeChatMentionsProject(messages), [messages])
   const catalog = useMobileNativeChatProjectCatalog({ client, hostId, connState, enabled })
   const slack = useMobileNativeChatSlackImages(client, hostId)
+  const gates = useOptionalHostProtocolGates()
+  const proofMedia = useMobileNativeChatProofMediaSource({
+    client,
+    hostId,
+    hostCapabilities: gates?.hostCapabilities ?? NO_CAPABILITIES,
+    statusPending: gates?.statusPending ?? false
+  })
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!enabled) {
@@ -75,9 +87,11 @@ export function MobileNativeChatProjectsProvider({
   return (
     <MobileNativeChatProjectsContext.Provider value={value}>
       <MobileNativeChatSlackContext.Provider value={slack}>
-        <MobileMarkdownRenderersContext.Provider value={MOBILE_NATIVE_CHAT_MARKDOWN_RENDERERS}>
-          {children}
-        </MobileMarkdownRenderersContext.Provider>
+        <MobileNativeChatProofMediaContext.Provider value={proofMedia}>
+          <MobileMarkdownRenderersContext.Provider value={MOBILE_NATIVE_CHAT_MARKDOWN_RENDERERS}>
+            {children}
+          </MobileMarkdownRenderersContext.Provider>
+        </MobileNativeChatProofMediaContext.Provider>
       </MobileNativeChatSlackContext.Provider>
     </MobileNativeChatProjectsContext.Provider>
   )

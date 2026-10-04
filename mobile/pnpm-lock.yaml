@@ -269,6 +269,9 @@ importers:
       expo-task-manager:
         specifier: ~55.0.20
         version: 55.0.20(expo@55.0.31)(react-native@0.83.10(patch_hash=44876634a8efbb0f2c3f66cd4332be170ec821d1cbfc0264ac80680983e8513d)(@babel/core@7.29.7)(@react-native/metro-config@0.85.2(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.8))
+      expo-video:
+        specifier: ~55.0.21
+        version: 55.0.21(expo@55.0.31)(react-native@0.83.10(patch_hash=44876634a8efbb0f2c3f66cd4332be170ec821d1cbfc0264ac80680983e8513d)(@babel/core@7.29.7)(@react-native/metro-config@0.85.2(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.8))(react@19.2.8)
       fflate:
         specifier: 0.8.3
         version: 0.8.3
@@ -4474,6 +4477,13 @@ packages:
     resolution: {integrity: sha512-evxNpagCkjT3lE6bGV570TFzRtKuIuLY8I37RYHoriXCJ+ZKCN1hbmklK29uAixya+BxGpeTI2K4FqYeJLvfrw==}
     peerDependencies:
       expo: '*'
+
+  expo-video@55.0.21:
+    resolution: {integrity: sha512-E3zO2LygK6FzFC+ir8aTCagf/68MgeyXT8ltnEECpr0pPcJVZVoEA1KNi1djGLV8qj83D3B06wvFQ0g2N/Y3ow==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
+      react-native: '*'
 
   expo@55.0.31:
     resolution: {integrity: sha512-ZqV6jniU7twd18ADh1xP7moVrgP/BO1OTJwF2OzYnfJI9ak5cXDk+8DrV2jlgj33pMrLKqlnUvNz11zxyhwo7w==}
@@ -12200,6 +12210,12 @@ snapshots:
   expo-updates-interface@55.1.6(expo@55.0.31):
     dependencies:
       expo: 55.0.31(6e1eff07115a8c47a6fe668ab523fd7c)
+
+  expo-video@55.0.21(expo@55.0.31)(react-native@0.83.10(patch_hash=44876634a8efbb0f2c3f66cd4332be170ec821d1cbfc0264ac80680983e8513d)(@babel/core@7.29.7)(@react-native/metro-config@0.85.2(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.8))(react@19.2.8):
+    dependencies:
+      expo: 55.0.31(6e1eff07115a8c47a6fe668ab523fd7c)
+      react: 19.2.8
+      react-native: 0.83.10(patch_hash=44876634a8efbb0f2c3f66cd4332be170ec821d1cbfc0264ac80680983e8513d)(@babel/core@7.29.7)(@react-native/metro-config@0.85.2(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.8)
 
   expo@55.0.31(6e1eff07115a8c47a6fe668ab523fd7c):
     dependencies:

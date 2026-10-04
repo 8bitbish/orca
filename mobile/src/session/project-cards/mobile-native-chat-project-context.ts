@@ -25,7 +25,9 @@ export function mobileNativeChatMentionsProject(messages: readonly NativeChatMes
       message.blocks.some(
         (block) =>
           block.type === 'text' &&
-          (block.text.includes('```project-card') || block.text.includes('orca-worktree:'))
+          (block.text.includes('```project-card') ||
+            block.text.includes('```proof-card') ||
+            block.text.includes('orca-worktree:'))
       )
   )
 }

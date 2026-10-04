@@ -1,24 +1,28 @@
 import { NATIVE_CHAT_PROJECT_CARD_FENCE } from '../../../../src/shared/native-chat-project-card-payload'
 import { parseNativeChatWorktreeHref } from '../../../../src/shared/native-chat-project-target'
+import { NATIVE_CHAT_PROOF_CARD_FENCE } from '../../../../src/shared/native-chat-proof-card-payload'
 import {
   NATIVE_CHAT_SLACK_DRAFT_FENCE,
   NATIVE_CHAT_SLACK_MESSAGE_FENCE
 } from '../../../../src/shared/native-chat-slack-card-payload'
 import { isNativeChatSlackHref } from '../../../../src/shared/native-chat-slack-href'
 import type { MobileMarkdownRenderers } from '../../components/mobile-markdown-renderers'
+import { MobileNativeChatProofCard } from '../proof-cards/MobileNativeChatProofCard'
 import { MobileNativeChatSlackChip } from '../slack-cards/MobileNativeChatSlackChip'
 import { MobileNativeChatSlackDraftCard } from '../slack-cards/MobileNativeChatSlackDraftCard'
 import { MobileNativeChatSlackMessageCard } from '../slack-cards/MobileNativeChatSlackMessageCard'
 import { MobileNativeChatProjectCard } from './MobileNativeChatProjectCard'
 import { MobileNativeChatProjectChip } from './MobileNativeChatProjectChip'
 
-/** Native chat's card fences (```project-card, ```slack-message, ```slack-draft) and
+/** Native chat's card fences (```project-card, ```proof-card, ```slack-message, ```slack-draft) and
  *  its `orca-worktree:` and Slack chip links. */
 export const MOBILE_NATIVE_CHAT_MARKDOWN_RENDERERS: MobileMarkdownRenderers = {
   renderFence: (fence, codeBlock, key) => {
     switch (fence.language?.toLowerCase()) {
       case NATIVE_CHAT_PROJECT_CARD_FENCE:
         return <MobileNativeChatProjectCard key={key} source={fence.text} fallback={codeBlock} />
+      case NATIVE_CHAT_PROOF_CARD_FENCE:
+        return <MobileNativeChatProofCard key={key} source={fence.text} fallback={codeBlock} />
       case NATIVE_CHAT_SLACK_MESSAGE_FENCE:
         return (
           <MobileNativeChatSlackMessageCard key={key} source={fence.text} fallback={codeBlock} />

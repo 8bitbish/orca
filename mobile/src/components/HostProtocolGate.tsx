@@ -20,6 +20,11 @@ export function useHostProtocolGates(): HostStatusGates {
   return gates
 }
 
+/** The gates where a surface may also render outside a host route (tests, previews). */
+export function useOptionalHostProtocolGates(): HostStatusGates | null {
+  return useContext(HostStatusGatesContext)
+}
+
 // Why: single choke point above every /h/[hostId] route so a blocked verdict replaces the
 // whole host UI (sidebar + detail stack) while the host list and other hosts stay usable.
 export function HostProtocolGate({ hostId, children }: Props) {
