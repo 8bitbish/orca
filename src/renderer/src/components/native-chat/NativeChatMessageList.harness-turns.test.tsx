@@ -75,7 +75,7 @@ describe('terminal-backed transcript with background-task notifications', () => 
       notification2: NOTIFICATION_2,
       prompt3: PROMPT_3
     }
-    const messages = createNativeChatMessageListProjection()(session.messages)
+    const messages = createNativeChatMessageListProjection()(session.messages).conversation
     const harness = nativeChatHarnessTurns(session.messages, compareMessages)
     const turnKeys = nativeChatRowTurnKeys(messages, harness?.turnKeysByItemId)
     const turnOf = (text: string): string | undefined =>
@@ -104,7 +104,7 @@ describe('terminal-backed transcript with background-task notifications', () => 
     const slots = buildNativeChatTranscriptSlots({
       messages,
       turnKeys,
-      activeTurnKey: ids.prompt3,
+      liveTurnKey: ids.prompt3,
       receipts: new Map(),
       turnStatuses: {
         active: null,
