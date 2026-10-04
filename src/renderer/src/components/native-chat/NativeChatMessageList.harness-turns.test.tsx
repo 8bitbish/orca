@@ -19,7 +19,10 @@ import {
   nativeChatLatestTurnId,
   nativeChatTranscriptSettledTurns
 } from './native-chat-terminal-turn'
-import { buildNativeChatTranscriptSlots } from './native-chat-transcript-slots'
+import {
+  buildNativeChatTranscriptSlots,
+  type NativeChatMessageSlot
+} from './native-chat-transcript-slots'
 import type { NativeChatLiveSession } from './use-native-chat-live-session'
 
 // Scrubbed records from a Claude Code 2.1.286 session: two prompts, each answered and then
@@ -129,7 +132,7 @@ describe('terminal-backed transcript with background-task notifications', () => 
       expandedTurnKeys: new Set(),
       isWorking: false,
       lifecycleWorking: false
-    })
+    }).filter((slot): slot is NativeChatMessageSlot => slot.kind === 'message')
     const drawnText = slots
       .filter((slot) => !slot.folded)
       .flatMap((slot) => slot.message.blocks)
