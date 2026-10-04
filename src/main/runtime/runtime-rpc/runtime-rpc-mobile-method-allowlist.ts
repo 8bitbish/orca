@@ -1,5 +1,3 @@
-import { TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS } from './runtime-rpc-mobile-terminal-message-queue-methods'
-
 export const MOBILE_RPC_METHOD_ALLOWLIST = new Set([
   'accounts.list',
   'accounts.consumeCodexResetCredit',
@@ -220,6 +218,9 @@ export const MOBILE_RPC_METHOD_ALLOWLIST = new Set([
   'agentSession.reveal',
   'agentSession.send',
   'agentSession.cancel',
+  'agentSession.queuedMessageSend',
+  'agentSession.queuedMessageDelete',
+  'agentSession.queuedMessagesResume',
   'agentSession.close',
   'agentSession.respondToApproval',
   'agentSession.respondToQuestion',
@@ -237,10 +238,8 @@ export const MOBILE_RPC_METHOD_ALLOWLIST = new Set([
   'agentSession.hold',
   'agentSession.release',
   'nativeChat.readSession',
-  'nativeChat.slackImage',
   'nativeChat.subscribe',
   'nativeChat.unsubscribe',
-  ...TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS,
   'settings.get',
   'settings.getTerminalQuickCommands',
   'settings.mutateNativeChatSessionOptions',

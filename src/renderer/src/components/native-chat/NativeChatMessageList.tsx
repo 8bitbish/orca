@@ -3,13 +3,11 @@ import { ArrowDown } from 'lucide-react'
 import type { CommentMarkdownLinkClickHandler } from '@/components/sidebar/CommentMarkdown'
 import { translate } from '@/i18n/i18n'
 import type { NativeChatLiveSession } from './use-native-chat-live-session'
-import { createNativeChatMessageListProjection } from './native-chat-message-list-projection'
+import { useNativeChatTranscriptProjection } from './use-native-chat-transcript-projection'
 import { structuredQuestionTranscript } from './structured-agent-question-projection'
 import { nativeChatTaskListState } from './native-chat-task-list-state'
 import { nativeChatTaskListPredecessors } from './native-chat-task-list-history'
 import { NativeChatTaskList } from './NativeChatTaskList'
-import { projectNativeChatTaskListFrames } from './native-chat-task-list-frames'
-import { omitNativeChatThreadGoalRows } from './native-chat-thread-goal-rows'
 import { useNativeChatTurnStatus } from './use-native-chat-turn-status'
 import { NativeChatAwaitingInputRow } from './NativeChatAwaitingInputRow'
 import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client'
@@ -19,14 +17,23 @@ import {
   NativeChatDisclosureContext,
   useNativeChatDisclosures
 } from './native-chat-disclosure-store'
-import { NativeChatTranscriptItems } from './NativeChatTranscriptItems'
+import {
+  NativeChatTranscriptItems,
+  NativeChatWaitingTranscriptItems
+} from './NativeChatTranscriptItems'
 import type { NativeChatTranscriptRowContext } from './NativeChatTranscriptRow'
 import type { NativeChatDeliveryNotice } from './NativeChatMessageRow'
 import {
   buildNativeChatTranscriptSlots,
+  splitNativeChatSlotsWaitingBehindLiveTurn,
+  nativeChatSlotsEndInLiveThought,
   nativeChatSlotIndexOf
 } from './native-chat-transcript-slots'
 import { useNativeChatTranscriptWindow } from './use-native-chat-transcript-window'
+import { nativeChatRowsInTranscriptOrder } from './native-chat-subagent-sections'
+import { useNativeChatSubagentSections } from './use-native-chat-subagent-sections'
+import { toggleNativeChatExpandedKey } from './native-chat-expanded-keys'
+import { useNativeChatRowTurns } from './use-native-chat-row-turns'
 import { useNativeChatTranscriptScroll } from './use-native-chat-transcript-scroll'
 import { useNativeChatOlderHistoryAutoload } from './use-native-chat-older-history-autoload'
 import { NativeChatOlderHistoryRow } from './NativeChatOlderHistoryRow'
@@ -38,23 +45,19 @@ import type {
 } from './native-chat-message-rail-items'
 import { useNativeChatRailHistoryJump } from './use-native-chat-rail-history-jump'
 import { nativeChatReaderScrollInputHandlers } from './native-chat-reader-scroll-input'
-import { nativeChatSessionThoughtSeconds } from '../../../../shared/native-chat-thought-duration'
 
-import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
+import type {
+  AgentJournalRenderItem,
+  AgentJournalSubmission
+} from '../../../../shared/agent-session-journal-types'
 import { isStructuredAgentSessionThinking } from '../../../../shared/structured-agent-session-live-turn'
-import { nativeChatSubagentLabels } from '../../../../shared/native-chat-subagent-attribution'
 import type { NativeChatSettledTurns } from '../../../../shared/native-chat-turn-status'
-import { useNativeChatRowTurns } from './use-native-chat-row-turns'
 import {
   nativeChatTurnDiffs,
   type NativeChatDiffReveal,
   type NativeChatDiffTarget,
   type NativeChatTurnDiff
 } from './native-chat-turn-diffs'
-
-export { ProviderFrameRow } from './NativeChatTranscriptChrome'
-
-const MAX_EXPANDED_TURNS = 128
 
 /** The turn is blocked on the reader. `shown`: the pane draws the prompt itself, as a card;
  *  `unshown`: it cannot (the prompt is only in the agent's terminal). */
@@ -67,6 +70,8 @@ type NativeChatNavigationRequest =
 export function NativeChatMessageList({
   session,
   journalItems,
+  journalSubmissions,
+  subagentRoster,
   railOutline = null,
   isVisible = true,
   isWorking,
@@ -76,8 +81,6 @@ export function NativeChatMessageList({
   allowFileUriLinks = false,
   workingStartedAt,
   settledTurns,
-  activeTurnOpenedBy,
-  turnKeysByItemId = null,
   deliveryNotices,
   awaitingInput = null,
   turnActivity,
@@ -85,6 +88,10 @@ export function NativeChatMessageList({
 }: {
   session: NativeChatLiveSession
   journalItems?: readonly AgentJournalRenderItem[]
+  /** With the items, what places each row in its turn (structured lane). */
+  journalSubmissions?: readonly AgentJournalSubmission[]
+  /** Every subagent the session's rosters named, whether or not its roster row is loaded. */
+  subagentRoster?: Parameters<typeof useNativeChatSubagentSections>[2]
   /** User messages older than the loaded window, from the host's outline. */
   railOutline?: readonly NativeChatRailOutlineEntry[] | null
   isVisible?: boolean
@@ -97,11 +104,6 @@ export function NativeChatMessageList({
   /** Recorded turn durations keyed by user message id (the host's, or the transcript's).
    *  A turn missing here shows the duration this list observed, if it saw the turn run. */
   settledTurns?: NativeChatSettledTurns
-  /** The key the host says anchors the running turn's bar (structured lane). */
-  activeTurnOpenedBy?: string | null
-  /** Host-attributed turn ownership per journal item id (structured lane).
-   *  Rows it does not name keep positional preceding-user grouping. */
-  turnKeysByItemId?: ReadonlyMap<string, string> | null
   onLinkClick?: CommentMarkdownLinkClickHandler
   allowFileUriLinks?: boolean
   deliveryNotices?: ReadonlyMap<string, NativeChatDeliveryNotice>
@@ -125,21 +127,7 @@ export function NativeChatMessageList({
   const [expandedTurnIds, setExpandedTurnIds] = useState<ReadonlySet<string>>(new Set())
   const disclosures = useNativeChatDisclosures()
   const toggleExpandedTurn = useCallback((turnKey: string) => {
-    setExpandedTurnIds((current) => {
-      const next = new Set(current)
-      if (next.has(turnKey)) {
-        next.delete(turnKey)
-      } else {
-        if (next.size >= MAX_EXPANDED_TURNS) {
-          const oldest = next.values().next().value
-          if (oldest) {
-            next.delete(oldest)
-          }
-        }
-        next.add(turnKey)
-      }
-      return next
-    })
+    setExpandedTurnIds((current) => toggleNativeChatExpandedKey(current, turnKey))
   }, [])
 
   const { hasMore, loadingEarlier, loadEarlier } = session
@@ -147,33 +135,34 @@ export function NativeChatMessageList({
   // remounts the row, which re-checks the range.
   const showOlderHistory = hasMore && session.readPhase === 'ready'
 
-  const projectMessages = useMemo(
-    () => createNativeChatMessageListProjection(),
-    // Rebound sessions must release the previous transcript's cached rows.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [session.agent, session.sessionId]
+  const { messages, subagentRows } = useNativeChatTranscriptProjection(
+    session,
+    journalItems,
+    journalSubmissions
   )
-  const messages = useMemo(() => {
-    const projected = projectNativeChatTaskListFrames(projectMessages(session.messages))
-    // Structured sessions show goal state in the banner above the composer.
-    return journalItems ? omitNativeChatThreadGoalRows(projected) : projected
-  }, [journalItems, projectMessages, session.messages])
-  const subagentLabels = useMemo(() => nativeChatSubagentLabels(messages), [messages])
+  const {
+    sections: subagentSections,
+    subagentRowsInOrder,
+    subagentChoices,
+    subagentDisclosure,
+    openSubagentSections
+  } = useNativeChatSubagentSections(messages, subagentRows, subagentRoster)
   const taskListPredecessors = useMemo(() => nativeChatTaskListPredecessors(messages), [messages])
   const taskListState = useMemo(() => nativeChatTaskListState(messages), [messages])
-  const { turnKeys, activeTurnKey } = useNativeChatRowTurns({
-    sessionMessages: session.messages,
-    messages,
-    turnKeysByItemId,
-    activeTurnOpenedBy
-  })
-  const turnDiffs = useMemo(
-    () =>
-      journalItems
-        ? nativeChatTurnDiffs(messages, turnKeys)
-        : new Map<string, NativeChatTurnDiff>(),
-    [journalItems, messages, turnKeys]
-  )
+  // Each row's turn, which turn is live, and the order the rows draw in, resolved once.
+  const {
+    messages: rows,
+    turnKeys,
+    liveTurnKey,
+    thoughtSeconds
+  } = useNativeChatRowTurns(session, messages, journalItems, journalSubmissions)
+  const turnDiffs = useMemo(() => {
+    if (!journalItems) {
+      return new Map<string, NativeChatTurnDiff>()
+    }
+    const merged = nativeChatRowsInTranscriptOrder(rows, turnKeys, subagentRowsInOrder)
+    return nativeChatTurnDiffs(merged.messages, merged.turnKeys, subagentSections.pathOf)
+  }, [journalItems, rows, subagentRowsInOrder, subagentSections.pathOf, turnKeys])
   // "Thinking" is real reasoning content at the tail of the turn, not the absence
   // of output — the latter reports thinking while the request is merely in flight.
   const thinking = useMemo(
@@ -181,9 +170,8 @@ export function NativeChatMessageList({
     [journalItems]
   )
   const turnStatuses = useNativeChatTurnStatus({
-    messages,
     turnKeys,
-    activeTurnKey,
+    liveTurnKey,
     isWorking,
     workingStartedAt,
     settledTurns,
@@ -198,41 +186,44 @@ export function NativeChatMessageList({
         ? 'activity'
         : null
   const lifecycleWorking = session.transcriptLifecycle?.state === 'working'
-  const thoughtSeconds = useMemo(
-    () => nativeChatSessionThoughtSeconds(session.agent, journalItems, messages),
-    [journalItems, messages, session.agent]
-  )
-  const slots = useMemo(
+  const allSlots = useMemo(
     () =>
       buildNativeChatTranscriptSlots({
-        messages,
+        messages: rows,
         turnKeys,
-        activeTurnKey,
+        liveTurnKey,
         receipts,
         turnStatuses,
         turnDiffs,
         expandedTurnKeys: expandedTurnIds,
         isWorking,
         lifecycleWorking,
-        subagentLabels,
+        subagentSections,
+        subagentChoices,
         thoughtSeconds
       }),
     [
-      activeTurnKey,
+      liveTurnKey,
       expandedTurnIds,
       isWorking,
       lifecycleWorking,
-      messages,
       receipts,
-      subagentLabels,
+      rows,
+      subagentChoices,
+      subagentSections,
       thoughtSeconds,
       turnDiffs,
       turnKeys,
       turnStatuses
     ]
   )
-  // A live thought row already reads "Thinking…"; the tail indicator need not repeat it.
-  const tailThinking = turnStatuses.active?.thinking === true && slots.at(-1)?.thoughtLive !== true
+  // A message waiting behind the live turn draws after that turn's live activity, not inside it.
+  const { slots, waitingSlots } = useMemo(
+    () => splitNativeChatSlotsWaitingBehindLiveTurn(allSlots, journalItems),
+    [allSlots, journalItems]
+  )
+  const tailThinking =
+    turnStatuses.active?.thinking === true && !nativeChatSlotsEndInLiveThought(slots)
   const transcriptWindow = useNativeChatTranscriptWindow({
     scrollRef,
     slots,
@@ -300,13 +291,17 @@ export function NativeChatMessageList({
   const revealDiff = useCallback(
     (target: NativeChatDiffTarget) => {
       beginNavigation()
+      // A subagent's edit is revealed inside its section.
+      if (target.subagentSections) {
+        openSubagentSections(target.subagentSections)
+      }
       navigationSequence.current += 1
       setNavigationRequest({
         kind: 'diff',
         target: { ...target, requestId: navigationSequence.current }
       })
     },
-    [beginNavigation]
+    [beginNavigation, openSubagentSections]
   )
   const jumpToLatest = useCallback(() => {
     beginNavigation()
@@ -349,6 +344,7 @@ export function NativeChatMessageList({
       runtimeContext,
       onLinkClick,
       onToggleExpandedTurn: toggleExpandedTurn,
+      subagentDisclosure,
       onScrollMessageToTop: scrollMessageToTop,
       onRevealDiff: revealDiff
     }),
@@ -363,6 +359,7 @@ export function NativeChatMessageList({
       runtimeContext,
       scrollMessageToTop,
       taskListPredecessors,
+      subagentDisclosure,
       toggleExpandedTurn
     ]
   )
@@ -412,6 +409,7 @@ export function NativeChatMessageList({
                 ) : tailRow === 'awaiting-input' ? (
                   <NativeChatAwaitingInputRow subject={null} pending />
                 ) : null}
+                <NativeChatWaitingTranscriptItems slots={waitingSlots} context={rowContext} />
               </div>
             </div>
             {showJump ? (

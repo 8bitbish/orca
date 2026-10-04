@@ -4,7 +4,8 @@ import { compareNativeChatTranscriptMessages } from './native-chat-transcript-pr
 import {
   nativeChatHarnessTurns,
   nativeChatRowTurnKeys,
-  nativeChatSelfAnchoredTurnRows
+  nativeChatTurnBarRows,
+  nativeChatTurnDrawOrder
 } from './native-chat-turn-grouping'
 
 function message(id: string, role: NativeChatMessage['role'] = 'assistant'): NativeChatMessage {
@@ -67,16 +68,67 @@ describe('nativeChatRowTurnKeys', () => {
   })
 })
 
-describe('nativeChatSelfAnchoredTurnRows', () => {
-  it('anchors a turn with no user bubble at its first rendered row', () => {
+describe('nativeChatTurnBarRows', () => {
+  it('anchors a turn with no user bubble above its first rendered row', () => {
     const messages = [message('A', 'user'), message('t1'), message('t2'), message('t3')]
     const turnKeys = ['A', 'A', 'wake-turn', 'wake-turn']
-    expect(nativeChatSelfAnchoredTurnRows(messages, turnKeys)).toEqual(new Map([['wake-turn', 2]]))
+    expect(nativeChatTurnBarRows(messages, turnKeys)).toEqual(
+      new Map([
+        ['A', { index: 0, above: false }],
+        ['wake-turn', { index: 2, above: true }]
+      ])
+    )
   })
 
-  it('never anchors a turn whose key is a rendered message', () => {
+  it('puts a turn opened by a rendered message under that message', () => {
     const messages = [message('A', 'user'), message('t1')]
-    expect(nativeChatSelfAnchoredTurnRows(messages, ['A', 'A']).size).toBe(0)
+    expect(nativeChatTurnBarRows(messages, ['A', 'A']).get('A')).toEqual({ index: 0, above: false })
+  })
+})
+
+describe('nativeChatTurnDrawOrder', () => {
+  it("draws a message that opened a later turn after the earlier turn's remaining rows", () => {
+    // B was sent while A ran and Claude queued it: A's tool run and answer follow B in the journal.
+    const messages = [
+      message('A', 'user'),
+      message('a1'),
+      message('B', 'user'),
+      message('a2'),
+      message('a-done'),
+      message('b1')
+    ]
+    const turnKeys = ['A', 'A', 'B', 'A', 'A', 'B']
+    expect(nativeChatTurnDrawOrder(messages, turnKeys, new Set(['A', 'B']))).toEqual([
+      0, 1, 3, 4, 2, 5
+    ])
+  })
+
+  it('keeps each of several queued openers ahead of its own rows', () => {
+    const messages = [
+      message('A', 'user'),
+      message('B', 'user'),
+      message('C', 'user'),
+      message('a-done'),
+      message('b1'),
+      message('c1')
+    ]
+    const turnKeys = ['A', 'B', 'C', 'A', 'B', 'C']
+    const order = nativeChatTurnDrawOrder(messages, turnKeys, new Set(['A', 'B', 'C']))
+    expect(order?.map((index) => messages[index]!.id)).toEqual([
+      'A',
+      'a-done',
+      'B',
+      'b1',
+      'C',
+      'c1'
+    ])
+  })
+
+  it('leaves a steer, and a message that opened no turn, where they were written', () => {
+    const messages = [message('A', 'user'), message('steer', 'user'), message('a1')]
+    expect(nativeChatTurnDrawOrder(messages, ['A', 'A', 'A'], new Set(['A']))).toBeNull()
+    const waiting = [message('A', 'user'), message('C', 'user'), message('a1')]
+    expect(nativeChatTurnDrawOrder(waiting, ['A', 'C', 'A'], new Set(['A']))).toBeNull()
   })
 })
 
@@ -114,12 +166,9 @@ describe('nativeChatHarnessTurns', () => {
       'u2',
       'u2'
     ])
-    expect([
-      ...nativeChatSelfAnchoredTurnRows(
-        drawn,
-        nativeChatRowTurnKeys(drawn, turns?.turnKeysByItemId)
-      )
-    ]).toEqual([['n1', 2]])
+    expect(
+      nativeChatTurnBarRows(drawn, nativeChatRowTurnKeys(drawn, turns?.turnKeysByItemId)).get('n1')
+    ).toEqual({ index: 2, above: true })
   })
 
   it('names a notification that opened the newest turn as the running turn', () => {

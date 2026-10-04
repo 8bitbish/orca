@@ -22,7 +22,7 @@ import {
   pendingSendsAsMessages,
   shouldPruneLaunchPrompt
 } from './native-chat-pending'
-import { useNativeChatPendingSends } from './use-native-chat-pending-sends'
+import { useNativeChatPendingDelivery } from './use-native-chat-pending-delivery'
 import {
   appendCommandMarkerCache,
   applyCommandMarkerBoundaries,
@@ -153,14 +153,13 @@ export function NativeChatResolvedView({
     () => ({ paneKey, agent, sessionId }),
     [paneKey, agent, sessionId]
   )
-  const { pending, clearPending, onOptimisticSend, onOptimisticSendCanceled, appendDeliveredEcho } =
-    useNativeChatPendingSends({
-      paneKey,
-      agent,
-      messages: session.messages,
-      liveWorking,
-      onActivity: () => setWorkingInterrupted(false)
-    })
+  const delivery = useNativeChatPendingDelivery({
+    paneKey,
+    agent,
+    messages: session.messages,
+    liveWorking
+  })
+  const { pending, record, clear, appendDeliveredEcho } = delivery
   // Slash commands aren't chat turns, so they get a small local "Ran /clear"
   // system line instead of a user bubble. Capped + cached per conversation.
   const [commandMarkers, setCommandMarkers] = useState<NativeChatCommandMarker[]>(() =>
@@ -178,6 +177,20 @@ export function NativeChatResolvedView({
     }
     clearNativeChatLaunchPrompt(terminalTabId)
   }, [clearNativeChatLaunchPrompt, paneLaunchPrompt, session.messages, terminalTabId])
+  const onOptimisticSend = useCallback(
+    (text: string, imagePaths?: string[]) => {
+      setWorkingInterrupted(false)
+      return record(text, imagePaths)
+    },
+    [record]
+  )
+  const onQueueDelivered = useCallback(
+    (text: string, imagePaths: string[]) => {
+      setWorkingInterrupted(false)
+      appendDeliveredEcho(text, imagePaths)
+    },
+    [appendDeliveredEcho]
+  )
   const messageQueue = useNativeChatPaneMessageQueue({
     paneKey,
     agent,
@@ -185,7 +198,7 @@ export function NativeChatResolvedView({
     transcriptPath,
     targetPtyId,
     composerRef,
-    onDelivered: appendDeliveredEcho
+    onDelivered: onQueueDelivered
   })
   const onSlashCommand = useCallback(
     (command: string) => {
@@ -214,6 +227,14 @@ export function NativeChatResolvedView({
   const launchPromptDeliveryNotices = useNativeChatLaunchPromptDeliveryNotice(
     paneLaunchPrompt?.failed ? launchPromptMessage?.id : null,
     sessionAfterCommandBoundaries.messages
+  )
+  // Why memoized: a fresh map each render would re-render every memoized transcript row.
+  const deliveryNotices = useMemo(
+    () =>
+      delivery.notices.size === 0
+        ? launchPromptDeliveryNotices
+        : new Map([...(launchPromptDeliveryNotices ?? []), ...delivery.notices]),
+    [launchPromptDeliveryNotices, delivery.notices]
   )
   const promptCard = useNativeChatInteractivePromptCard({
     paneKey,
@@ -301,14 +322,14 @@ export function NativeChatResolvedView({
     // settles, so cancelPendingSends no longer sees the optimistic id. Clear
     // the echo cache here so a cancelled prompt cannot stick as a ghost bubble.
     // Host-queued messages are not echoes, so they survive this.
-    clearPending()
+    clear()
     if (stopQueue()) {
       // The host writes the interrupt and sends the next queued message once the turn ends.
       interactiveSend.cancelPending()
       return
     }
     interactiveSend.cancel()
-  }, [clearPending, interactiveSend, stopQueue])
+  }, [clear, interactiveSend, stopQueue])
   const { onLinkClick, linkActionRequest, closeLinkActions } = useNativeChatLinkActions(
     fileLinkContext,
     rootRef,
@@ -340,7 +361,8 @@ export function NativeChatResolvedView({
         handleNativeChatResolvedViewKeyDown(event, {
           keybindings,
           splitActions: contextMenuActions,
-          composer: composerRef.current
+          composer: composerRef.current,
+          questionAnswerInput: questionAnswerInputRef.current
         })
       }
       onMouseUpCapture={contextMenu.onSelectionCapture}
@@ -371,7 +393,7 @@ export function NativeChatResolvedView({
               awaitingInput={awaitingInput}
               onLinkClick={onLinkClick}
               allowFileUriLinks={fileLinkContext !== null}
-              deliveryNotices={launchPromptDeliveryNotices}
+              deliveryNotices={deliveryNotices}
             />
           </NativeChatReplyScope>
         )}
@@ -401,7 +423,8 @@ export function NativeChatResolvedView({
           isWorking={isWorking}
           onStop={stopAgent}
           onOptimisticSend={onOptimisticSend}
-          onOptimisticSendCanceled={onOptimisticSendCanceled}
+          onOptimisticSendCanceled={delivery.cancel}
+          optimisticSendOutcome={delivery}
           onSlashCommand={onSlashCommand}
           onSwitchToTerminal={onSwitchToTerminal}
           readTerminalScreen={readTerminalScreen}

@@ -9,17 +9,9 @@ import { agentSessionRefusalError } from '../../../../shared/agent-session-wire-
 import { agentSessionFingerprintConflict } from '../../../../shared/agent-session-mutation-envelope'
 import type { z } from 'zod'
 import {
-  projectBackgroundTaskEvent,
-  projectBackgroundTaskHistory
-} from './structured-agent-session-background-task-capability'
-import {
-  projectThoughtMarkerEvent,
-  projectThoughtMarkerHistory
-} from './native-chat-thought-marker-projection'
-import {
-  projectTurnItemEvent,
-  projectTurnItemHistory
-} from './structured-agent-session-turn-item-capability'
+  projectStructuredEventForClient,
+  projectStructuredHistoryForClient
+} from './structured-agent-session-client-projection'
 import { defineMethod, defineStreamingMethod, type RpcContext } from '../core'
 import {
   ensureStructuredHostInstalled as ensureHostInstalled,
@@ -38,6 +30,7 @@ import {
 } from './structured-agent-session-create'
 import { STRUCTURED_AGENT_SESSION_HOLD_METHODS } from './structured-agent-session-hold'
 import { STRUCTURED_AGENT_SESSION_REVEAL_METHODS } from './structured-agent-session-reveal'
+import { STRUCTURED_AGENT_SESSION_QUEUED_METHODS } from './structured-agent-session-queued-methods'
 import { STRUCTURED_AGENT_SESSION_RESTART_RESUME_METHODS } from './structured-agent-session-restart-resume'
 import { resolveUncommittedStructuredCreate } from './structured-agent-session-precommit-refusal'
 import {
@@ -210,6 +203,7 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
     params: CancelParams,
     handler: async (params, ctx) => requireStructuredCleanupHost(ctx).cancel(callerFor(ctx), params)
   }),
+  ...STRUCTURED_AGENT_SESSION_QUEUED_METHODS,
   defineMethod({
     // Releasing a chat view, not ending a conversation: the record and journal stay on disk so the
     // same session can be attached again. Only the provider child and the in-memory entry go.
@@ -258,17 +252,11 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
   defineMethod({
     name: 'agentSession.history',
     params: HistoryParams,
-    handler: async (params, ctx) =>
-      projectThoughtMarkerHistory(
-        projectTurnItemHistory(
-          projectBackgroundTaskHistory(
-            await (await requireInstalledHost(ctx)).history(params),
-            ctx
-          ),
-          ctx
-        ),
-        ctx
-      )
+    handler: async (params, ctx) => {
+      const host = await requireInstalledHost(ctx)
+      const history = await host.history(params)
+      return projectStructuredHistoryForClient(history, ctx, host.sessionAgent(params.sessionId))
+    }
   }),
   defineStreamingMethod({
     name: 'agentSession.subscribe',
@@ -288,12 +276,7 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
         id: subscriptionId,
         sessionId: params.sessionId,
         emit: (event) =>
-          emit(
-            projectThoughtMarkerEvent(
-              projectTurnItemEvent(projectBackgroundTaskEvent(event, ctx), ctx),
-              ctx
-            )
-          ),
+          emit(projectStructuredEventForClient(event, ctx, host.sessionAgent(params.sessionId))),
         ...(params.cursor ? { cursor: params.cursor } : {})
       })
       if (stream.isClosed()) {

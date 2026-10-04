@@ -1,6 +1,7 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { vi } from 'vitest'
 import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
+import type { QueuedMessageCard } from './structured-agent-session-queued-cards'
 import type { AgentSessionBackgroundTask } from '../../../../shared/agent-session-wire'
 import type { AgentSessionWriteRefusal } from '../../../../shared/agent-session-write-failure'
 import type { AgentSessionRefusalReference } from '../../../../shared/agent-session-wire-refusals'
@@ -83,9 +84,7 @@ export function createStructuredSessionMocks() {
     messageListProps: initialMessageListProps,
     composerProps: nullable<{
       launchSeed?: NativeChatLaunchSeed
-      structuredTransport?: Record<string, unknown> & {
-        send?: (text: string, attachments: readonly unknown[]) => boolean
-      }
+      structuredTransport?: Record<string, unknown>
       isWorking?: boolean
       onStop?: () => void
     }>(),
@@ -114,7 +113,12 @@ export function createStructuredSessionMocks() {
     hasOlder: false,
     loadingOlder: false,
     olderHistoryGeneration: 0,
-    loadOlder: vi.fn<() => Promise<NativeChatOlderPageResult>>()
+    loadOlder: vi.fn<() => Promise<NativeChatOlderPageResult>>(),
+    queuedCards: Array.of<QueuedMessageCard>(),
+    queuedSteer: vi.fn<(messageId: string) => Promise<void>>(async () => {}),
+    queuedRemove: vi.fn<(messageId: string) => Promise<void>>(async () => {}),
+    queuedEdit: vi.fn<(messageId: string) => Promise<void>>(async () => {}),
+    queuedSteerNewest: vi.fn<() => boolean>(() => false)
   }
 
   const moduleFactories = {
@@ -126,8 +130,6 @@ export function createStructuredSessionMocks() {
     useStructuredAgentSession: async () => {
       const { useStructuredAgentSessionOutbox } =
         await import('./use-structured-agent-session-outbox')
-      const { useStructuredAgentSessionHeldQueue } =
-        await import('./use-structured-agent-session-held-queue')
       const { projectStructuredAgentSessionMessages } =
         await import('../../../../shared/structured-agent-session-message-projection')
       return {
@@ -141,18 +143,7 @@ export function createStructuredSessionMocks() {
             sessionId: props.sessionId,
             target: props.target,
             fence: props.transportEnabled === false ? null : 1,
-            hold: { turn: Boolean(mocks.isWorking), editingId: null },
             submissions: mocks.submissions as never
-          })
-          const heldQueue = useStructuredAgentSessionHeldQueue({
-            outbox: outbox.outbox,
-            blockedClientMessageId: outbox.blockedClientMessageId,
-            working: Boolean(mocks.isWorking),
-            turnId: mocks.turnId ?? null,
-            awaitingAnswer: false,
-            editingId: null,
-            setEditingId: () => {},
-            revise: outbox.revise
           })
           return {
             journalItems: mocks.journalItems,
@@ -187,7 +178,6 @@ export function createStructuredSessionMocks() {
             blockedClientMessageId: outbox.blockedClientMessageId,
             send: outbox.send,
             retry: outbox.retry,
-            heldQueue,
             isWorking: mocks.isWorking,
             backgroundTasks: {
               show: mocks.showBackgroundTasks || mocks.monitoringBackgroundTasks,
@@ -200,6 +190,13 @@ export function createStructuredSessionMocks() {
             turnId: mocks.turnId,
             canStop: mocks.canStop ?? mocks.turnId !== null,
             stop: mocks.stop,
+            queuedMessages: {
+              cards: mocks.queuedCards,
+              steer: mocks.queuedSteer,
+              remove: mocks.queuedRemove,
+              edit: mocks.queuedEdit,
+              steerNewest: mocks.queuedSteerNewest
+            },
             threadGoal: mocks.threadGoal,
             cancel: mocks.cancel,
             stopBackgroundTask: (taskId?: string) =>
@@ -271,7 +268,8 @@ export function createStructuredSessionMocks() {
           },
           insertTypedText: () => true,
           handlePasteEvent: mocks.handlePasteEvent,
-          pasteFromClipboard: mocks.pasteFromClipboard
+          pasteFromClipboard: mocks.pasteFromClipboard,
+          contains: (node: Node | null) => fieldRef.current?.contains(node) === true
         }))
         return <textarea ref={fieldRef} data-testid="structured-composer" />
       })

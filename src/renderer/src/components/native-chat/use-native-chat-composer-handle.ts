@@ -1,15 +1,18 @@
 import { useCallback, useImperativeHandle, type ForwardedRef } from 'react'
+import type { ClipboardEventLike } from './native-chat-clipboard-payload'
 import type {
   NativeChatComposerHandle,
   NativeChatStructuredComposerTransport
 } from './native-chat-composer-types'
 import type { NativeChatComposerImageAttachment } from './NativeChatComposerField'
+import {
+  useNativeChatComposerPaste,
+  type UseNativeChatComposerPasteArgs
+} from './use-native-chat-composer-paste'
+import { useNativeChatTypedInsertion } from './use-native-chat-typed-insertion'
 
-/** The composer's imperative surface, including the reply send a project card uses. */
-export function useNativeChatComposerHandle(
-  ref: ForwardedRef<NativeChatComposerHandle>,
-  args: Omit<NativeChatComposerHandle, 'sendReply'> & {
-    disabled: boolean
+type UseNativeChatComposerHandleArgs = Parameters<typeof useNativeChatTypedInsertion>[0] &
+  Omit<UseNativeChatComposerPasteArgs, 'insertTypedText'> & {
     sendPty: (reply?: string) => boolean
     sendStructured: (
       text: string,
@@ -18,9 +21,41 @@ export function useNativeChatComposerHandle(
     ) => void
     structuredTransport: NativeChatStructuredComposerTransport | undefined
   }
-): void {
-  const { disabled, sendPty, sendStructured, structuredTransport } = args
-  const { focus, insertTypedText, handlePasteEvent, pasteFromClipboard, restoreDraft } = args
+
+/** Typed and pasted insertion for the composer, exposed on the handle the chat
+ *  root uses to route keystrokes and pastes into it, plus the reply send a project
+ *  card uses and the queued-message restore. Returns the paste handler. */
+export function useNativeChatComposerHandle(
+  ref: ForwardedRef<NativeChatComposerHandle>,
+  args: UseNativeChatComposerHandleArgs
+): (event: ClipboardEventLike) => void {
+  const {
+    textareaRef,
+    draft,
+    setDraft,
+    setHistory,
+    setActiveSuggestion,
+    sendPty,
+    sendStructured,
+    structuredTransport,
+    ...pasteArgs
+  } = args
+  const { disabled, attachResolvedPaths, setCaret } = pasteArgs
+  const { insertTypedText, insertPastedText, focus, contains } = useNativeChatTypedInsertion({
+    textareaRef,
+    caret: args.caret,
+    draft,
+    setDraft,
+    setCaret,
+    setHistory,
+    setActiveSuggestion
+  })
+
+  const { handlePaste: handlePasteEvent, pasteFromClipboard } = useNativeChatComposerPaste({
+    ...pasteArgs,
+    insertTypedText: insertPastedText
+  })
+
   // Sent like typed text through the same path as Enter, leaving the user's draft in place.
   const sendReply = useCallback(
     (text: string): boolean => {
@@ -35,6 +70,19 @@ export function useNativeChatComposerHandle(
     },
     [disabled, sendPty, sendStructured, structuredTransport]
   )
+  const restoreDraft = useCallback(
+    (text: string, imagePaths: readonly string[]) => {
+      const next = draft.trim() === '' ? text : `${draft}\n${text}`
+      setDraft(next)
+      setCaret(next.length)
+      if (imagePaths.length > 0) {
+        attachResolvedPaths([...imagePaths])
+      }
+      focus()
+    },
+    [attachResolvedPaths, draft, focus, setCaret, setDraft]
+  )
+
   useImperativeHandle(
     ref,
     () => ({
@@ -42,9 +90,19 @@ export function useNativeChatComposerHandle(
       insertTypedText,
       handlePasteEvent,
       pasteFromClipboard,
+      contains,
       sendReply,
       restoreDraft
     }),
-    [focus, insertTypedText, handlePasteEvent, pasteFromClipboard, sendReply, restoreDraft]
+    [
+      focus,
+      insertTypedText,
+      handlePasteEvent,
+      pasteFromClipboard,
+      contains,
+      sendReply,
+      restoreDraft
+    ]
   )
+  return handlePasteEvent
 }

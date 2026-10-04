@@ -1,39 +1,49 @@
 import { useMemo } from 'react'
-import type { NativeChatMessage } from '../../../../shared/native-chat-types'
-import { selectNativeChatActiveTurnKey } from '../../../../shared/native-chat-turn-status'
+import type {
+  AgentJournalRenderItem,
+  AgentJournalSubmission
+} from '../../../../shared/agent-session-journal-types'
+import type { AgentType, NativeChatMessage } from '../../../../shared/native-chat-types'
 import {
   nativeChatHarnessTurns,
   nativeChatRowTurnKeys
 } from '../../../../shared/native-chat-turn-grouping'
+import { nativeChatSessionThoughtSeconds } from '../../../../shared/native-chat-thought-duration'
 import { compareMessages } from './native-chat-session-assembler'
+import {
+  useNativeChatTurnMembership,
+  type NativeChatTurnRows
+} from './use-native-chat-turn-membership'
 
-/** Each drawn row's turn, resolved once (a per-row findLast is quadratic on a long
- *  transcript), and the turn whose bar carries the live clock. */
-export function useNativeChatRowTurns({
-  sessionMessages,
-  messages,
-  turnKeysByItemId,
-  activeTurnOpenedBy
-}: {
-  /** The unprojected rows, harness deliveries included. */
-  sessionMessages: readonly NativeChatMessage[]
-  messages: readonly NativeChatMessage[]
-  turnKeysByItemId: ReadonlyMap<string, string> | null
-  activeTurnOpenedBy: string | null | undefined
-}): { turnKeys: (string | undefined)[]; activeTurnKey: string } {
-  // Without the host's attribution, a turn a harness delivery opened (a background-task
-  // notification) is keyed by that delivery, which the projection has already stripped.
+/** `useNativeChatTurnMembership`, plus terminal transcripts' harness turns (a turn a harness
+ *  delivery opened, such as a background-task notification, is keyed by that delivery, which the
+ *  projection has already stripped) and each reasoning row's duration. */
+export function useNativeChatRowTurns(
+  /** `messages` are the unprojected rows, harness deliveries included. */
+  session: { agent: AgentType; messages: readonly NativeChatMessage[] },
+  messages: readonly NativeChatMessage[],
+  journalItems: readonly AgentJournalRenderItem[] | undefined,
+  journalSubmissions: readonly AgentJournalSubmission[] | undefined
+): NativeChatTurnRows & { thoughtSeconds: ReadonlyMap<string, number> } {
+  const membership = useNativeChatTurnMembership(messages, journalItems, journalSubmissions)
   const harnessTurns = useMemo(
-    () => (turnKeysByItemId ? null : nativeChatHarnessTurns(sessionMessages, compareMessages)),
-    [sessionMessages, turnKeysByItemId]
+    () => (journalItems ? null : nativeChatHarnessTurns(session.messages, compareMessages)),
+    [journalItems, session.messages]
   )
-  const turnKeys = useMemo(
-    () => nativeChatRowTurnKeys(messages, turnKeysByItemId ?? harnessTurns?.turnKeysByItemId),
-    [harnessTurns, messages, turnKeysByItemId]
+  const thoughtSeconds = useMemo(
+    () => nativeChatSessionThoughtSeconds(session.agent, journalItems, messages),
+    [journalItems, messages, session.agent]
   )
-  const activeTurnKey = selectNativeChatActiveTurnKey(
-    messages,
-    activeTurnOpenedBy ?? harnessTurns?.latestTurnOpenedBy
+  return useMemo(
+    () =>
+      harnessTurns
+        ? {
+            messages: membership.messages,
+            turnKeys: nativeChatRowTurnKeys(membership.messages, harnessTurns.turnKeysByItemId),
+            liveTurnKey: harnessTurns.latestTurnOpenedBy ?? membership.liveTurnKey,
+            thoughtSeconds
+          }
+        : { ...membership, thoughtSeconds },
+    [harnessTurns, membership, thoughtSeconds]
   )
-  return { turnKeys, activeTurnKey }
 }

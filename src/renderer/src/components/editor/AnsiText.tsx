@@ -5,7 +5,7 @@ import {
   getBuiltinTheme
 } from '@/lib/terminal-theme'
 import { parseAnsiSegments, type AnsiColor } from './ipynb-ansi'
-import { useDocumentDarkTheme } from './use-document-dark-theme'
+import { useDocumentDarkTheme } from '@/hooks/use-document-dark-theme'
 
 const ANSI_PALETTE_KEYS = [
   'black',

@@ -177,6 +177,17 @@ export const AGENT_SESSION_ACCEPTED_SEND_RUNTIME_CAPABILITY =
 // only Stop a client can send before the provider has opened a turn.
 export const AGENT_SESSION_CONVERSATION_STOP_RUNTIME_CAPABILITY =
   'agent-session.conversation-stop.v1' as const
+// Why: `agentSession.send`'s params are strict, so an older host rejects `delivery`; and only a
+// capable client can render the `queued` result arm, the draft list, and returned cards. DARK ON
+// PURPOSE — not in RUNTIME_CAPABILITIES: advertising still requires the integrated Codex steer
+// matrix (#21062) in the shipped host, and the desktop and phone clients that render the queue.
+// v1 includes `submission.queuedMessageId` on every draft hand-off: a client reads that link and
+// never compares a draft id with a submission id. It also publishes the queue's pause once, as
+// `queuePause` beside the list, lifted by `agentSession.queuedMessagesResume` or the user's next
+// turn; cards carry a hold of their own only when their conversion failed. The host mechanism lands first; the constant
+// gates the rollout.
+export const AGENT_SESSION_QUEUED_MESSAGES_RUNTIME_CAPABILITY =
+  'agent-session.queued-messages.v1' as const
 // Why: paired clients advertise Claude-structured support so the host can gate its agent-specific
 // journal and lifecycle surfaces independently from Codex support.
 export const CLAUDE_STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY =
@@ -222,11 +233,6 @@ export const AGENT_SESSION_TURN_ITEM_CAPABILITY = 'agent-session.turn-item.v1' a
 // gap. The host publishes those rows (journal items and terminal transcript messages) only to
 // clients that advertise this.
 export const AGENT_SESSION_THOUGHT_MARKER_CAPABILITY = 'agent-session.thought-marker.v1' as const
-// Why: a structured host with this never hands a send to the provider while the session's own
-// turn runs: it stays the journal's queued submission until the turn settles, one per turn, in
-// order, and a Stop ends the turn and keeps them, so the next goes out at once. Clients read it to
-// know a send made mid-turn waits rather than folding in; nothing on the wire changes shape.
-export const AGENT_SESSION_HELD_SEND_RUNTIME_CAPABILITY = 'agent-session.held-send.v1' as const
 export const AGENT_SESSION_BACKGROUND_TASK_STOP_CAPABILITY =
   'agent-session.background-task-stop.v1' as const
 // Why: agentSession.cancel has a strict schema, so clients must not send prompt identity to an
@@ -389,7 +395,6 @@ export const RUNTIME_CAPABILITIES = [
   TERMINAL_PAIRED_PARKING_RUNTIME_CAPABILITY,
   TERMINAL_QUICK_COMMANDS_RUNTIME_CAPABILITY,
   ...TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITIES,
-  AGENT_SESSION_HELD_SEND_RUNTIME_CAPABILITY,
   WORKTREE_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,
   WORKTREE_ARCHIVE_FAILURE_BLOCKING_RUNTIME_CAPABILITY,
   TERMINAL_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,

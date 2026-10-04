@@ -3,19 +3,17 @@ import type { KeybindingOverrides } from '../../../../shared/keybindings'
 import { getShortcutPlatform } from '@/lib/shortcut-platform'
 import type { NativeChatComposerHandle } from './native-chat-composer-types'
 import { matchNativeChatSplitShortcut } from './native-chat-split-shortcut'
-import {
-  shouldFocusNativeChatComposerFromEditingKey,
-  shouldRedirectNativeChatTyping
-} from './native-chat-typing-redirect'
+import { routeNativeChatRootKeyToInput } from './native-chat-root-key-routing'
 
-/** The terminal-backed chat pane's capture-phase keys: split shortcuts, then typing
- *  anywhere in the pane lands in the composer. */
+/** The terminal-backed chat pane's capture-phase keys: split shortcuts, then keys
+ *  pressed outside an input route to the chat's input. */
 export function handleNativeChatResolvedViewKeyDown(
   event: React.KeyboardEvent<HTMLElement>,
   args: {
     keybindings: KeybindingOverrides
     splitActions: { onSplitRight: () => void; onSplitDown: () => void } | undefined
     composer: NativeChatComposerHandle | null
+    questionAnswerInput: HTMLInputElement | null
   }
 ): void {
   const splitDirection = event.repeat
@@ -31,18 +29,5 @@ export function handleNativeChatResolvedViewKeyDown(
     }
     return
   }
-  // Backspace/Delete outside an input focuses the composer (like typing)
-  // but inserts nothing — let the now-focused field handle the keystroke.
-  if (shouldFocusNativeChatComposerFromEditingKey(event)) {
-    args.composer?.focus()
-    return
-  }
-  if (!shouldRedirectNativeChatTyping(event)) {
-    return
-  }
-  if (!args.composer?.insertTypedText(event.key)) {
-    return
-  }
-  event.preventDefault()
-  event.stopPropagation()
+  routeNativeChatRootKeyToInput(event, args.composer, args.questionAnswerInput)
 }

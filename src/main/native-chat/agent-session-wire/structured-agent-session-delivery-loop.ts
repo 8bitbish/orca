@@ -2,17 +2,15 @@
 // it, and the one thing that settles a queued message because of a start, a child or a leftover.
 //
 // A send is accepted on its own serialized step and returns; this loop does the rest. It exists
-// for a session exactly while a message is queued there — accepted, not yet handed over — and
-// every step re-reads the journal and the conversation's child record to decide, so there is no
-// loop state to disagree with them. Each step is its own serialized task. That is what lets a Stop
+// for a session exactly while a message is queued there — accepted, not yet handed over — and no
+// child is running a conversation command: a command's turn takes no input, and the commit that
+// ends it wakes the loop again. Every step re-reads the journal and the conversation's child
+// record to decide, so there is no loop state to disagree with them. Each step is its own serialized task. That is what lets a Stop
 // that arrives while a start holds the queue withdraw the queued messages before the handover that
 // would have written them. Stop and the conversation's close are the only other writers of a
 // queued message: a child's exit only ends the child, and this loop reads why.
-//
-// A queued message waits while the session's own turn runs (`agent-session.held-send.v1`): the
-// provider gets one message per turn, in order, never one folded into the turn already running.
-// Every commit nudges the loop, so the turn's settling is what hands the next one over.
 
+import type { AgentSessionRecord } from '../../../shared/agent-session-record'
 import {
   agentSessionFailureFact,
   type SubmissionRejectionFact
@@ -39,7 +37,7 @@ import {
 } from './structured-agent-session-start-failure-row'
 import { failedProviderChildStart } from './structured-agent-session-provider-child'
 import { handOverSubmission } from './structured-agent-session-turns'
-import { isStructuredAgentSessionTurnInProgress } from '../../../shared/structured-agent-session-held-send'
+import { structuredAgentSessionCommandRunning } from './structured-agent-session-command-turn'
 
 export type StructuredAgentSessionDeliveryLoopDeps = {
   sessions: ReadonlyMap<string, StructuredAgentSessionHostSession>
@@ -58,6 +56,9 @@ export type StructuredAgentSessionDeliveryLoopDeps = {
   /** Who the chat's failure sentences name. */
   failureTextContext: (sessionId: string) => AgentSessionFailureWordsContext
   onError: (sessionId: string, error: unknown) => void
+  record: (sessionId: string) => AgentSessionRecord | null
+  flushStreamedEvents: (sessionId: string) => Promise<void>
+  now: () => number
 }
 
 type Step = 'continue' | 'stop'
@@ -83,19 +84,6 @@ export class StructuredAgentSessionDeliveryLoop {
   /** Quit: no step after this one starts a child or hands a message over. */
   dispose(): void {
     this.disposed = true
-  }
-
-  /** After any commit: wakes the loop only if a queued message could go out now. Synchronous with
-   *  `stop`, so a turn that settles after a step found it running always gets a fresh wake. */
-  nudge(sessionId: string): void {
-    if (this.disposed || this.running.has(sessionId)) {
-      return
-    }
-    const session = this.deps.sessions.get(sessionId)
-    const oldest = session ? oldestQueuedSubmission(session) : undefined
-    if (session && oldest && !this.holdsBack(session)) {
-      this.wake(sessionId)
-    }
   }
 
   /** From inside the session's serialize, after a message was accepted or the conversation
@@ -162,15 +150,14 @@ export class StructuredAgentSessionDeliveryLoop {
       (submission) => session.journal.wroteBeforeOpen(submission.acceptedSequence)
     )
     const oldest = oldestQueuedSubmission(session)
-    if (!oldest) {
+    // A running command takes no input while its child carries it; its end is a commit, which
+    // wakes the loop again. With no child it is a gone generation's, which the start below settles.
+    if (!oldest || (session.child && structuredAgentSessionCommandRunning(session.journal))) {
       return this.stop(sessionId)
     }
     const failedStart = startThatFailedWhileQueued(session, oldest)
     if (failedStart) {
       return this.fail(sessionId, failedStart)
-    }
-    if (this.holdsBack(session)) {
-      return this.stop(sessionId)
     }
     const ready = await this.deps.ensureProviderChild(sessionId, oldest.clientMessageId)
     if (!ready.ok) {
@@ -219,8 +206,7 @@ export class StructuredAgentSessionDeliveryLoop {
       })
     }
     const next = oldestQueuedSubmission(session)
-    // Re-read here too: a turn the provider opened on its own may have started since prepare.
-    if (!next || this.holdsBack(session)) {
+    if (!next) {
       return this.stop(sessionId)
     }
     await handOverSubmission(
@@ -230,7 +216,10 @@ export class StructuredAgentSessionDeliveryLoop {
         fence: awaitedChild.fence,
         adapter: this.deps.adapter,
         providerChildPhase: () => this.deps.sessions.get(sessionId)?.child?.phase,
-        failureTextContext: this.deps.failureTextContext(sessionId)
+        failureTextContext: this.deps.failureTextContext(sessionId),
+        record: () => this.deps.record(sessionId),
+        flushStreamedEvents: () => this.deps.flushStreamedEvents(sessionId),
+        now: this.deps.now
       },
       next
     )
@@ -252,20 +241,6 @@ export class StructuredAgentSessionDeliveryLoop {
       )
     }
     return this.stop(sessionId)
-  }
-
-  /** Whether the next message must wait because the child it would go to is mid-turn. */
-  private holdsBack(session: StructuredAgentSessionHostSession): boolean {
-    // No child, no turn: a running record left by a gone one is settled when the next starts.
-    const { child } = session
-    return (
-      child !== null &&
-      isStructuredAgentSessionTurnInProgress(
-        session.journal.activeTurnId(),
-        session.journal.submissions(),
-        child.fence
-      )
-    )
   }
 
   /** Inside the serialized step that found nothing to do, so an accept after it wakes anew. */

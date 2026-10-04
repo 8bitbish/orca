@@ -53,6 +53,7 @@ function Harness(props: HarnessProps): React.JSX.Element {
     insertTypedText: () => true,
     handlePasteEvent: () => {},
     pasteFromClipboard: () => {},
+    contains: () => false,
     sendReply: () => false,
     restoreDraft: () => {}
   }

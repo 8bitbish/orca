@@ -14,7 +14,8 @@ import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vite
 import { agentJournalSubmissionKey } from '../../../shared/agent-session-journal-item-key'
 import { computeAgentSessionPayloadFingerprint } from '../../../shared/agent-session-mutation-envelope'
 import type { AgentSessionMutationEnvelope } from '../../../shared/agent-session-wire'
-import { AgentSessionRecordStore } from '../../runtime/agent-session-record-store'
+import type { AgentSessionRecordStore } from '../../runtime/agent-session-record-store'
+import { openTestAgentSessionRecordStore } from '../../runtime/agent-session-record-store-test-harness'
 import type { StructuredAgentSessionAdapter } from './structured-agent-session-adapter'
 import { StructuredAgentSessionHost } from './structured-agent-session-host'
 import {
@@ -27,6 +28,7 @@ import {
   hostTestOperationId,
   resetHostTestOperationIds
 } from './structured-agent-session-host-test-data'
+import { openTestJournalHostDatabase } from '../agent-session-journal/journal-host-database-test-support'
 
 const CALLER = { callerKey: 'client-1' }
 
@@ -142,7 +144,7 @@ beforeEach(async () => {
     providerChildPhase: 'starting' as const
   }))
   dispatch = vi.fn(async () => ({ state: 'admitted' as const }))
-  store = await AgentSessionRecordStore.open({ directory: join(root, 'store'), hostId: 'local' })
+  store = await openTestAgentSessionRecordStore(root)
   host = new StructuredAgentSessionHost({
     store,
     adapter: {
@@ -154,7 +156,7 @@ beforeEach(async () => {
       answerPrompt: vi.fn(async () => undefined),
       setOption: vi.fn(async () => undefined)
     },
-    journalRoot: root,
+    journalDatabase: openTestJournalHostDatabase(root),
     claimKeyId: 'key-1',
     mintSpawnToken: () => `spawn-${generation + 1}`,
     now: () => NOW
@@ -180,7 +182,7 @@ describe('a send into a published session whose child ended before startup', () 
   it('restarts the child and admits the message against it before it has proven its start', async () => {
     const releasedFence = store.getRecord(SESSION)?.lease.runtimeFence ?? 0
 
-    const first = await send('hello again', releasedFence)
+    await send('hello again', releasedFence)
 
     // Accepted at the lost owner's fence and handed to the child delivery started, once.
     expect(acquire).toHaveBeenCalledTimes(2)
@@ -189,13 +191,8 @@ describe('a send into a published session whose child ended before startup', () 
     const current = store.getRecord(SESSION)?.lease.runtimeFence ?? 0
     expect(current).toBeGreaterThan(releasedFence)
 
-    // Once proven, and its turn answered, the next send meets a live owner and restarts nothing.
+    // Once proven, the next send meets a live owner and restarts nothing.
     await proveStarted()
-    await host.settleLateDispatch({
-      sessionId: SESSION,
-      clientMessageId: first,
-      providerIdentity: { provider: 'codex', threadId: THREAD, turnId: 'turn-1', ordinal: 0 }
-    })
     await send('and again', current)
     expect(acquire).toHaveBeenCalledTimes(2)
     expect(dispatch).toHaveBeenCalledTimes(2)

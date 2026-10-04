@@ -95,18 +95,13 @@ const RUNNING_TURN: AgentJournalRenderItem = {
 }
 
 // Every way work can be in flight after a send, in the order a message passes through them.
-/** Nothing runs yet: what the outbox holds is the work a Stop takes back. */
 const IN_FLIGHT = {
   'the send is on its way to the host': () => {
     outbox = [entry('dispatching')]
   },
   'the host has queued it': () => {
     submissions = [submission({ handoverRecorded: true })]
-  }
-}
-
-/** A turn is in progress: the outbox is the queue behind it, which a Stop keeps. */
-const TURN_IN_PROGRESS = {
+  },
   'it was handed over and is unanswered': () => {
     submissions = [submission({ handoverRecorded: true, handedOverAt: 2 })]
   },
@@ -175,23 +170,6 @@ describe('Stop against a host that stops the conversation', () => {
       expect(mocks.withdrawUnsent.mock.invocationCallOrder[0]).toBeLessThan(
         mocks.call.mock.invocationCallOrder[cancelCall] ?? 0
       )
-      expect(cancels()).toEqual([expect.not.objectContaining({ turnId: expect.anything() })])
-    }
-  )
-
-  it.each(Object.entries(TURN_IN_PROGRESS))(
-    'shows while %s, and stops the conversation, keeping the queue behind it',
-    async (_state, arrange) => {
-      arrange()
-      const { result } = render()
-
-      expect(result.current.canStop).toBe(true)
-      await act(async () => {
-        await result.current.stop()
-      })
-
-      // The next queued message goes out as the stopped turn settles.
-      expect(mocks.withdrawUnsent).not.toHaveBeenCalled()
       expect(cancels()).toEqual([expect.not.objectContaining({ turnId: expect.anything() })])
     }
   )

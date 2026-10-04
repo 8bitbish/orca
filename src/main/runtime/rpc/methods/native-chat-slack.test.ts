@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RpcDispatcher } from '../dispatcher'
 import type { RpcRequest } from '../core'
 import type { OrcaRuntimeService } from '../../orca-runtime'
-import { MOBILE_RPC_METHOD_ALLOWLIST } from '../../runtime-rpc/runtime-rpc-mobile-method-allowlist'
+import { isMobileRpcMethodAllowed } from '../../runtime-rpc/runtime-rpc-mobile-method-access'
 import { ALL_RPC_METHODS } from './index'
 import { NATIVE_CHAT_SLACK_METHODS } from './native-chat-slack'
 
@@ -46,7 +46,7 @@ afterEach(() => {
 describe('nativeChat.slackImage', () => {
   it('is registered and open to paired phones', () => {
     expect(ALL_RPC_METHODS.some((method) => method.name === 'nativeChat.slackImage')).toBe(true)
-    expect(MOBILE_RPC_METHOD_ALLOWLIST.has('nativeChat.slackImage')).toBe(true)
+    expect(isMobileRpcMethodAllowed('nativeChat.slackImage')).toBe(true)
   })
 
   it('serves an image from the host cache', async () => {

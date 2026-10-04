@@ -16,7 +16,7 @@ import {
 import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
 import { classifyMobileNativeChatSend } from './mobile-native-chat-send-classification'
 import { routeMobileNativeChatSendThroughQueue } from './mobile-native-chat-queue-send'
-import type { MobileNativeChatQueueStackProps } from './MobileNativeChatQueuedMessages'
+import type { MobileNativeChatQueueStackProps } from './MobileNativeChatTerminalQueuedMessages'
 import {
   useMobileNativeChatMessageQueue,
   type MobileNativeChatMessageQueue

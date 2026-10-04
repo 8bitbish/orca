@@ -17,7 +17,6 @@ import {
   applyCommandMarkerBoundaries,
   clearCommandMarkerCacheForTests,
   commandMarkersAsMessages,
-  isCommandMarkerId,
   readCommandMarkerCache
 } from './native-chat-command-marker'
 import { isLaunchPromptMessageId, isPendingMessageId } from './native-chat-synthetic-message-ids'
@@ -738,11 +737,6 @@ describe('commandMarkersAsMessages', () => {
   it('survives stripNoiseMessages (the "Ran" text is not a noise prefix)', () => {
     const markers = commandMarkersAsMessages([{ id: 'c1', command: '/compact', sentAt: 1 }])
     expect(stripNoiseMessages(markers)).toEqual(markers)
-  })
-
-  it('isCommandMarkerId recognizes the prefix', () => {
-    expect(isCommandMarkerId('command:c1')).toBe(true)
-    expect(isCommandMarkerId('pending:p1')).toBe(false)
   })
 })
 

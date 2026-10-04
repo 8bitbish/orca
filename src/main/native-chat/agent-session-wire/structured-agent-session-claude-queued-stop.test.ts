@@ -1,14 +1,13 @@
-// Messages sent while Claude's turn runs wait on the host, one per turn and in order, so the SDK's
-// input is never written mid-turn. Stop interrupts the turn and keeps them: the next goes out as
-// the interrupted turn settles. Only a send already handed to Claude that it had not started is
-// withdrawn by a Stop — under the SessionStart hook Orca installs, whose frame proves the start
-// before the turn's system/init says the CLI can cancel its queue.
+// A follow-up Claude queued behind the running turn is dropped by Stop, so the chat must record it
+// as withdrawn and stop reading as working — under the SessionStart hook Orca installs, whose frame
+// proves the start before the turn's system/init says the CLI can cancel its queue.
 
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { computeAgentSessionPayloadFingerprint } from '../../../shared/agent-session-mutation-envelope'
+import { isQueuedAgentJournalSubmission } from '../../../shared/agent-session-queued-submission'
 import { DISPATCH_REJECTED_CANCELLED } from '../../../shared/structured-agent-session-dispatch-rejection'
 import { activeStructuredAgentSessionTurnId } from '../../../shared/structured-agent-session-live-turn'
 import { projectStructuredAgentSessionStatus } from '../../../shared/structured-agent-session-projection'
@@ -17,8 +16,10 @@ import {
   fakeClaude,
   PROVIDER_SESSION_ID
 } from '../../claude/claude-structured-session-test-support'
-import { AgentSessionRecordStore } from '../../runtime/agent-session-record-store'
+import type { AgentSessionRecordStore } from '../../runtime/agent-session-record-store'
+import { openTestAgentSessionRecordStore } from '../../runtime/agent-session-record-store-test-harness'
 import { structuredClaudeLifecycleEvent } from '../../runtime/structured-claude-runtime-adapter'
+import { openTestJournalHostDatabase } from '../agent-session-journal/journal-host-database-test-support'
 import { StructuredAgentSessionHost } from './structured-agent-session-host'
 import {
   HOST_TEST_NOW as NOW,
@@ -79,11 +80,11 @@ beforeEach(async () => {
     readProcessStartTime: async () => 1_700_000_000_000,
     now: () => NOW
   })
-  store = await AgentSessionRecordStore.open({ directory: join(root, 'store'), hostId: 'local' })
+  store = await openTestAgentSessionRecordStore(root)
   host = new StructuredAgentSessionHost({
     store,
     adapter: Object.assign(adapter, { supportsCreate: () => true }),
-    journalRoot: root,
+    journalDatabase: openTestJournalHostDatabase(root),
     claimKeyId: 'key-1',
     mintSpawnToken: () => 'spawn-a',
     now: () => NOW
@@ -150,17 +151,20 @@ async function status(): Promise<string> {
   )
 }
 
-function textOf(frame: Record<string, unknown> | undefined): string {
-  return JSON.stringify(frame?.message ?? null)
+async function liveTurnId(): Promise<string | null> {
+  return activeStructuredAgentSessionTurnId((await host.journalSnapshot(SESSION)).items)
 }
 
-/** Claude opens a turn for the newest message it was given: its system/init, then the echo. */
-function openTurn(connection: (typeof claude.connections)[number]): void {
+/** Sends the first message and lets Claude open its turn; returns the turn a client reads. */
+async function openFirstTurn(connection: (typeof claude.connections)[number]): Promise<string> {
+  const first = await send('Write a long reply.')
+  await eventually(() => expect(connection.sent).toHaveLength(1))
+  // Claude opens the turn: its system/init, then the echo of the message it runs.
   connection.handlers.onMessage?.({
     type: 'system',
     subtype: 'init',
     session_id: PROVIDER_SESSION_ID,
-    uuid: `init-${connection.sent.length}`,
+    uuid: 'turn-init',
     model: 'claude-sonnet-5',
     capabilities: CAPABILITIES
   })
@@ -168,128 +172,147 @@ function openTurn(connection: (typeof claude.connections)[number]): void {
     ...connection.sent.at(-1)!,
     uuid: connection.sent.at(-1)!.uuid
   })
+  await eventually(async () => expect((await dispatch(first)).state).toBe('accepted'))
+  const turnId = await liveTurnId()
+  expect(turnId).not.toBeNull()
+  return turnId!
 }
 
-function endTurn(
-  connection: (typeof claude.connections)[number],
-  subtype: 'success' | 'error_during_execution' = 'success'
-): void {
+async function endFirstTurn(connection: (typeof claude.connections)[number]): Promise<void> {
   connection.handlers.onMessage?.({
     type: 'result',
-    subtype,
+    subtype: 'success',
+    uuid: 'result-first',
     session_id: PROVIDER_SESSION_ID,
-    uuid: `result-${connection.sent.length}`,
-    user_message_uuid: connection.sent.at(-1)!.uuid
+    is_error: false,
+    terminal_reason: 'completed',
+    duration_ms: 12
   })
+  await eventually(async () => expect(await liveTurnId()).toBeNull())
 }
 
-async function runningTurn(): Promise<{
-  connection: (typeof claude.connections)[number]
-  turnId: string
-}> {
+function stop(turnId: string) {
+  return host.cancel(CALLER, { envelope: envelope('agentSession.cancel', { turnId }), turnId })
+}
+
+it('withdraws a follow-up Claude queued behind the running turn when that turn is stopped', async () => {
   const connection = claude.connections[0]!
-  const first = await send('Write a long reply.')
-  await eventually(() => expect(connection.sent).toHaveLength(1))
-  openTurn(connection)
-  await eventually(async () => expect((await dispatch(first)).state).toBe('accepted'))
-  const turnId = activeStructuredAgentSessionTurnId((await host.journalSnapshot(SESSION)).items)
-  expect(turnId).not.toBeNull()
-  return { connection, turnId: turnId! }
-}
-
-async function held(clientMessageId: string): Promise<boolean> {
-  const submission = (await host.journalSnapshot(SESSION)).submissions.find(
-    (entry) => entry.clientMessageId === clientMessageId
-  )
-  return submission?.dispatchState === 'pending' && submission.handedOverAt === undefined
-}
-
-/** Long enough for a delivery loop that was going to write to have written. */
-async function settle(): Promise<void> {
-  await host.flushStreamedEvents(SESSION)
-  await new Promise((resolve) => setTimeout(resolve, 150))
-}
-
-it('holds a message sent mid-turn and hands it over as the turn ends', async () => {
-  const { connection } = await runningTurn()
+  const turnId = await openFirstTurn(connection)
 
   const followUp = await send('And then this.')
-  await settle()
-  // Never written into the running turn.
-  expect(connection.sent).toHaveLength(1)
-  expect(await held(followUp)).toBe(true)
-  expect(await status()).toBe('working')
-
-  endTurn(connection)
-  await eventually(() => expect(connection.sent).toHaveLength(2))
-  expect(textOf(connection.sent[1])).toContain('And then this.')
-}, 15_000)
-
-it('delivers queued messages in order, one per turn', async () => {
-  const { connection } = await runningTurn()
-  const second = await send('Second.')
-  const third = await send('Third.')
-  await settle()
-  expect(connection.sent).toHaveLength(1)
-
-  endTurn(connection)
-  await eventually(() => expect(connection.sent).toHaveLength(2))
-  expect(textOf(connection.sent[1])).toContain('Second.')
-  // The third waits for the turn the second opens, not merely for the second's handover.
-  await settle()
-  expect(connection.sent).toHaveLength(2)
-  expect(await held(third)).toBe(true)
-
-  openTurn(connection)
-  await eventually(async () => expect((await dispatch(second)).state).toBe('accepted'))
-  await settle()
-  expect(connection.sent).toHaveLength(2)
-  endTurn(connection)
-  await eventually(() => expect(connection.sent).toHaveLength(3))
-  expect(textOf(connection.sent[2])).toContain('Third.')
-}, 15_000)
-
-it('Stop interrupts the turn and sends the next queued message as it settles', async () => {
-  const { connection, turnId } = await runningTurn()
-  const next = await send('Do this instead.')
-  const after = await send('Then this.')
-  await settle()
-  expect(connection.sent).toHaveLength(1)
-
-  const stopped = await host.cancel(CALLER, {
-    envelope: envelope('agentSession.cancel', { turnId }),
-    turnId
-  })
-  expect(stopped).toMatchObject({ ok: true, value: { cancelled: true } })
-  // Kept, not withdrawn, and still not written while the interrupted turn winds down.
-  expect(await held(next)).toBe(true)
-  expect(connection.sent).toHaveLength(1)
-
-  endTurn(connection, 'error_during_execution')
-  await eventually(() => expect(connection.sent).toHaveLength(2))
-  expect(textOf(connection.sent[1])).toContain('Do this instead.')
-  expect(await held(after)).toBe(true)
-  expect((await dispatch(next)).state).toBe('pending')
-}, 15_000)
-
-it('withdraws a send Claude was handed but had not started when its turn is stopped', async () => {
-  const { connection } = await runningTurn()
-  endTurn(connection)
-  await eventually(async () => expect(await status()).toBe('idle'))
-
-  // Handed over at once (nothing runs), then Stopped before Claude echoes it.
-  const unstarted = await send('Never mind.')
   await eventually(() => expect(connection.sent).toHaveLength(2))
   queued.push(String(connection.sent.at(-1)!.uuid))
-  const stopped = await host.cancel(CALLER, {
-    envelope: envelope('agentSession.cancel', {})
-  })
+  await eventually(async () => expect((await dispatch(followUp)).state).toBe('pending'))
+
+  const stopped = await stop(turnId)
   expect(stopped).toMatchObject({ ok: true, value: { cancelled: true } })
+  // The interrupted turn closes as the CLI ends it.
+  connection.handlers.onMessage?.({
+    type: 'result',
+    subtype: 'error_during_execution',
+    session_id: PROVIDER_SESSION_ID,
+    uuid: 'interrupted-result'
+  })
   await eventually(async () =>
-    expect(await dispatch(unstarted)).toEqual({
+    expect(await dispatch(followUp)).toEqual({
       state: 'rejected',
       reason: DISPATCH_REJECTED_CANCELLED
     })
   )
   await eventually(async () => expect(await status()).toBe('idle'))
+}, 15_000)
+
+// The phone names the turn from its own copy of the journal, which can trail the host's.
+it('withdraws a follow-up Claude holds when the turn the Stop names ended before it landed', async () => {
+  const connection = claude.connections[0]!
+  const turnId = await openFirstTurn(connection)
+  const followUp = await send('And then this.')
+  await eventually(() => expect(connection.sent).toHaveLength(2))
+  queued.push(String(connection.sent.at(-1)!.uuid))
+  await eventually(async () => expect((await dispatch(followUp)).state).toBe('pending'))
+  await endFirstTurn(connection)
+
+  expect(await stop(turnId)).toMatchObject({ ok: true, value: { cancelled: true } })
+  expect(connection.calls.find((call) => call.subtype === 'interrupt')?.params).toEqual({
+    cancelQueued: true
+  })
+  await eventually(async () =>
+    expect(await dispatch(followUp)).toEqual({
+      state: 'rejected',
+      reason: DISPATCH_REJECTED_CANCELLED
+    })
+  )
+  await eventually(async () => expect(await status()).toBe('idle'))
+}, 15_000)
+
+it('withdraws a follow-up still queued on the host when the turn the Stop names already ended', async () => {
+  const connection = claude.connections[0]!
+  const turnId = await openFirstTurn(connection)
+  await endFirstTurn(connection)
+  // Holds the delivery loop between its start check and the handover, with the follow-up queued.
+  let release!: () => void
+  const held = new Promise<void>((resolve) => (release = resolve))
+  const awaitStarted = vi.spyOn(adapter, 'awaitStarted').mockImplementationOnce(async () => {
+    await held
+  })
+  const followUp = await send('And then this.')
+  await eventually(() => expect(awaitStarted).toHaveBeenCalled())
+  const submission = (await host.journalSnapshot(SESSION)).submissions.find(
+    (entry) => entry.clientMessageId === followUp
+  )
+  expect(submission && isQueuedAgentJournalSubmission(submission)).toBe(true)
+
+  // Nothing reached Claude, so the host's withdrawal is the whole Stop, as with no turn named.
+  expect(await stop(turnId)).toMatchObject({ ok: true, value: { cancelled: true } })
+  release()
+  await eventually(async () =>
+    expect(await dispatch(followUp)).toEqual({
+      state: 'rejected',
+      reason: DISPATCH_REJECTED_CANCELLED
+    })
+  )
+  expect(connection.sent).toHaveLength(1)
+  await eventually(async () => expect(await status()).toBe('idle'))
+  const rows = (await host.journalSnapshot(SESSION)).items.flatMap((item) =>
+    item.body.kind === 'status' ? [item.body.text] : []
+  )
+  expect(rows).not.toContain('The provider had already finished this turn.')
+}, 15_000)
+
+it('withdraws a host-queued follow-up but leaves a newer turn running when the Stop names an older one', async () => {
+  const connection = claude.connections[0]!
+  const olderTurnId = await openFirstTurn(connection)
+  await endFirstTurn(connection)
+  const second = await send('Now this.')
+  await eventually(() => expect(connection.sent).toHaveLength(2))
+  connection.handlers.onMessage?.({
+    ...connection.sent.at(-1)!,
+    uuid: connection.sent.at(-1)!.uuid
+  })
+  await eventually(async () => expect((await dispatch(second)).state).toBe('accepted'))
+  const newerTurnId = await liveTurnId()
+  expect(newerTurnId).not.toBeNull()
+  expect(newerTurnId).not.toBe(olderTurnId)
+  let release!: () => void
+  const held = new Promise<void>((resolve) => (release = resolve))
+  const awaitStarted = vi.spyOn(adapter, 'awaitStarted').mockImplementationOnce(async () => {
+    await held
+  })
+  const followUp = await send('And then this.')
+  await eventually(() => expect(awaitStarted).toHaveBeenCalled())
+
+  expect(await stop(olderTurnId)).toMatchObject({ ok: true, value: { cancelled: false } })
+  release()
+  await eventually(async () =>
+    expect(await dispatch(followUp)).toEqual({
+      state: 'rejected',
+      reason: DISPATCH_REJECTED_CANCELLED
+    })
+  )
+  expect(connection.calls.some((call) => call.subtype === 'interrupt')).toBe(false)
+  expect(await liveTurnId()).toBe(newerTurnId)
+  const rows = (await host.journalSnapshot(SESSION)).items.flatMap((item) =>
+    item.body.kind === 'status' ? [item.body.text] : []
+  )
+  expect(rows).toContain('The provider had already finished this turn.')
 }, 15_000)

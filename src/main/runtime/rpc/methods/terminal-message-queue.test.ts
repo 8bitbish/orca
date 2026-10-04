@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RpcDispatcher } from '../dispatcher'
 import type { RpcRequest } from '../core'
 import type { OrcaRuntimeService } from '../../orca-runtime'
-import { MOBILE_RPC_METHOD_ALLOWLIST } from '../../runtime-rpc/runtime-rpc-mobile-method-allowlist'
+import { isMobileRpcMethodAllowed } from '../../runtime-rpc/runtime-rpc-mobile-method-access'
 import { RUNTIME_CAPABILITIES } from '../../../../shared/protocol-version'
 import {
   TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY,
@@ -101,7 +101,7 @@ describe('terminalMessageQueue RPC', () => {
     expect(RUNTIME_CAPABILITIES).toContain(TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY)
     for (const name of METHOD_NAMES) {
       expect(ALL_RPC_METHODS.some((method) => method.name === name)).toBe(true)
-      expect(MOBILE_RPC_METHOD_ALLOWLIST.has(name)).toBe(true)
+      expect(isMobileRpcMethodAllowed(name)).toBe(true)
     }
   })
 

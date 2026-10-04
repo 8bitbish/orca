@@ -33,12 +33,6 @@ import {
   stopStructuredAgentSessionRuntime
 } from './structured-agent-session-runtime'
 
-// A Stop must never reach for real processes on this machine under a made-up pid.
-vi.mock('../codex/codex-structured-turn-processes', () => ({
-  captureCodexTurnProcesses: async () => null,
-  terminateCodexTurnProcesses: async () => true
-}))
-
 const CALLER = { callerKey: 'codex-turn-end-test' }
 const MODEL = {
   model: 'gpt-test',
@@ -207,28 +201,24 @@ describe('a Codex send its turn ended without taking it', () => {
     expect(verdictOf((await settled()).submissions, sent)).toBe('withdrawn')
   })
 
-  it('holds a follow-up behind the running Codex turn, and a Stop sends it as that turn ends', async () => {
+  it('withdraws a follow-up Codex steered into the turn a Stop ends, with no working latch', async () => {
     const opening = await send('look around')
     await vi.waitFor(() => expect(answers).toBe(1))
     turns.start()
     turns.echo(opening)
     const followUp = await send('and check the tests')
-    // Never steered into the running turn: Codex is not asked to start anything until it ends.
-    await host.flushStreamedEvents(SESSION)
-    await new Promise((resolve) => setTimeout(resolve, 150))
-    expect(answers).toBe(1)
-    expect(verdictOf((await settled()).submissions, followUp)).toBe('pending')
+    // Steered: Codex answers with the running turn, and fires no second turn/started.
+    await vi.waitFor(() => expect(answers).toBe(2))
 
     await stop('turn-1')
 
-    // The interrupted turn's end hands the follow-up over as a turn of its own.
-    await vi.waitFor(() => expect(answers).toBe(2))
+    await vi.waitFor(async () =>
+      expect(verdictOf((await settled()).submissions, followUp)).not.toBe('pending')
+    )
     const after = await settled()
     expect(verdictOf(after.submissions, opening)).toBe('accepted')
-    expect(verdictOf(after.submissions, followUp)).toBe('pending')
-    expect(
-      after.submissions.find((entry) => entry.clientMessageId === followUp)?.handedOverAt
-    ).toBeDefined()
+    expect(verdictOf(after.submissions, followUp)).toBe('withdrawn')
+    expect(after.owesWork).toBe(false)
   })
 })
 

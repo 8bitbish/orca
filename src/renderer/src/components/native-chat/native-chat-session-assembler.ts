@@ -13,11 +13,7 @@ import {
   isImageSourceUserTurn,
   normalizeImageTranscriptMessages
 } from '../../../../shared/native-chat-image-transcript-markers'
-import {
-  isLaunchPromptMessageId,
-  isPendingMessageId,
-  isQueuedPendingMessageId
-} from './native-chat-synthetic-message-ids'
+import { isLaunchPromptMessageId, isPendingMessageId } from './native-chat-pending'
 
 /** Messages grouped by source. Higher-priority sources (transcript > hook >
  *  scrape) supersede lower ones when they describe the same turn. */
@@ -95,23 +91,16 @@ function supersedes(candidate: NativeChatMessage, existing: NativeChatMessage): 
   return candidateRank > existingRank
 }
 
-// Why: the tail bubbles form fixed tiers that timestamps alone can't express —
-// the streaming preview has a null timestamp (which would sort to the front of a
-// tier) while echoes carry a finite `sentAt`, and echoes must never mix into real
-// content. Ranking also settles where the preview sits relative to an echo: an
-// idle send is the prompt the preview is answering, so the preview goes BELOW it;
-// a send queued mid-reply is not, so the preview goes above it. Getting this
-// backwards rendered the reply above the message that prompted it.
-// Rank first, then timestamp within a tier.
+// Why: the tail bubbles form fixed tiers that timestamps alone can't express.
+// The streaming preview (null timestamp) must follow real content but sit ahead
+// of the optimistic composer echoes and queued sends, which carry finite timestamps
+// that would otherwise sort past it. Rank first, then timestamp within a tier.
 function messageSortRank(message: NativeChatMessage): number {
-  if (isQueuedPendingMessageId(message.id)) {
-    return 3
-  }
   if (message.id === NATIVE_CHAT_STREAMING_ID) {
-    return 2
-  }
-  if (isPendingMessageId(message.id) || isLaunchPromptMessageId(message.id)) {
     return 1
+  }
+  if (message.queued || isPendingMessageId(message.id) || isLaunchPromptMessageId(message.id)) {
+    return 2
   }
   return 0
 }

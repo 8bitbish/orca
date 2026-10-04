@@ -18,7 +18,10 @@ import { isSlashCommandDraft } from '../../../../shared/native-chat-slash-comman
 import type { NativeChatPickerState } from './use-native-chat-picker-state'
 import type { NativeChatSendLifecycle } from './use-native-chat-send-lifecycle'
 import type { NativeChatPtySessionOptionsSurface } from './native-chat-pty-session-options'
-import type { NativeChatComposerQueue } from './native-chat-composer-types'
+import type {
+  NativeChatComposerQueue,
+  NativeChatOptimisticSendOutcome
+} from './native-chat-composer-types'
 
 type PtyComposerSendArgs = {
   agent: AgentType
@@ -32,6 +35,7 @@ type PtyComposerSendArgs = {
   resolveTarget: () => NativeChatResolvedTarget | null
   classifySend: NativeChatPickerState['classifySend']
   onOptimisticSend?: (text: string, imagePaths?: string[]) => string | undefined
+  optimisticSendOutcome?: NativeChatOptimisticSendOutcome
   onSlashCommand?: (command: string) => void
   sessionOptionsSurface: NativeChatPtySessionOptionsSurface | null
   terminalTabId: string
@@ -95,12 +99,29 @@ function sendNow(
   imagePaths: string[],
   classification: ReturnType<NativeChatPickerState['classifySend']>
 ): void {
-  const { sendOptions } = resolveNativeChatLaunchDraftSend({
+  const { sendOptions: launchSendOptions } = resolveNativeChatLaunchDraftSend({
     launchDraft: args.launchDraft,
     launchDraftResolved: args.launchDraftResolved,
     agent: args.agent,
     readScreen: () => args.readTerminalScreen?.()
   })
+  let pendingId: string | undefined
+  const sendOptions =
+    args.agent === 'claude' && classification === 'chat'
+      ? {
+          ...launchSendOptions,
+          onWriteRejected: () => {
+            if (pendingId) {
+              args.optimisticSendOutcome?.reject(pendingId)
+            }
+          },
+          onWriteUnconfirmed: () => {
+            if (pendingId) {
+              args.optimisticSendOutcome?.holdUnconfirmed(pendingId)
+            }
+          }
+        }
+      : launchSendOptions
   let pendingHandle: NativeChatSendHandle | null = null
   // Why: slash-like text must not silently drop its attached images.
   if (classification !== 'chat' && imagePaths.length === 0) {
@@ -131,7 +152,7 @@ function sendNow(
       args.sessionOptionsSurface?.recordOutgoingCommand(text.trim())
     }
   } else {
-    const pendingId = args.onOptimisticSend?.(text, imagePaths)
+    pendingId = args.onOptimisticSend?.(text, imagePaths)
     if (pendingHandle) {
       args.trackPendingSend(pendingHandle, pendingId)
     }

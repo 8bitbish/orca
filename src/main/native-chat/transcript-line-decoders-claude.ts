@@ -16,6 +16,7 @@ import {
 import { imageSourcePathFromText } from '../../shared/native-chat-image-transcript-markers'
 import { isHarnessTurnOpenerText } from '../../shared/harness-injected-user-turns'
 import { claudeContentBlocks, claudeThinkingOnlyBlocks } from './transcript-record-blocks'
+import { unwrapClaudePastedContentBlock } from '../../shared/claude-pasted-content'
 import { claudeInterruptedMessageId } from './transcript-turn-markers'
 import { claudeAbsorbedPromptBlocks } from './transcript-claude-absorbed-prompt'
 
@@ -87,7 +88,7 @@ export function decodeClaudeTranscriptLine(
       ? {
           id: extractString(record.uuid) ?? fallbackId,
           role: 'user',
-          blocks: absorbed,
+          blocks: absorbed.map(unwrapClaudePastedContentBlock),
           timestamp: parseTimestamp(record.timestamp),
           source: 'transcript'
         }
@@ -156,7 +157,7 @@ export function decodeClaudeTranscriptLine(
   return {
     id: messageId ?? fallbackId,
     role: claudeMessageRole(role, blocks),
-    blocks,
+    blocks: role === 'user' ? blocks.map(unwrapClaudePastedContentBlock) : blocks,
     timestamp,
     source: 'transcript'
   }
