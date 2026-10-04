@@ -7,6 +7,10 @@ import type {
 } from '../api-types'
 import type { AgentType } from '../../shared/native-chat-types'
 import type { NativeChatSlackImageRequest } from '../../shared/native-chat-slack-image-contract'
+import type {
+  NativeChatProofImageRequest,
+  NativeChatProofVideoRequest
+} from '../../shared/native-chat-proof-media-contract'
 
 export const nativeChatApi = {
   readSession: (
@@ -41,5 +45,9 @@ export const nativeChatApi = {
   },
   slackImage: (request: NativeChatSlackImageRequest) =>
     ipcRenderer.invoke('nativeChat:slackImage', request),
-  openSlack: (href: string): Promise<boolean> => ipcRenderer.invoke('nativeChat:openSlack', href)
+  openSlack: (href: string): Promise<boolean> => ipcRenderer.invoke('nativeChat:openSlack', href),
+  proofImage: (request: NativeChatProofImageRequest) =>
+    ipcRenderer.invoke('nativeChat:proofImage', request),
+  proofVideo: (request: NativeChatProofVideoRequest) =>
+    ipcRenderer.invoke('nativeChat:proofVideo', request)
 } satisfies PreloadApi['nativeChat']

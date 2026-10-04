@@ -27,6 +27,9 @@ export function createWebNativeChatApi(): NativeChatApi {
       window.open(buildNativeChatSlackLinks(target).primary, '_blank', 'noopener')
       return true
     },
+    // Proof media lives on the desktop that captured it; a browser client shows placeholders.
+    proofImage: async () => ({ ok: false, reason: 'unavailable' }),
+    proofVideo: async () => ({ ok: false, reason: 'unavailable' }),
     readSession: async (agent, sessionId, limit, transcriptPath) =>
       parseRuntimeNativeChatReadSessionResult(
         await callRuntimeResult<unknown>('nativeChat.readSession', {

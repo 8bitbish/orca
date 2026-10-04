@@ -42,6 +42,7 @@ describe('nativeChatFenceRoute', () => {
     ['slack-message', 'slack-message'],
     ['Slack-Message', 'slack-message'],
     ['slack-draft', 'slack-draft'],
+    ['proof-card', 'proof-card'],
     ['ts', 'code'],
     ['xml', 'code'],
     [undefined, 'code']
@@ -117,10 +118,10 @@ describe('nativeChatFences', () => {
   })
 })
 
-describe('nativeChatFenceRoute: Slack cards', () => {
+describe('nativeChatFenceRoute: Slack and proof cards', () => {
   const card = '{"teamId":"TFAKE0001"}\n'
 
-  it.each(['slack-message', 'slack-draft'] as const)(
+  it.each(['slack-message', 'slack-draft', 'proof-card'] as const)(
     'draws a finished %s fence only in an assistant reply',
     (language) => {
       expect(nativeChatFenceRoute({ language, code: card, scope: REPLY })).toBe(language)
@@ -129,7 +130,7 @@ describe('nativeChatFenceRoute: Slack cards', () => {
     }
   )
 
-  it.each(['slack-message', 'slack-draft'] as const)(
+  it.each(['slack-message', 'slack-draft', 'proof-card'] as const)(
     'holds back a %s fence that is still streaming',
     (language) => {
       const scope = { markupPreviews: true, openFenceBody: '{"teamId":"TFA' }
