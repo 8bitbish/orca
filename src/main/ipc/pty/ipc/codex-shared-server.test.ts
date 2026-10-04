@@ -90,9 +90,8 @@ describe('Codex shared-server IPC', () => {
     ['zsh on a v36 daemon', 'zsh', [ownedBy(36)], true],
     ['zsh on a v37 daemon', 'zsh', [ownedBy(37)], false],
     ['fish on a v37 daemon', 'fish', [ownedBy(37)], true],
-    // Why 37/38: this release line ships the fish wrapper at v38 (main: 39).
-    ['fish on a v37 daemon', 'fish', [ownedBy(37)], true],
-    ['fish on a v38 daemon', 'fish', [ownedBy(38)], false],
+    ['fish on a v38 daemon', 'fish', [ownedBy(38)], true],
+    ['fish on a v39 daemon', 'fish', [ownedBy(39)], false],
     ['cmd.exe, which never gets the codex function', 'cmd', [ownedBy(36)], false],
     ['an unknown shell', null, [ownedBy(36)], false],
     ['zsh where the older daemon does not hold this pane', 'zsh', [ownedBy(36, 'other')], false]

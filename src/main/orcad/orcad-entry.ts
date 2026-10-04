@@ -31,6 +31,7 @@ import {
 export { parseArgs }
 
 let runOrcadQuitHandlers = (): void => {}
+let closeOrcadObservability = (): void => {}
 
 function createNodeAppEnvironment(): AppEnvironment {
   const quitHandlers: (() => void)[] = []
@@ -110,7 +111,12 @@ export async function startOrcad(options: OrcadOptions = {}): Promise<OrcadHandl
   return startOrcadWithHost(
     resolveUserDataPath(),
     (registerCleanup) => startOrcadRuntime(options, registerCleanup),
-    () => runOrcadQuitHandlers()
+    () => {
+      runOrcadQuitHandlers()
+      // Last, after every quit handler, so the spans they end still reach the file.
+      closeOrcadObservability()
+      closeOrcadObservability = () => {}
+    }
   )
 }
 
@@ -123,6 +129,8 @@ async function startOrcadRuntime(
   const { registerHeadlessPtyRuntime, getLocalPtyProvider, getSshPtyProvider } =
     await import('../ipc/pty')
   const { getAppEnvironment } = await import('../../shared/app-environment')
+  const { installOrcadObservability } = await import('./orcad-observability')
+  closeOrcadObservability = installOrcadObservability()
   const { resolveAdvertisedPairingEndpoint } = await import('../runtime/pairing-endpoint')
   const { ServeReadinessPublisher } = await import('../server/serve-readiness')
   const { createOrcadProfileStateStartup } = await import('./orcad-profile-state-startup')
@@ -234,8 +242,10 @@ async function startOrcadRuntime(
       publish: (summary, subject) => agentHookServer.ingestStructuredStatus(summary, subject),
       forget: (subject) => agentHookServer.dropStructuredStatus(subject),
       publishChildWork: (subject, evidence, provider) =>
-        agentHookServer.ingestStructuredChildWork(subject, evidence, provider)
+        agentHookServer.ingestStructuredChildWork(subject, evidence, provider),
+      readChildWork: (subject) => agentHookServer.getStructuredChildWorkViews(subject)
     },
+    checkHookAgentPresence: (paneKey) => agentHookServer.checkAgentPresence(paneKey),
     reconcileAgentStatusForEndedProcess: (paneKeys) =>
       agentHookServer.reconcileEndedProcessForPaneKeys(paneKeys),
     buildAgentHookPtyEnv: () =>

@@ -1460,20 +1460,6 @@ jobs:
           }
           cargo --version
 
-      # Why an explicit step rather than trusting the runner image: the packaged
-      # CLI launcher is a native Rust binary, and a Windows host without cargo
-      # fails deep inside electron-builder's native hook instead of here. Real
-      # Windows dev machines do not have it by default either.
-      - name: Ensure the Rust toolchain for the Windows CLI launcher
-        if: matrix.platform == 'win'
-        shell: pwsh
-        run: |
-          if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
-            rustup toolchain install stable --profile minimal
-            rustup default stable
-          }
-          cargo --version
-
       # Why ORCA_POSTHOG_WRITE_KEY here: this is the only build that
       # produces a published binary, so this is the only place the secret
       # needs to be in scope. The key is a PostHog *project* API key, not
@@ -2389,6 +2375,15 @@ jobs:
       - skill-sharing-linux-floor-release-gate
       - skill-sharing-release-gate
       - terminal-rendering-golden
+    # Why explicit: a skipped orcad-template (tags that predate it) would skip every job after it.
+    if: >-
+      !cancelled() &&
+      needs.cut.result == 'success' &&
+      needs.build.result == 'success' &&
+      needs.build-mac.result == 'success' &&
+      needs.skill-sharing-linux-floor-release-gate.result == 'success' &&
+      needs.skill-sharing-release-gate.result == 'success' &&
+      needs.terminal-rendering-golden.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -2457,7 +2452,8 @@ jobs:
     needs:
       - cut
       - publish-release
-    if: ${{ needs.cut.outputs.tag != '' }}
+    # Why explicit: a skipped orcad-template (tags that predate it) would skip every job after it.
+    if: ${{ !cancelled() && needs.publish-release.result == 'success' && needs.cut.outputs.tag != '' }}
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -2486,7 +2482,8 @@ jobs:
     # A release created with GITHUB_TOKEN does not reliably emit a release
     # event to other workflows. Dispatch the trusted default-branch workflow;
     # it validates and checks out the released tag before deploying.
-    if: ${{ needs.cut.outputs.tag != '' }}
+    # Why explicit: a skipped orcad-template (tags that predate it) would skip every job after it.
+    if: ${{ !cancelled() && needs.publish-release.result == 'success' && needs.cut.outputs.tag != '' }}
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -2530,7 +2527,8 @@ jobs:
     needs:
       - cut
       - publish-release
-    if: ${{ needs.cut.outputs.tag != '' && startsWith(needs.cut.outputs.tag, 'v') }}
+    # Why explicit: a skipped orcad-template (tags that predate it) would skip every job after it.
+    if: ${{ !cancelled() && needs.publish-release.result == 'success' && needs.cut.outputs.tag != '' && startsWith(needs.cut.outputs.tag, 'v') }}
     uses: ./.github/workflows/homebrew-bump.yml
     with:
       tag: ${{ needs.cut.outputs.tag }}

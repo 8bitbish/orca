@@ -6,6 +6,7 @@ import type { StartupCommandDelivery } from './codex-startup-delivery'
 import type { ExecutionHostId } from './execution-host'
 import type { PtyIncarnationId } from './pty-incarnation'
 import type { RuntimeListingHostScope } from './runtime-listing-host-scope'
+import type { RuntimeTerminalComposerRead } from './runtime-terminal-composer-read'
 import type { RuntimeMobileSessionTabsResult } from './runtime-session-contracts'
 import type { TabGroupLayoutNode } from './tab-types'
 import type { TerminalExitCause } from './terminal-exit-cause'
@@ -17,6 +18,12 @@ export type RuntimeTerminalSummary = {
   ptyId: string | null
   incarnationId?: string | null
   orphaned?: boolean
+  /**
+   * Orphaned only: the pane the host last recorded for this PTY, which the renderer owning it can
+   * still hold even when its graph omitted that pane. Absent when none was recorded or the host
+   * predates the field.
+   */
+  recordedPaneKey?: string
   worktreeId: string
   worktreePath: string
   branch: string
@@ -183,7 +190,7 @@ export type RuntimeTerminalShow = RuntimeTerminalSummary & {
 
 export type RuntimeTerminalState = 'running' | 'exited' | 'unknown'
 
-export type RuntimeTerminalRead = {
+export type RuntimeTerminalRead = RuntimeTerminalComposerRead & {
   handle: string
   status: RuntimeTerminalState
   tail: string[]
@@ -194,11 +201,6 @@ export type RuntimeTerminalRead = {
   latestCursor?: string
   returnedLineCount?: number
   source?: 'stream' | 'screen' | 'screen-unavailable'
-  /** UI-only composer text the user typed, excluded from `tail`. */
-  draft?: string
-  /** The dim suggestion an agent painted into its empty prompt, excluded from `tail`. Optional:
-   *  older hosts report it as `draft`. */
-  suggestion?: string
 }
 
 export type RuntimeTerminalRename = {

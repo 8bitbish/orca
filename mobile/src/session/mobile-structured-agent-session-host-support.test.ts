@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   AGENT_SESSION_PROMPT_CANCEL_RUNTIME_CAPABILITY,
   AGENT_SESSION_QUESTION_ANSWERS_RUNTIME_CAPABILITY,
-  AGENT_SESSION_QUEUED_MESSAGES_RUNTIME_CAPABILITY
+  AGENT_SESSION_QUEUED_MESSAGES_RUNTIME_CAPABILITY,
+  AGENT_SESSION_REPEATED_STOP_RUNTIME_CAPABILITY
 } from '../../../src/shared/protocol-version'
 import {
   TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY,
@@ -16,22 +17,41 @@ describe('structuredAgentSessionHostSupport', () => {
       promptCancel: false,
       questionAnswers: false,
       queuedMessages: false,
+      quietRepeatedStop: false,
       terminalMessageQueue: false,
       terminalMessageQueueUnsubscribe: false
     })
     expect(
       structuredAgentSessionHostSupport([AGENT_SESSION_QUESTION_ANSWERS_RUNTIME_CAPABILITY])
-    ).toMatchObject({ promptCancel: false, questionAnswers: true, queuedMessages: false })
+    ).toMatchObject({
+      promptCancel: false,
+      questionAnswers: true,
+      queuedMessages: false,
+      quietRepeatedStop: false
+    })
     expect(
       structuredAgentSessionHostSupport([AGENT_SESSION_PROMPT_CANCEL_RUNTIME_CAPABILITY])
-    ).toMatchObject({ promptCancel: true, questionAnswers: false, queuedMessages: false })
+    ).toMatchObject({
+      promptCancel: true,
+      questionAnswers: false,
+      queuedMessages: false,
+      quietRepeatedStop: false
+    })
     expect(
       structuredAgentSessionHostSupport([AGENT_SESSION_QUEUED_MESSAGES_RUNTIME_CAPABILITY])
     ).toMatchObject({
       promptCancel: false,
       questionAnswers: false,
       queuedMessages: true,
-      terminalMessageQueue: false
+      quietRepeatedStop: false
+    })
+    expect(
+      structuredAgentSessionHostSupport([AGENT_SESSION_REPEATED_STOP_RUNTIME_CAPABILITY])
+    ).toMatchObject({
+      promptCancel: false,
+      questionAnswers: false,
+      queuedMessages: false,
+      quietRepeatedStop: true
     })
   })
 
