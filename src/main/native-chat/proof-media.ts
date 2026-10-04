@@ -17,12 +17,16 @@ import type {
   NativeChatProofVideoMime,
   NativeChatProofVideoReply
 } from '../../shared/native-chat-proof-media-contract'
+import {
+  NATIVE_CHAT_PROOF_IMAGE_MAX_FILE_BYTES,
+  NATIVE_CHAT_PROOF_MEDIA_MAX_FILE_BYTES
+} from '../../shared/native-chat-proof-media-rpc-contract'
 import type { NativeChatSlackImageVariant } from '../../shared/native-chat-slack-image-contract'
 import { readSlackCacheImage, type SlackCacheImageCodec } from './slack-cache-image'
 
-export const PROOF_IMAGE_MAX_FILE_BYTES = 10 * 1024 * 1024
+export const PROOF_IMAGE_MAX_FILE_BYTES = NATIVE_CHAT_PROOF_IMAGE_MAX_FILE_BYTES
 /** Recordings are meant to be under ~5 MB; this leaves room without letting a stray file through. */
-export const PROOF_VIDEO_MAX_FILE_BYTES = 40 * 1024 * 1024
+export const PROOF_VIDEO_MAX_FILE_BYTES = NATIVE_CHAT_PROOF_MEDIA_MAX_FILE_BYTES
 const MAX_REQUEST_LENGTH = 1024
 
 export function proofMediaRoot(): string {
@@ -114,7 +118,7 @@ export async function readProofImage(args: {
     : { ok: false, reason: IMAGE_REFUSALS[read.reason] ?? 'unavailable' }
 }
 
-function sniffVideo(bytes: Buffer): NativeChatProofVideoMime | null {
+export function sniffProofVideo(bytes: Buffer): NativeChatProofVideoMime | null {
   if (bytes.length >= 4 && bytes.readUInt32BE(0) === 0x1a45dfa3) {
     return 'video/webm'
   }
@@ -153,7 +157,7 @@ export async function readProofVideo(args: {
     }
     const bytes = Buffer.alloc(info.size)
     const { bytesRead } = await handle.read(bytes, 0, info.size, 0)
-    const mimeType = sniffVideo(bytes)
+    const mimeType = sniffProofVideo(bytes)
     return mimeType === null
       ? { ok: false, reason: 'wrong-type' }
       : { ok: true, mimeType, bytes: bytes.subarray(0, bytesRead) }

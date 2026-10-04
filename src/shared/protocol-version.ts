@@ -14,6 +14,7 @@ import {
 } from './skill-install-capability'
 export { SKILL_INSTALL_RESULT_V2_CAPABILITY } from './skill-install-capability'
 import { TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITIES } from './terminal-message-queue-capability'
+import { NATIVE_CHAT_PROOF_MEDIA_RUNTIME_CAPABILITY } from './native-chat-proof-media-capability'
 
 // Why: declares the Orca runtime RPC compatibility contract. Desktop,
 // headless server, CLI, and mobile builds may drift in app version, but
@@ -388,6 +389,7 @@ export const RUNTIME_CAPABILITIES = [
   TERMINAL_PAIRED_PARKING_RUNTIME_CAPABILITY,
   TERMINAL_QUICK_COMMANDS_RUNTIME_CAPABILITY,
   ...TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITIES,
+  NATIVE_CHAT_PROOF_MEDIA_RUNTIME_CAPABILITY,
   WORKTREE_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,
   WORKTREE_ARCHIVE_FAILURE_BLOCKING_RUNTIME_CAPABILITY,
   TERMINAL_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,

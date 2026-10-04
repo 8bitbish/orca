@@ -346,6 +346,11 @@ import {
 } from './linear-params'
 import { CreateProject } from './linear-project-create-params'
 import { NativeChatSession, NativeChatUnsubscribe } from './native-chat-params'
+import {
+  NativeChatProofMediaInfo,
+  NativeChatProofMediaRead,
+  NativeChatProofMediaThumbnail
+} from './native-chat-proof-media-params'
 import { NativeChatSlackImage } from './native-chat-slack-params'
 import {
   NotificationGetMissedSinceParams,
@@ -986,6 +991,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'mobileWeb.bundle.chunk': MobileWebBundleChunkParamsSchema,
   'mobileWeb.bundle.manifest': null,
   'mobileWeb.bundle.range': MobileWebBundleChunkParamsSchema,
+  'nativeChat.proofMediaInfo': NativeChatProofMediaInfo,
+  'nativeChat.proofMediaRead': NativeChatProofMediaRead,
+  'nativeChat.proofMediaThumbnail': NativeChatProofMediaThumbnail,
   'nativeChat.readSession': NativeChatSession,
   'nativeChat.slackImage': NativeChatSlackImage,
   'nativeChat.subscribe': NativeChatSession,

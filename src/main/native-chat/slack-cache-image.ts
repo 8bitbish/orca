@@ -40,6 +40,10 @@ export function setSlackCacheImageCodec(codec: SlackCacheImageCodec | null): voi
   registeredCodec = codec
 }
 
+export function slackCacheImageCodec(): SlackCacheImageCodec | null {
+  return registeredCodec
+}
+
 export function slackCacheImageRoot(): string {
   return path.join(homedir(), ...SLACK_MCP_IMAGE_CACHE_HOME_RELATIVE)
 }
@@ -105,7 +109,7 @@ export async function resolveSlackCacheImagePath(
     : { ok: false, reason: 'not-image' }
 }
 
-function sniffMime(bytes: Buffer): SlackCacheImageMime | null {
+export function sniffSlackCacheImageMime(bytes: Buffer): SlackCacheImageMime | null {
   if (
     bytes.length >= 8 &&
     bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
@@ -201,7 +205,7 @@ export async function readSlackCacheImage(
   if (bytes === 'too-large' || bytes === 'missing') {
     return { ok: false, reason: bytes }
   }
-  const mimeType = sniffMime(bytes)
+  const mimeType = sniffSlackCacheImageMime(bytes)
   if (mimeType === null) {
     return { ok: false, reason: 'not-image' }
   }
