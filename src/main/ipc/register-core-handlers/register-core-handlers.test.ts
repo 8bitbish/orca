@@ -66,6 +66,7 @@ const {
   registerLocalhostWorktreeLabelHandlersMock,
   registerNativeChatHandlersMock,
   registerNativeChatSlackHandlersMock,
+  registerNativeChatProofHandlersMock,
   registerEmulatorFrameStreamHandlersMock,
   registerEmulatorVideoStreamHandlersMock
 } = vi.hoisted(() => ({
@@ -134,6 +135,7 @@ const {
   registerLocalhostWorktreeLabelHandlersMock: vi.fn(),
   registerNativeChatHandlersMock: vi.fn(),
   registerNativeChatSlackHandlersMock: vi.fn(),
+  registerNativeChatProofHandlersMock: vi.fn(),
   registerEmulatorFrameStreamHandlersMock: vi.fn(),
   registerEmulatorVideoStreamHandlersMock: vi.fn()
 }))
@@ -400,6 +402,10 @@ vi.mock('../native-chat-slack', () => ({
   registerNativeChatSlackHandlers: registerNativeChatSlackHandlersMock
 }))
 
+vi.mock('../native-chat-proof', () => ({
+  registerNativeChatProofHandlers: registerNativeChatProofHandlersMock
+}))
+
 import { agentSessionRefusalError } from '../../../shared/agent-session-wire-refusals'
 import { recordStructuredAgentSessionHostInstallRefusal } from '../../runtime/structured-agent-session-host-refusal'
 import { registerCoreHandlers } from './register-core-handlers'
@@ -472,6 +478,7 @@ describe('registerCoreHandlers', () => {
     registerLocalhostWorktreeLabelHandlersMock.mockReset()
     registerNativeChatHandlersMock.mockReset()
     registerNativeChatSlackHandlersMock.mockReset()
+    registerNativeChatProofHandlersMock.mockReset()
     registerEmulatorFrameStreamHandlersMock.mockReset()
     registerEmulatorVideoStreamHandlersMock.mockReset()
   })
@@ -594,6 +601,7 @@ describe('registerCoreHandlers', () => {
     expect(aiVaultOptions.getActiveRuntimeAiVaultHostInfos()).toEqual([])
     expect(registerNativeChatHandlersMock).toHaveBeenCalled()
     expect(registerNativeChatSlackHandlersMock).toHaveBeenCalled()
+    expect(registerNativeChatProofHandlersMock).toHaveBeenCalled()
     expect(registerCliHandlersMock).toHaveBeenCalled()
     expect(registerPreflightHandlersMock).toHaveBeenCalled()
     expect(registerShellHandlersMock).toHaveBeenCalledWith(store)
