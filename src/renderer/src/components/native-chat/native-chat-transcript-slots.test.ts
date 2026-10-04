@@ -87,7 +87,7 @@ describe('transcript slots', () => {
   it("marks only the working turn's newest thought live and carries its duration", () => {
     const messages = [text('u', 'go', 'user'), text('r1', 'plan', 'reasoning')]
     const working = build(messages, {
-      activeTurnKey: 'u',
+      liveTurnKey: 'u',
       isWorking: true,
       thoughtSeconds: new Map([['r1', 7]])
     })
@@ -97,7 +97,7 @@ describe('transcript slots', () => {
     })
 
     const answered = build([...messages, text('a', 'Done.')], {
-      activeTurnKey: 'u',
+      liveTurnKey: 'u',
       isWorking: true
     })
     expect(answered.find((slot) => slot.message.id === 'r1')).toMatchObject({
@@ -105,7 +105,7 @@ describe('transcript slots', () => {
       thoughtSeconds: null
     })
 
-    const idle = build(messages, { activeTurnKey: 'u', isWorking: false })
+    const idle = build(messages, { liveTurnKey: 'u', isWorking: false })
     expect(idle.find((slot) => slot.message.id === 'r1')?.thoughtLive).toBe(false)
   })
 
@@ -125,7 +125,7 @@ describe('transcript slots', () => {
       marker('m3', 9_000)
     ]
     const working = build(messages, {
-      activeTurnKey: 'u',
+      liveTurnKey: 'u',
       isWorking: true,
       thoughtSeconds: new Map([['m1', 2]])
     })
@@ -134,7 +134,7 @@ describe('transcript slots', () => {
     expect(working[1]).toMatchObject({ thoughtSeconds: 6, thoughtLive: false })
     expect(working[3]).toMatchObject({ thoughtSeconds: null, thoughtLive: true })
 
-    const merging = build(messages.slice(0, 3), { activeTurnKey: 'u', isWorking: true })
+    const merging = build(messages.slice(0, 3), { liveTurnKey: 'u', isWorking: true })
     expect(merging.map((slot) => slot.message.id)).toEqual(['u', 'm1'])
     // The merged line is live while its newest member is the turn's newest output.
     expect(merging[1]).toMatchObject({ thoughtLive: true, thoughtSeconds: null })
