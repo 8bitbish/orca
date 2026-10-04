@@ -14,6 +14,7 @@ import { colors, spacing } from '../../theme/mobile-theme'
 import {
   MOBILE_NATIVE_CHAT_PROOF_COMPARE_START,
   mobileNativeChatProofAspect,
+  mobileNativeChatProofCompareClaimsDrag,
   mobileNativeChatProofComparePosition,
   mobileNativeChatProofFrame,
   stepMobileNativeChatProofComparePosition
@@ -49,10 +50,10 @@ export function ProofCompare({
   const responder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        // Horizontal drags are the slider's; vertical ones still scroll the chat.
+        // Claimed only once a drag turns horizontal: claiming on touch start (and refusing
+        // to let go) froze chat scrolling over the slider and jumped the divider on a scroll.
         onMoveShouldSetPanResponderCapture: (_event, gesture) =>
-          Math.abs(gesture.dx) > Math.abs(gesture.dy),
+          mobileNativeChatProofCompareClaimsDrag(gesture.dx, gesture.dy),
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: (event) => {
           grantX.current = event.nativeEvent.locationX

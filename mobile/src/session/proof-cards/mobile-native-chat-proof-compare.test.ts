@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   mobileNativeChatProofAspect,
+  mobileNativeChatProofCompareClaimsDrag,
   mobileNativeChatProofComparePosition,
   mobileNativeChatProofFrame,
   stepMobileNativeChatProofComparePosition
@@ -17,6 +18,13 @@ describe('proof compare slider maths', () => {
   it('stays centred before the frame has a width', () => {
     expect(mobileNativeChatProofComparePosition(10, 0)).toBe(50)
     expect(mobileNativeChatProofComparePosition(Number.NaN, 320)).toBe(50)
+  })
+
+  it('takes horizontal drags and leaves vertical ones and still touches to the chat', () => {
+    expect(mobileNativeChatProofCompareClaimsDrag(12, 3)).toBe(true)
+    expect(mobileNativeChatProofCompareClaimsDrag(-12, 3)).toBe(true)
+    expect(mobileNativeChatProofCompareClaimsDrag(3, 40)).toBe(false)
+    expect(mobileNativeChatProofCompareClaimsDrag(0, 0)).toBe(false)
   })
 
   it('steps by ten for screen readers and stops at the ends', () => {

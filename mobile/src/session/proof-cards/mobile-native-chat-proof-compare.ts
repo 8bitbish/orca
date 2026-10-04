@@ -17,6 +17,12 @@ export function mobileNativeChatProofComparePosition(x: number, width: number): 
   return clampPercent((x / width) * 100)
 }
 
+/** Whether a drag that started on the slider is the slider's: horizontal ones are, while
+ *  vertical ones (and a touch that has not moved) stay with the chat's scrolling. */
+export function mobileNativeChatProofCompareClaimsDrag(dx: number, dy: number): boolean {
+  return Math.abs(dx) > Math.abs(dy)
+}
+
 /** One screen-reader swipe up or down on the slider. */
 export function stepMobileNativeChatProofComparePosition(
   position: number,
