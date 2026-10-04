@@ -18051,6 +18051,28 @@
         "openInSlack": "Open in Slack",
         "less": "less ▴",
         "more": "more ▾"
+      },
+      "proof": {
+        "videoMissing": "Recording not found",
+        "imageMissing": "Screenshot not found",
+        "outsideFolder": "Not in the proof folder",
+        "folderMissing": "No proof folder on this Mac",
+        "tooLarge": "Too large to show",
+        "notVideo": "Not a video file",
+        "notImage": "Not an image file",
+        "unavailable": "Can’t show this file here",
+        "playFullScreen": "Play {{value0}} full screen",
+        "recording": "Recording",
+        "before": "Before",
+        "after": "After",
+        "compare": "Drag to compare before and after",
+        "kindWeb": "Web",
+        "kindIos": "iOS",
+        "kindAndroid": "Android",
+        "kindDesktop": "Desktop",
+        "kindFigma": "Figma",
+        "kindCode": "Code",
+        "checks": "Checks"
       }
     },
     "tab": {

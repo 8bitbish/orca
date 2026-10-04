@@ -7,6 +7,12 @@ import type {
   NativeChatSlackImageRequest,
   NativeChatSlackImageResult
 } from '../../shared/native-chat-slack-image-contract'
+import type {
+  NativeChatProofImageReply,
+  NativeChatProofImageRequest,
+  NativeChatProofVideoReply,
+  NativeChatProofVideoRequest
+} from '../../shared/native-chat-proof-media-contract'
 
 // notFound marks a not-yet-on-disk miss (retry-worthy) vs a real read/parse error (#8401).
 export type NativeChatReadSessionResult =
@@ -80,4 +86,8 @@ export type NativeChatApi = {
   slackImage: (request: NativeChatSlackImageRequest) => Promise<NativeChatSlackImageResult | null>
   /** Opens a Slack chip href (`slack-user:` etc.) in Slack; false when nothing opened. */
   openSlack: (href: string) => Promise<boolean>
+  /** A proof card image from ~/.orca-personal/proof/ on this machine. */
+  proofImage: (request: NativeChatProofImageRequest) => Promise<NativeChatProofImageReply>
+  /** A proof card recording's bytes from ~/.orca-personal/proof/ on this machine. */
+  proofVideo: (request: NativeChatProofVideoRequest) => Promise<NativeChatProofVideoReply>
 }

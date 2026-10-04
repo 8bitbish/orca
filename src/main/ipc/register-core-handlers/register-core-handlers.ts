@@ -28,6 +28,7 @@ import { registerAiVaultHandlers } from '../ai-vault'
 import { registerAiVaultSearchHandlers } from '../ai-vault-search'
 import { registerNativeChatHandlers } from '../native-chat'
 import { registerNativeChatSlackHandlers } from '../native-chat-slack'
+import { registerNativeChatProofHandlers } from '../native-chat-proof'
 import { registerNotificationHandlers } from '../notifications'
 import { registerNotebookHandlers } from '../notebook'
 import { registerOnboardingHandlers } from '../onboarding'
@@ -240,6 +241,7 @@ export function registerCoreHandlers(
   })
   registerNativeChatHandlers()
   registerNativeChatSlackHandlers()
+  registerNativeChatProofHandlers()
   registerClipboardHandlers(store)
   registerUpdaterHandlers(store)
   registerSpeechHandlers(store)
