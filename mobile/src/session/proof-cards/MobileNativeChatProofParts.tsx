@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { Animated, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { ImageOff, VideoOff, X } from 'lucide-react-native'
+import { Animated, StyleSheet, Text, View } from 'react-native'
+import { ImageOff, VideoOff } from 'lucide-react-native'
 import type { NativeChatProofMedia } from '../../../../src/shared/native-chat-proof-card-payload'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
 import type { MobileNativeChatProofMediaRefusal } from './mobile-native-chat-proof-media-loader'
-import { useMobileNativeChatProofFile } from './use-mobile-native-chat-proof-media'
 
 export const PROOF_STRIP_HEIGHT = 176
 export const PROOF_MAX_MEDIA_HEIGHT = 400
@@ -152,45 +151,6 @@ export function ProofSkeleton({
   )
 }
 
-/** A screenshot full size: the thumbnail first, then the original from the phone's cache. */
-export function ProofImageModal({
-  item,
-  thumbnailUri,
-  onClose
-}: {
-  item: NativeChatProofMedia
-  thumbnailUri: string
-  onClose: () => void
-}): React.JSX.Element {
-  const full = useMobileNativeChatProofFile(item.path)
-  const uri = full.status === 'ready' ? full.value.uri : thumbnailUri
-  const label = proofItemLabel(item)
-  return (
-    <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
-      <Pressable accessibilityLabel="Close image" onPress={onClose} style={styles.backdrop}>
-        <Image
-          accessibilityLabel={label}
-          source={{ uri }}
-          style={styles.full}
-          resizeMode="contain"
-        />
-        <Text style={styles.caption} numberOfLines={1}>
-          {label}
-        </Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Close"
-        hitSlop={12}
-        onPress={onClose}
-        style={styles.close}
-      >
-        <X size={20} color={colors.textPrimary} />
-      </Pressable>
-    </Modal>
-  )
-}
-
 export const proofStyles = StyleSheet.create({
   frame: {
     borderRadius: radii.row,
@@ -205,6 +165,12 @@ export const proofStyles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.row,
     backgroundColor: 'rgba(0, 0, 0, 0.55)'
+  },
+  pill: {
+    borderRadius: 4,
+    backgroundColor: 'rgba(17, 17, 17, 0.85)',
+    paddingHorizontal: 6,
+    paddingVertical: 2
   },
   label: {
     position: 'absolute',
@@ -261,22 +227,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden'
   },
   progressFill: { height: 3, backgroundColor: colors.textSecondary },
-  progressText: { color: colors.textSecondary, fontSize: 11 },
-  backdrop: {
-    flex: 1,
-    backgroundColor: colors.bgBase,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-    gap: spacing.sm
-  },
-  full: { width: '100%', flex: 1 },
-  close: {
-    position: 'absolute',
-    top: spacing.xl * 2,
-    right: spacing.lg,
-    backgroundColor: colors.bgRaised,
-    borderRadius: 999,
-    padding: spacing.sm
-  }
+  progressText: { color: colors.textSecondary, fontSize: 11 }
 })

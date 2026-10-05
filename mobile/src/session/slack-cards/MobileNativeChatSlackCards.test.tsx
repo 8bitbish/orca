@@ -37,6 +37,7 @@ vi.mock('lucide-react-native', () => ({
 }))
 // The fence renderers also route ```proof-card, whose recordings import the native video module.
 vi.mock('expo-video', () => ({ VideoView: 'VideoView', useVideoPlayer: () => null }))
+vi.mock('react-native-svg', () => ({ default: 'Svg' }))
 vi.mock('../../components/AgentStateDot', () => ({ AgentStateDot: 'AgentStateDot' }))
 vi.mock('../../components/MobileRepoIcon', () => ({ MobileRepoIcon: 'MobileRepoIcon' }))
 vi.mock('@react-native-async-storage/async-storage', () => ({

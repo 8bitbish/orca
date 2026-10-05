@@ -78,6 +78,13 @@ vi.mock('lucide-react-native', () =>
     ].map((name) => [name, name])
   )
 )
+vi.mock('react-native-svg', () => ({
+  default: 'Svg',
+  Defs: 'Defs',
+  LinearGradient: 'LinearGradient',
+  Rect: 'Rect',
+  Stop: 'Stop'
+}))
 vi.mock('expo-video', () => ({
   VideoView: 'VideoView',
   useVideoPlayer: (_uri: string, setup: (player: Record<string, unknown>) => void) => {
@@ -220,6 +227,16 @@ function byLabel(root: ReactTestRenderer, label: string | RegExp): ReactTestInst
   )
 }
 
+/** Gives every laid-out view a phone card's size, twice: the card, then the slider in it. */
+function layOut(root: ReactTestRenderer): void {
+  const layout = { nativeEvent: { layout: { x: 0, y: 0, width: 340, height: 360 } } }
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (const node of root.root.findAll((n) => typeof n.props.onLayout === 'function')) {
+      act(() => node.props.onLayout(layout))
+    }
+  }
+}
+
 describe('MobileNativeChatProofCard', () => {
   it('routes a ```proof-card fence to the card with its header, checks, links and actions', async () => {
     const root = await render(fence(CARD))
@@ -315,6 +332,7 @@ describe('MobileNativeChatProofCard', () => {
 
   it('compares one before and one after with a slider that starts at 50% and steps by 10', async () => {
     const root = await render(fence(CARD))
+    layOut(root)
     const [slider] = root.root.findAll((node) => node.props.accessibilityRole === 'adjustable')
     expect(slider.props.accessibilityValue).toMatchObject({ now: 50 })
     await act(async () =>
