@@ -132,8 +132,10 @@ test.describe('Desktop chat proof card', () => {
       expect(await video.evaluate((element: HTMLVideoElement) => element.loop)).toBe(true)
       expect(await video.evaluate((element: HTMLVideoElement) => element.videoWidth)).toBe(390)
 
-      const slider = proof.getByRole('slider', { name: 'Drag to compare before and after' })
-      await expect(slider).toBeVisible()
+      const slider = proof.locator('[data-proof-compare]')
+      await expect(
+        proof.getByRole('slider', { name: 'Drag to compare before and after' })
+      ).toBeAttached()
       await expect(proof.locator('[data-proof-check="pass"]')).toHaveCount(1)
       await expect(proof.locator('[data-proof-check="fail"]')).toHaveCount(1)
       await expect(proof.locator('[data-proof-check="unchecked"]')).toHaveCount(1)
@@ -145,7 +147,11 @@ test.describe('Desktop chat proof card', () => {
       if (!box) {
         throw new Error('Slider has no box')
       }
-      await orcaPage.mouse.click(box.x + box.width * 0.25, box.y + box.height / 2)
+      // A press that moves drags the divider; a still click would open the viewer.
+      await orcaPage.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2)
+      await orcaPage.mouse.down()
+      await orcaPage.mouse.move(box.x + box.width * 0.25, box.y + box.height / 2, { steps: 5 })
+      await orcaPage.mouse.up()
       await expect(proof.locator('[data-proof-compare-before]')).toHaveAttribute(
         'style',
         /inset\(0px 7\d% 0px 0px\)|inset\(0 7\d% 0 0\)/

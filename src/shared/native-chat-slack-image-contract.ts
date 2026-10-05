@@ -5,6 +5,9 @@ export type NativeChatSlackImageVariant = 'thumbnail' | 'full'
 
 /** Thumbnails are scaled down to at most this many pixels wide. */
 export const NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_WIDTH = 1024
+/** ...and to at most this many pixels in all, so a very tall image is not decoded at
+ *  full height for a small frame. */
+export const NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_MAX_PIXELS = 1024 * 2048
 
 export type NativeChatSlackImageResult = {
   /** A `data:image/…;base64,` URI. */

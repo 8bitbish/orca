@@ -12,6 +12,7 @@ import {
   SLACK_MCP_IMAGE_CACHE_HOME_RELATIVE
 } from '../../shared/native-chat-slack-image-path'
 import {
+  NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_MAX_PIXELS,
   NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_WIDTH,
   type NativeChatSlackImageResult,
   type NativeChatSlackImageVariant
@@ -185,6 +186,14 @@ function reencode(
   return jpeg.length <= maxBytes ? result('image/jpeg', jpeg, size) : null
 }
 
+/** The width a thumbnail of this size is scaled to: at most 1024 wide and 2 MP in all. */
+export function slackCacheThumbnailWidth(width: number, height: number): number {
+  const byArea = Math.floor(
+    Math.sqrt((NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_MAX_PIXELS * width) / height)
+  )
+  return Math.max(1, Math.min(width, NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_WIDTH, byArea))
+}
+
 export type ReadSlackCacheImageArgs = {
   path: string
   variant: NativeChatSlackImageVariant
@@ -218,11 +227,15 @@ export async function readSlackCacheImage(
     : args.maxBytes
   // The original keeps a GIF's frames and a PNG's exact pixels, so it wins whenever it fits.
   const original = bytes.length <= limit ? result(mimeType, bytes, size) : null
-  const tooWide = thumbnail && size !== null && size.width > NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_WIDTH
-  if (original && !tooWide) {
+  const thumbnailWidth =
+    thumbnail && size !== null ? slackCacheThumbnailWidth(size.width, size.height) : null
+  const tooBig = thumbnailWidth !== null && size !== null && thumbnailWidth < size.width
+  if (original && !tooBig) {
     return { ok: true, image: original }
   }
-  const width = thumbnail ? NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_WIDTH : FULL_REENCODE_WIDTH
+  const width = thumbnail
+    ? (thumbnailWidth ?? NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_WIDTH)
+    : FULL_REENCODE_WIDTH
   const image = (decoded ? reencode(decoded, mimeType, width, limit) : null) ?? original
   return image ? { ok: true, image } : { ok: false, reason: 'too-large-to-send' }
 }

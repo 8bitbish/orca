@@ -18132,7 +18132,10 @@
         "kindDesktop": "Desktop",
         "kindFigma": "Figma",
         "kindCode": "Code",
-        "checks": "Checks"
+        "checks": "Checks",
+        "tallImage": "Tall image, click to see it all",
+        "compareFullScreen": "View before and after full screen",
+        "compareSide": "Show side"
       },
       "slack": {
         "directMessage": "Direct message",
@@ -18182,6 +18185,14 @@
         "queuePausedCleared": "Queue paused after you cleared the conversation",
         "queuePaused": "Queue paused",
         "resume": "Resume"
+      },
+      "imageViewer": {
+        "hint": "Pinch or {{value0}}-scroll to zoom · drag to pan · double-click for 100% · Esc to close",
+        "zoomOut": "Zoom out",
+        "zoomIn": "Zoom in",
+        "fit": "Fit",
+        "fitWidth": "Fit width",
+        "surface": "Image, zoom and pan"
       }
     },
     "tab": {

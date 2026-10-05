@@ -6,6 +6,7 @@ import {
   readSlackCacheImage,
   resolveSlackCacheImagePath,
   SLACK_CACHE_IMAGE_MAX_FILE_BYTES,
+  slackCacheThumbnailWidth,
   type SlackCacheImageCodec
 } from './slack-cache-image'
 
@@ -210,6 +211,23 @@ describe('readSlackCacheImage', () => {
       width: 1024,
       height: 512
     })
+  })
+
+  it('bounds a very tall thumbnail by area, keeping its shape', async () => {
+    put('tall.png', PNG)
+    const codec = fakeCodec(1481, 4000)
+    const result = await read('tall.png', { codec })
+    expect(codec.resizedTo).toEqual([881])
+    expect(result.ok && result.image).toMatchObject({ width: 881, height: 2379 })
+    expect(slackCacheThumbnailWidth(1170, 2532)).toBe(984)
+    expect(slackCacheThumbnailWidth(800, 600)).toBe(800)
+  })
+
+  it('scales a small but very tall original down for a thumbnail', async () => {
+    put('strip.png', PNG)
+    const codec = fakeCodec(600, 12000)
+    await read('strip.png', { codec })
+    expect(codec.resizedTo).toEqual([323])
   })
 
   it('falls back to JPEG when the scaled PNG is still too big', async () => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronsLeftRight, ImageOff, Maximize2, VideoOff } from 'lucide-react'
+import { ImageOff, Maximize2, VideoOff } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
@@ -8,8 +8,13 @@ import {
   type NativeChatProofMedia
 } from '../../../../shared/native-chat-proof-card-payload'
 import type { NativeChatProofMediaRefusal } from '../../../../shared/native-chat-proof-media-contract'
+import { imageThumbnailFrame } from '../../../../shared/image-thumbnail-frame'
 import { NativeChatImagePreviewDialog } from './NativeChatImagePreviewDialog'
+import { NativeChatProofCompare, NativeChatProofTallCue } from './NativeChatProofCompare'
 import { useNativeChatProofImage, useNativeChatProofVideo } from './use-native-chat-proof-media'
+
+/** Strip tiles: one fixed height, a width that follows the image within bounds. */
+const STRIP_BOX = { height: 176, minWidth: 128, maxWidth: 320 }
 
 function itemLabel(item: NativeChatProofMedia): string {
   return item.caption ?? basename(item.source)
@@ -201,22 +206,27 @@ function ProofImage({ item }: { item: NativeChatProofMedia }): React.JSX.Element
   } else if (thumbnail.status === 'missing') {
     body = <ProofPlaceholder item={item} reason={thumbnail.reason} inStrip />
   } else {
+    const frame = imageThumbnailFrame(thumbnail.value.width, thumbnail.value.height, STRIP_BOX)
     body = (
       <>
         <button
           type="button"
           data-proof-image=""
+          data-fit={frame.fit}
           aria-label={`${translate('components.native-chat.composer.viewAttachment', 'View image')}: ${label}`}
           title={label}
           onClick={() => setOpen(true)}
-          className="block h-44 max-w-full overflow-hidden rounded-md border border-border bg-muted/20 transition-colors hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="relative block max-w-full shrink-0 overflow-hidden rounded-md border border-border bg-muted/20 transition-colors hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          style={{ width: frame.width, height: frame.height }}
         >
           <img
             src={thumbnail.value.src}
             alt={label}
             draggable={false}
-            className="h-full w-auto max-w-full object-contain"
+            data-fit={frame.fit}
+            className="h-full w-full object-contain data-[fit=top]:object-cover data-[fit=top]:object-top"
           />
+          {frame.tall ? <NativeChatProofTallCue /> : null}
         </button>
         <NativeChatImagePreviewDialog
           open={open}
@@ -234,89 +244,6 @@ function ProofImage({ item }: { item: NativeChatProofMedia }): React.JSX.Element
     >
       {body}
       <ProofCaption item={item} prefix={prefix} />
-    </figure>
-  )
-}
-
-/** Before over after, split by a handle you drag (or move with the arrow keys). */
-function ProofCompare({
-  before,
-  after
-}: {
-  before: NativeChatProofMedia
-  after: NativeChatProofMedia
-}): React.JSX.Element {
-  const [position, setPosition] = useState(50)
-  const beforeImage = useNativeChatProofImage(before.path, 'full')
-  const afterImage = useNativeChatProofImage(after.path, 'full')
-  if (before.path === null || after.path === null) {
-    return <ProofStrip items={[before, after]} />
-  }
-  if (beforeImage.status === 'missing' || afterImage.status === 'missing') {
-    return <ProofStrip items={[before, after]} />
-  }
-  if (beforeImage.status === 'loading' || afterImage.status === 'loading') {
-    return <Skeleton className="aspect-video w-full" />
-  }
-  const { width, height } = afterImage.value
-  const aspect = width && height ? width / height : 16 / 10
-  const beforeLabel = translate('components.native-chat.proof.before', 'Before')
-  const afterLabel = translate('components.native-chat.proof.after', 'After')
-  return (
-    <figure data-proof-media="compare" className="m-0 min-w-0">
-      <div
-        data-proof-compare=""
-        className="relative max-w-full select-none overflow-hidden rounded-md border border-border bg-muted/20"
-        style={{
-          aspectRatio: String(aspect),
-          width: `min(100%, calc(22rem * ${aspect}))`
-        }}
-      >
-        <img
-          src={afterImage.value.src}
-          alt={`${afterLabel}: ${itemLabel(after)}`}
-          draggable={false}
-          className="absolute inset-0 h-full w-full object-contain"
-        />
-        <img
-          data-proof-compare-before=""
-          src={beforeImage.value.src}
-          alt={`${beforeLabel}: ${itemLabel(before)}`}
-          draggable={false}
-          className="absolute inset-0 h-full w-full object-contain"
-          style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
-        />
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 bg-background shadow-[0_0_0_1px_var(--border)]"
-          style={{ left: `${position}%` }}
-        >
-          <span className="absolute left-1/2 top-1/2 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm">
-            <ChevronsLeftRight className="size-4" />
-          </span>
-        </span>
-        <span className="pointer-events-none absolute left-2 top-2 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium text-foreground">
-          {beforeLabel}
-        </span>
-        <span className="pointer-events-none absolute right-2 top-2 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium text-foreground">
-          {afterLabel}
-        </span>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          step={1}
-          value={position}
-          onChange={(event) => setPosition(Number(event.target.value))}
-          aria-label={translate(
-            'components.native-chat.proof.compare',
-            'Drag to compare before and after'
-          )}
-          className="absolute inset-0 m-0 h-full w-full cursor-ew-resize appearance-none opacity-0"
-        />
-      </div>
-      <ProofCaption item={before} prefix={beforeLabel} />
-      <ProofCaption item={after} prefix={afterLabel} />
     </figure>
   )
 }
@@ -357,7 +284,26 @@ export function NativeChatProofViewer({
       {videos.map((item, index) => (
         <ProofVideo key={`${index}:${item.source}`} item={item} />
       ))}
-      {pair ? <ProofCompare before={pair.before} after={pair.after} /> : null}
+      {pair ? (
+        <NativeChatProofCompare
+          before={pair.before}
+          after={pair.after}
+          fallback={<ProofStrip items={[pair.before, pair.after]} />}
+          loading={<Skeleton className="h-80 w-full" />}
+          captions={
+            <>
+              <ProofCaption
+                item={pair.before}
+                prefix={translate('components.native-chat.proof.before', 'Before')}
+              />
+              <ProofCaption
+                item={pair.after}
+                prefix={translate('components.native-chat.proof.after', 'After')}
+              />
+            </>
+          }
+        />
+      ) : null}
       <ProofStrip items={images} />
     </div>
   )
