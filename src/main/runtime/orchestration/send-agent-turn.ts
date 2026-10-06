@@ -53,9 +53,10 @@ export type StructuredSessionTurnSend = {
 
 /**
  * What the typed text is, which decides how it is typed. A dispatch preamble leads with the
- * coordinator's task line; no other kind of message may borrow that.
+ * coordinator's task line; no other kind of message may borrow that. A queued message is one the
+ * terminal message queue holds until the agent's turn ends, so it waits for the turn to start.
  */
-export type TerminalTurnPurpose = 'dispatch-preamble'
+export type TerminalTurnPurpose = 'dispatch-preamble' | 'queued-message'
 
 /** A terminal has one write: whether a mid-turn prompt waits is the agent TUI's own behaviour. */
 export type TerminalTurn = {
@@ -115,6 +116,9 @@ function terminalTurnOptions(turn: TerminalTurn): DispatchPreambleSendOptions {
   switch (turn.purpose) {
     case 'dispatch-preamble':
       return dispatchPreambleSendOptions(turn.operationId)
+    // Why no acceptQueued: the queue reads a blocked or stalled turn start from the thrown error.
+    case 'queued-message':
+      return { inputKind: 'driving', requestId: turn.operationId }
   }
 }
 

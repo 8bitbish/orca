@@ -9,6 +9,7 @@ import {
   deliverQueuedMessage,
   QUEUE_INTERRUPT_KEY
 } from '../terminal-message-queue/terminal-message-queue-delivery'
+import { sendAgentTurn } from './orchestration/send-agent-turn'
 import { watchTranscriptForInterrupts } from '../terminal-message-queue/terminal-message-queue-transcript-watch'
 import type { TerminalQueuedMessage } from '../../shared/terminal-message-queue-contract'
 import type { PtyIncarnationId } from '../../shared/pty-incarnation'
@@ -97,7 +98,12 @@ export class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeWithResolveW
       {
         writeRaw: (bytes) => write({ text: bytes }),
         sendPrompt: async (text) => {
-          await this.sendTerminalAgentPrompt(target.handle, text, { inputKind: 'driving' })
+          await sendAgentTurn({
+            kind: 'terminal',
+            runtime: this,
+            handle: target.handle,
+            turn: { purpose: 'queued-message', body: text, operationId: item.id }
+          })
         },
         submit: () => write({ enter: true }),
         sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms))

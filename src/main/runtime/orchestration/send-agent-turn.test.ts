@@ -198,6 +198,20 @@ describe('sendAgentTurn to a terminal', () => {
     )
   })
 
+  it('types a queued message without the dispatch lead line and waits for the turn to start', async () => {
+    const runtime = { sendTerminalAgentPrompt: vi.fn(async () => ({ submits: 1 })) }
+    await sendAgentTurn({
+      kind: 'terminal',
+      runtime,
+      handle: 'term_1',
+      turn: { purpose: 'queued-message', body: 'next', operationId: 'item-1' }
+    })
+    expect(runtime.sendTerminalAgentPrompt).toHaveBeenCalledWith('term_1', 'next', {
+      inputKind: 'driving',
+      requestId: 'item-1'
+    })
+  })
+
   it('propagates a failed write as the primitive threw it', async () => {
     const failure = new Error('terminal_not_writable')
     const runtime = {

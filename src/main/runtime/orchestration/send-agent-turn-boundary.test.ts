@@ -112,7 +112,9 @@ describe('agent turn send boundary', () => {
         'runtime/rpc/methods/orchestration/worker/deliver-worker-dispatch-preamble.ts',
         'runtime/rpc/methods/orchestration/runs/dispatch-methods.ts',
         'runtime/orchestration/coordinator-task-dispatch.ts',
-        'runtime/rpc/methods/orchestration/federation/federation.ts'
+        'runtime/rpc/methods/orchestration/federation/federation.ts',
+        // The terminal message queue's prompt, sent once the lead turn ends.
+        'runtime/orca-runtime-terminal-message-queue.ts'
       ].sort()
     )
   })
@@ -195,6 +197,9 @@ describe('agent turn send boundary', () => {
         'runtime/claude-agent-teams-tmux-dispatcher.ts',
         // Intended: the runtime lending its own write to that agent-teams relay.
         'runtime/orca-runtime-resolve-terminal-split-source-authority.ts',
+        // Intended: the terminal message queue's keystrokes around its sendAgentTurn prompt: Ctrl+U,
+        // image-path pastes, a bare Enter for an image-only item, and the Esc of its Stop.
+        'runtime/orca-runtime-terminal-message-queue.ts',
         // Intended: a client's live keystroke stream, typed without Enter.
         'runtime/rpc/methods/terminal/terminal-input-delivery.ts',
         // Temporary: `terminal.send` into a terminal with no settled agent prompt, which may still
