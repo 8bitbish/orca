@@ -6,6 +6,8 @@ import {
   MobileNativeChatProofMediaContext,
   type MobileNativeChatProofMediaSource
 } from './mobile-native-chat-proof-context'
+import type { MobileNativeChatProofImageRegions } from './mobile-native-chat-proof-image-regions'
+import type { ProofTile } from './mobile-native-chat-proof-image-tiles'
 import type { MobileNativeChatProofMediaLoader } from './mobile-native-chat-proof-media-loader'
 import { MobileNativeChatProofViewer } from './MobileNativeChatProofMedia'
 
@@ -21,6 +23,7 @@ vi.mock('react-native', () => ({
   },
   Image: 'Image',
   Modal: 'Modal',
+  PixelRatio: { get: () => 2 },
   // The handlers land on the view as props, so a test can drive them directly.
   PanResponder: { create: (config: object) => ({ panHandlers: config }) },
   Pressable: 'Pressable',
@@ -97,8 +100,15 @@ afterEach(() => {
   renderer = null
 })
 
-async function render(media: readonly NativeChatProofMedia[]): Promise<ReactTestRenderer> {
-  const source: MobileNativeChatProofMediaSource = { status: 'supported', loader: loader() }
+async function render(
+  media: readonly NativeChatProofMedia[],
+  regions?: MobileNativeChatProofImageRegions
+): Promise<ReactTestRenderer> {
+  const source: MobileNativeChatProofMediaSource = {
+    status: 'supported',
+    loader: loader(),
+    regions
+  }
   await act(async () => {
     renderer = create(
       createElement(
@@ -232,5 +242,101 @@ describe('proof image thumbnails and full-screen viewer', () => {
     expect(moved.props.accessibilityValue.now).toBe(Math.round((240 / 340) * 100))
     expect(modals(root)).toHaveLength(0)
     expect(styleOf(moved.parent!)).toMatchObject({ width: 340, height: 360 })
+  })
+})
+
+// The made-up board's real pixels: three times its thumbnail.
+const BOARD_SOURCE = { width: 2643, height: 7137 }
+
+function regions(load: MobileNativeChatProofImageRegions['load']) {
+  return {
+    sourceSize: vi.fn(async () => BOARD_SOURCE),
+    cached: vi.fn<MobileNativeChatProofImageRegions['cached']>(() => null),
+    load: vi.fn(load)
+  }
+}
+
+const served: MobileNativeChatProofImageRegions['load'] = async (path, cell) => ({
+  path,
+  ...cell,
+  sourceWidth: BOARD_SOURCE.width,
+  sourceHeight: BOARD_SOURCE.height,
+  outputWidth: cell.maxWidth,
+  outputHeight: Math.round((cell.height * cell.maxWidth) / cell.width),
+  requestedScale: cell.maxWidth / cell.width,
+  uri: 'data:image/jpeg;base64,AAAA'
+})
+
+describe('full-detail tiles over a zoomed proof image', () => {
+  afterEach(() => vi.useRealTimers())
+
+  const settle = () =>
+    act(async () => {
+      await vi.advanceTimersByTimeAsync(300)
+    })
+  /** Opens the board, pinches it to 2× fit and lets the view settle. */
+  async function zoomIn(root: ReactTestRenderer): Promise<void> {
+    await act(async () => byLabel(root, 'Board, show full size')[0].props.onPress())
+    layOut(root, 390, 844)
+    await settle()
+    const [surface] = byLabel(root, 'Board')
+    act(() => surface.props.onPanResponderGrant(touches([150, 400], [250, 400])))
+    act(() => surface.props.onPanResponderMove(touches([100, 400], [300, 400])))
+    act(() => surface.props.onPanResponderRelease(touches()))
+    await settle()
+  }
+  const tiles = (root: ReactTestRenderer) =>
+    find(root, (node) => node.props.testID === 'proof-image-tile')
+  const base = (root: ReactTestRenderer) =>
+    styleOf(find(root, (node) => String(node.type) === 'Image' && node.props.onLoad)[0])
+
+  it("draws the settled view's tile over the base image, lined up in source pixels", async () => {
+    vi.useFakeTimers()
+    const host = regions(served)
+    const root = await render([BOARD], host)
+    await act(async () => byLabel(root, 'Board, show full size')[0].props.onPress())
+    layOut(root, 390, 844)
+    await settle()
+    // At fit the base bitmap is sharp enough on a 2× screen.
+    expect(host.load).not.toHaveBeenCalled()
+    act(() => modals(root)[0].props.onRequestClose())
+
+    await zoomIn(root)
+    expect(host.load).toHaveBeenCalledTimes(1)
+    const [tile] = tiles(root)
+    const at = styleOf(tile)
+    const under = base(root)
+    const [, cell] = host.load.mock.calls[0]
+    const perSource = under.width / BOARD_SOURCE.width
+    expect(at.left).toBeCloseTo(under.left + cell.x * perSource, 5)
+    expect(at.top).toBeCloseTo(under.top + cell.y * (under.height / BOARD_SOURCE.height), 5)
+    expect(at.width).toBeCloseTo(cell.width * perSource, 5)
+    // Asked for at the screen's device pixels (2×), not the source's.
+    expect(cell.maxWidth).toBeLessThanOrEqual(Math.ceil(cell.width * perSource * 2))
+    act(() => tile.props.onLoad())
+
+    // Back to fit: the tile goes and the base image is left as it was.
+    const [surface] = byLabel(root, 'Board')
+    for (let tap = 0; tap < 2; tap += 1) {
+      act(() => surface.props.onPanResponderGrant(touches([195, 400])))
+      act(() => surface.props.onPanResponderRelease(touches()))
+    }
+    expect(tiles(root)).toHaveLength(0)
+  })
+
+  it("keeps today's viewer when the host lacks the capability or a region fails", async () => {
+    vi.useFakeTimers()
+    const plain = await render([BOARD])
+    await zoomIn(plain)
+    expect(tiles(plain)).toHaveLength(0)
+    expect(base(plain).height).toBeCloseTo(844 * 2, 0)
+    act(() => plain.unmount())
+
+    const failing = regions(async (): Promise<ProofTile | null> => null)
+    const root = await render([BOARD], failing)
+    await zoomIn(root)
+    expect(failing.load).toHaveBeenCalledTimes(1)
+    expect(tiles(root)).toHaveLength(0)
+    expect(base(root).height).toBeCloseTo(844 * 2, 0)
   })
 })
