@@ -254,8 +254,11 @@ describe('MobileNativeChatProofCard', () => {
   it.each([
     ['bad JSON', '{"worktree": '],
     ['a missing title', { ...CARD, title: undefined }],
-    ['an unknown kind', { ...CARD, kind: 'tv' }],
-    ['a non-http link', { ...CARD, links: [{ label: 'x', url: 'javascript:alert(1)' }] }]
+    ['media that is not a list', { ...CARD, media: 'flow.mp4' }],
+    [
+      'a media path outside the proof folder',
+      { ...CARD, media: [{ type: 'image', path: '/tmp/a.png' }] }
+    ]
   ])('shows the raw block for %s', async (_name, body) => {
     const root = await render(fence(body))
     expect(root.toJSON()).toBe('RAW')
@@ -272,14 +275,68 @@ describe('MobileNativeChatProofCard', () => {
     expect(byLabel(root, 'Replies')).toHaveLength(1)
   })
 
-  it('names a file outside the proof folder without asking the host', async () => {
+  it('never asks the host for a file outside the proof folder', async () => {
     const loader = readyLoader()
     const root = await render(
       fence({ ...CARD, media: [{ type: 'video', path: '/tmp/elsewhere/flow.mp4' }] }),
       { status: 'supported', loader }
     )
-    expect(byLabel(root, 'Not in the proof folder: flow.mp4')).toHaveLength(1)
+    expect(root.toJSON()).toBe('RAW')
     expect(loader.loadFile).not.toHaveBeenCalled()
+  })
+
+  it('cuts a long check result to fit and opens it in full on a tap', async () => {
+    const long = `${'Every token matches the dark theme on the board, '.repeat(4)}checked twice.`
+    const root = await render(fence({ ...CARD, checks: [{ label: 'Tokens', result: long }] }))
+    expect(texts(root)).not.toContain(long)
+    const [row] = root.root.findAll(
+      (node) =>
+        String(node.type) === 'Text' &&
+        node.props.accessibilityRole === 'button' &&
+        node.props.accessibilityState?.expanded === false
+    )
+    expect(row.props.accessibilityHint).toBe('Shows the full text')
+    expect(texts(root)).toMatch(/…\|? Show more/)
+    act(() => row.props.onPress())
+    expect(texts(root)).toContain(long)
+    expect(texts(root)).toContain(' Show less')
+  })
+
+  it('opens a cut summary in full on a tap', async () => {
+    const summary = 'A summary sentence that goes on. '.repeat(40).trim()
+    const root = await render(fence({ ...CARD, summary }))
+    expect(texts(root)).not.toContain(summary)
+    const [text] = root.root.findAll(
+      (node) =>
+        String(node.type) === 'Text' && node.props.accessibilityHint === 'Shows the full text'
+    )
+    act(() => text.props.onPress())
+    expect(texts(root)).toContain(summary)
+  })
+
+  it('says how many media, checks and links it left out', async () => {
+    const root = await render(
+      fence({
+        ...CARD,
+        media: Array.from({ length: 13 }, (_, i) => ({
+          type: 'image',
+          path: `demo-app/2026-10-04-fake/shot-${i}.png`
+        })),
+        checks: Array.from({ length: 15 }, (_, i) => ({
+          label: `Check ${i}`,
+          result: 'ok'
+        })),
+        links: [
+          { label: 'Bad', url: 'javascript:alert(1)' },
+          { label: 'Good', url: 'https://example.com/good' }
+        ]
+      })
+    )
+    expect(byLabel(root, '1 more media not shown')).toHaveLength(1)
+    expect(byLabel(root, '3 more checks not shown')).toHaveLength(1)
+    expect(byLabel(root, '1 more links not shown')).toHaveLength(1)
+    expect(byLabel(root, 'Good, opens https://example.com/good')).toHaveLength(1)
+    expect(texts(root)).toContain('+3 more')
   })
 
   it('plays the recording muted and looped from the cached file', async () => {

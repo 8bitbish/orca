@@ -31,9 +31,7 @@ function ProofImage({ item }: { item: NativeChatProofMedia }): React.JSX.Element
   const thumbnail = useMobileNativeChatProofThumbnail(item.path)
   const label = proofItemLabel(item)
   let body: React.JSX.Element
-  if (item.path === null) {
-    body = <ProofPlaceholder item={item} reason="outside-folder" inStrip />
-  } else if (thumbnail.status === 'loading') {
+  if (thumbnail.status === 'loading') {
     body = <ProofSkeleton width={PROOF_STRIP_BOX.minWidth} height={PROOF_STRIP_HEIGHT} />
   } else if (thumbnail.status === 'missing') {
     body = <ProofPlaceholder item={item} reason={thumbnail.reason} inStrip />

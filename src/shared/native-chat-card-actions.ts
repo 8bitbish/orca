@@ -11,8 +11,8 @@ export type NativeChatCardAction = {
 } & ({ kind: 'reply'; reply: string } | { kind: 'input' })
 
 export const NATIVE_CHAT_CARD_MAX_ACTIONS = 4
-const MAX_LABEL_LENGTH = 40
-const MAX_REPLY_LENGTH = 2000
+export const NATIVE_CHAT_CARD_MAX_ACTION_LABEL_LENGTH = 40
+export const NATIVE_CHAT_CARD_MAX_ACTION_REPLY_LENGTH = 2000
 const ACTION_KEYS = new Set(['label', 'reply', 'input', 'style'])
 
 export function isNativeChatCardRecord(value: unknown): value is Record<string, unknown> {
@@ -31,14 +31,19 @@ export function optionalNativeChatCardText(value: unknown, max: number): string 
   return trimmed === '' ? undefined : trimmed
 }
 
-function parseAction(value: unknown, id: string, closed: boolean): NativeChatCardAction | null {
+/** One action, or null when it is outside the shape; `closed` also refuses unknown keys. */
+export function parseNativeChatCardAction(
+  value: unknown,
+  id: string,
+  closed: boolean
+): NativeChatCardAction | null {
   if (!isNativeChatCardRecord(value)) {
     return null
   }
   if (closed && Object.keys(value).some((key) => !ACTION_KEYS.has(key))) {
     return null
   }
-  const label = optionalNativeChatCardText(value.label, MAX_LABEL_LENGTH)
+  const label = optionalNativeChatCardText(value.label, NATIVE_CHAT_CARD_MAX_ACTION_LABEL_LENGTH)
   if (!label) {
     return null
   }
@@ -52,7 +57,7 @@ function parseAction(value: unknown, id: string, closed: boolean): NativeChatCar
   if (value.input !== undefined && value.input !== false) {
     return null
   }
-  const reply = optionalNativeChatCardText(value.reply, MAX_REPLY_LENGTH)
+  const reply = optionalNativeChatCardText(value.reply, NATIVE_CHAT_CARD_MAX_ACTION_REPLY_LENGTH)
   return reply ? { id, kind: 'reply', label, reply, style } : null
 }
 
@@ -67,7 +72,7 @@ export function parseNativeChatCardActions(
   }
   const actions: NativeChatCardAction[] = []
   for (const [index, entry] of raw.entries()) {
-    const action = parseAction(entry, `action-${index}`, closed)
+    const action = parseNativeChatCardAction(entry, `action-${index}`, closed)
     if (!action) {
       return null
     }

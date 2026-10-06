@@ -72,16 +72,18 @@ function ProofPlaceholder({
   )
 }
 
+/** One line, cut by CSS; the tooltip has the whole caption, even where the card cut it. */
 function ProofCaption({ item, prefix }: { item: NativeChatProofMedia; prefix?: string }) {
   const parts = [prefix, item.caption, item.where].filter(Boolean)
   if (parts.length === 0) {
     return null
   }
+  const full = [prefix, item.full?.caption ?? item.caption, item.full?.where ?? item.where]
   return (
     <figcaption
       data-proof-caption=""
       className="mt-1 min-w-0 truncate text-[11px] leading-4 text-muted-foreground"
-      title={parts.join(' · ')}
+      title={full.filter(Boolean).join(' · ')}
     >
       {parts.join(' · ')}
     </figcaption>
@@ -111,9 +113,7 @@ function ProofVideo({ item }: { item: NativeChatProofMedia }): React.JSX.Element
   }, [])
   const label = itemLabel(item)
   let body: React.JSX.Element
-  if (item.path === null) {
-    body = <ProofPlaceholder item={item} reason="outside-folder" />
-  } else if (video.status === 'loading') {
+  if (video.status === 'loading') {
     body = <Skeleton className="aspect-video w-full" />
   } else if (video.status === 'missing') {
     body = <ProofPlaceholder item={item} reason={video.reason} />
@@ -199,9 +199,7 @@ function ProofImage({ item }: { item: NativeChatProofMedia }): React.JSX.Element
         ? translate('components.native-chat.proof.after', 'After')
         : undefined
   let body: React.JSX.Element
-  if (item.path === null) {
-    body = <ProofPlaceholder item={item} reason="outside-folder" inStrip />
-  } else if (thumbnail.status === 'loading') {
+  if (thumbnail.status === 'loading') {
     body = <Skeleton className="h-44 w-32" />
   } else if (thumbnail.status === 'missing') {
     body = <ProofPlaceholder item={item} reason={thumbnail.reason} inStrip />

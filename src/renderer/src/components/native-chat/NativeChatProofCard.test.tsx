@@ -56,6 +56,14 @@ function source(overrides: Record<string, unknown> = {}): string {
   return JSON.stringify({ ...CARD, ...overrides })
 }
 
+function element(selector: string): HTMLElement {
+  const found = document.querySelector<HTMLElement>(selector)
+  if (!found) {
+    throw new Error(`No element for ${selector}`)
+  }
+  return found
+}
+
 function renderProofFence(code: string, channel: NativeChatProjectReplyChannel | null = null) {
   return render(
     <NativeChatFencePreviewContext.Provider value={REPLY_SCOPE}>
@@ -182,26 +190,84 @@ describe('NativeChatProofCard', () => {
     expect(videoDialog.querySelector('video[controls]')).not.toBeNull()
   })
 
-  it('shows placeholders for missing media and media outside the proof folder', async () => {
+  it('shows placeholders for missing media', async () => {
     renderProofFence(
       source({
         media: [
           { type: 'video', path: `${BUNDLE}/missing.mp4` },
-          { type: 'image', path: '/Users/someone/Desktop/secret.png' },
           { type: 'image', path: `${BUNDLE}/missing.png` }
         ]
       })
     )
     await waitFor(() =>
-      expect(document.querySelectorAll('[data-proof-media-missing]')).toHaveLength(3)
+      expect(document.querySelectorAll('[data-proof-media-missing]')).toHaveLength(2)
     )
     expect(screen.getByText('Recording not found')).toBeInTheDocument()
-    expect(screen.getByText('Not in the proof folder')).toBeInTheDocument()
     expect(screen.getByText('Screenshot not found')).toBeInTheDocument()
-    // A path outside the folder never reaches the host.
-    expect(api.proofImage).not.toHaveBeenCalledWith(
-      expect.objectContaining({ path: expect.stringContaining('secret') })
+  })
+
+  it('cuts a long check result to fit, with the full text on hover and on Show more', () => {
+    const long = `${'Every token matches the dark theme in the board, '.repeat(4)}checked twice.`
+    renderProofFence(source({ checks: [{ label: 'Tokens', result: long }] }))
+    expect(document.querySelector('[data-native-chat-proof-card]')).not.toBeNull()
+    const result = element('[data-proof-check-result]')
+    const cut = result.textContent ?? ''
+    expect(cut.length).toBeLessThanOrEqual(160)
+    expect(cut.endsWith('…')).toBe(true)
+    expect(result).toHaveAttribute('title', long)
+    const toggle = screen.getByRole('button', { name: 'Show more' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(toggle)
+    expect(result).toHaveTextContent(long)
+    expect(result).not.toHaveAttribute('title')
+    fireEvent.click(screen.getByRole('button', { name: 'Show less' }))
+    expect(result).toHaveTextContent(cut)
+  })
+
+  it('cuts a long title and summary, keeping the full text', () => {
+    const title = 'A very long title '.repeat(14)
+    const summary = 'A summary sentence that goes on. '.repeat(40)
+    renderProofFence(source({ title, summary }))
+    const shownTitle = element('[data-proof-title]')
+    expect(shownTitle.textContent?.endsWith('…')).toBe(true)
+    expect(shownTitle).toHaveAttribute('title', title.trim())
+    const shownSummary = element('[data-proof-summary]')
+    fireEvent.click(within(shownSummary).getByRole('button', { name: 'Show more' }))
+    expect(shownSummary).toHaveTextContent(summary.trim())
+  })
+
+  it('says how many media, checks and links it left out', () => {
+    renderProofFence(
+      source({
+        media: Array.from({ length: 14 }, (_, i) => ({
+          type: 'image',
+          path: `${BUNDLE}/shot-${i}.png`
+        })),
+        checks: Array.from({ length: 13 }, (_, i) => ({
+          label: `Check ${i}`,
+          result: 'ok'
+        })),
+        links: [
+          ...Array.from({ length: 8 }, (_, i) => ({
+            label: `Link ${i}`,
+            url: `https://example.com/${i}`
+          })),
+          { label: 'Bad', url: 'javascript:alert(1)' },
+          { label: 'Extra', url: 'https://example.com/extra' }
+        ]
+      })
     )
+    expect(document.querySelectorAll('[data-proof-check]')).toHaveLength(12)
+    expect(document.querySelectorAll('[data-proof-link]')).toHaveLength(8)
+    expect(document.querySelector('[data-proof-more="media"]')).toHaveTextContent(
+      '+2 more2 more media not shown'
+    )
+    expect(document.querySelector('[data-proof-more="checks"]')).toHaveAttribute(
+      'title',
+      '1 more checks not shown'
+    )
+    expect(document.querySelector('[data-proof-more="links"]')).toHaveTextContent('+2 more')
+    expect(document.querySelector('[data-proof-more="actions"]')).toBeNull()
   })
 
   it('falls back to two tiles when one half of the pair cannot be shown', async () => {
@@ -254,7 +320,17 @@ describe('NativeChatProofCard', () => {
     expect(document.querySelector('[data-native-chat-proof-card]')).toBeNull()
     expect(document.querySelector('[data-code-language="proof-card"]')).not.toBeNull()
     cleanup()
-    renderProofFence(source({ kind: 'television' }))
+    renderProofFence(source({ media: 'flow.mp4' }))
     expect(document.querySelector('[data-native-chat-proof-card]')).toBeNull()
+  })
+
+  it('shows the raw block for a media path outside the proof folder, without asking the host', () => {
+    renderProofFence(
+      source({
+        media: [{ type: 'image', path: '/Users/someone/Desktop/secret.png' }]
+      })
+    )
+    expect(document.querySelector('[data-native-chat-proof-card]')).toBeNull()
+    expect(api.proofImage).not.toHaveBeenCalled()
   })
 })

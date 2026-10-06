@@ -57,9 +57,6 @@ export function NativeChatProofCompare({
   const afterImage = useNativeChatProofImage(after.path, 'thumbnail')
   const beforeFull = useNativeChatProofImage(openSide ? before.path : null, 'full')
   const afterFull = useNativeChatProofImage(openSide ? after.path : null, 'full')
-  if (before.path === null || after.path === null) {
-    return <>{fallback}</>
-  }
   if (beforeImage.status === 'missing' || afterImage.status === 'missing') {
     return <>{fallback}</>
   }

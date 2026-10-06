@@ -1,4 +1,4 @@
-import { useContext, useMemo, type ReactNode } from 'react'
+import { useContext, useMemo, useState, type ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import {
   ArrowUpRight,
@@ -12,12 +12,12 @@ import {
   PenTool,
   Smartphone
 } from 'lucide-react-native'
-import {
-  parseNativeChatProofCard,
-  type NativeChatProofCheck,
-  type NativeChatProofKind,
-  type NativeChatProofLink
+import type {
+  NativeChatProofCheck,
+  NativeChatProofKind,
+  NativeChatProofLink
 } from '../../../../src/shared/native-chat-proof-card-payload'
+import { parseNativeChatProofCard } from '../../../../src/shared/native-chat-proof-card-reader'
 import { nativeChatProjectCardKey } from '../../../../src/shared/native-chat-project-card-choice'
 import { NATIVE_CHAT_WORKTREE_LINK_SCHEME } from '../../../../src/shared/native-chat-project-target'
 import { openExternalLink } from '../../platform/external-link'
@@ -29,6 +29,12 @@ import {
 import { MobileNativeChatCardActions } from '../project-cards/MobileNativeChatCardActions'
 import { MobileNativeChatProjectChip } from '../project-cards/MobileNativeChatProjectChip'
 import { MobileNativeChatProofViewer } from './MobileNativeChatProofMedia'
+import {
+  ProofCutText,
+  ProofMoreNote,
+  ProofToggleLabel,
+  proofExpandableProps
+} from './MobileNativeChatProofOverflow'
 import { proofKeyed } from './MobileNativeChatProofParts'
 
 const KIND_LABELS: Record<NativeChatProofKind, string> = {
@@ -88,49 +94,64 @@ function KindBadge({ kind }: { kind: NativeChatProofKind }): React.JSX.Element {
   )
 }
 
-/** Passing results read as normal text; a failure is warned, anything unchecked greyed. */
+/** Passing results read as normal text; a failure is warned, anything unchecked greyed.
+ *  A row the card cut to fit shows its full text on a tap. */
+function ProofCheckRow({ check }: { check: NativeChatProofCheck }): React.JSX.Element {
+  const [expanded, setExpanded] = useState(false)
+  const unchecked = check.tone === 'unchecked'
+  const label = expanded ? (check.full?.label ?? check.label) : check.label
+  const result = expanded ? (check.full?.result ?? check.result) : check.result
+  const expandable = check.full ? proofExpandableProps(expanded, () => setExpanded((o) => !o)) : {}
+  return (
+    <View style={styles.check}>
+      <View style={styles.checkIcon}>
+        <CheckIcon tone={check.tone} />
+      </View>
+      <Text style={[styles.checkText, unchecked ? styles.muted : null]} {...expandable}>
+        <Text style={unchecked ? null : styles.muted}>{label}</Text>
+        <Text> · </Text>
+        <Text
+          style={[
+            check.tone === 'fail' ? styles.checkFail : null,
+            unchecked ? styles.italic : null
+          ]}
+        >
+          {result}
+        </Text>
+        {check.full ? <ProofToggleLabel expanded={expanded} /> : null}
+      </Text>
+    </View>
+  )
+}
+
 function ProofChecks({
-  checks
+  checks,
+  hidden
 }: {
   checks: readonly NativeChatProofCheck[]
+  hidden: number
 }): React.JSX.Element | null {
-  if (checks.length === 0) {
+  if (checks.length === 0 && hidden === 0) {
     return null
   }
   return (
     <View accessibilityLabel="Checks" style={styles.checks}>
-      {proofKeyed(checks, (check) => check.label).map(({ key, item: check }) => {
-        const unchecked = check.tone === 'unchecked'
-        return (
-          <View key={key} style={styles.check}>
-            <View style={styles.checkIcon}>
-              <CheckIcon tone={check.tone} />
-            </View>
-            <Text style={[styles.checkText, unchecked ? styles.muted : null]}>
-              <Text style={unchecked ? null : styles.muted}>{check.label}</Text>
-              <Text> · </Text>
-              <Text
-                style={[
-                  check.tone === 'fail' ? styles.checkFail : null,
-                  unchecked ? styles.italic : null
-                ]}
-              >
-                {check.result}
-              </Text>
-            </Text>
-          </View>
-        )
-      })}
+      {proofKeyed(checks, (check) => check.label).map(({ key, item: check }) => (
+        <ProofCheckRow key={key} check={check} />
+      ))}
+      <ProofMoreNote section="checks" count={hidden} />
     </View>
   )
 }
 
 function ProofLinks({
-  links
+  links,
+  hidden
 }: {
   links: readonly NativeChatProofLink[]
+  hidden: number
 }): React.JSX.Element | null {
-  if (links.length === 0) {
+  if (links.length === 0 && hidden === 0) {
     return null
   }
   return (
@@ -139,7 +160,7 @@ function ProofLinks({
         <Pressable
           key={key}
           accessibilityRole="link"
-          accessibilityLabel={`${link.label}, opens ${link.url}`}
+          accessibilityLabel={`${link.full?.label ?? link.label}, opens ${link.url}`}
           onPress={() => openExternalLink(link.url)}
           style={({ pressed }) => [styles.link, pressed ? styles.pressed : null]}
         >
@@ -147,6 +168,7 @@ function ProofLinks({
           <Text style={styles.linkText}>{link.label}</Text>
         </Pressable>
       ))}
+      <ProofMoreNote section="links" count={hidden} />
     </View>
   )
 }
@@ -155,7 +177,9 @@ function ProofLinks({
  * A ```proof-card fence: what an agent's finished task looks like (a recording,
  * screenshots or a before/after slider) with what was and was not checked, links out and
  * reply actions. Media comes from the host's ~/.orca-personal/proof/; a file that cannot
- * be shown gets a placeholder. Anything off the schema shows `fallback`, the raw block.
+ * be shown gets a placeholder. Text the card cut to fit opens in full on a tap, and a
+ * section with items left out says how many. Bad JSON, the wrong shape or an unsafe
+ * media path shows `fallback`, the raw block.
  */
 export function MobileNativeChatProofCard({
   source,
@@ -171,8 +195,9 @@ export function MobileNativeChatProofCard({
     return <>{fallback}</>
   }
   const cardKey = messageId === undefined ? null : nativeChatProjectCardKey(messageId, source)
+  const hidden = card.adjustments.droppedCounts
   return (
-    <View style={styles.card} accessibilityLabel={`Proof: ${card.title}`}>
+    <View style={styles.card} accessibilityLabel={`Proof: ${card.full?.title ?? card.title}`}>
       <View style={styles.body}>
         <View style={styles.header}>
           <Text style={[styles.meta, styles.muted, styles.chip]} numberOfLines={1}>
@@ -184,12 +209,16 @@ export function MobileNativeChatProofCard({
           {card.kind ? <KindBadge kind={card.kind} /> : null}
         </View>
         <View style={styles.titles}>
-          <Text style={styles.title}>{card.title}</Text>
-          {card.summary ? <Text style={styles.prose}>{card.summary}</Text> : null}
+          <ProofCutText text={card.title} full={card.full?.title} style={styles.title} />
+          {card.summary ? (
+            <ProofCutText text={card.summary} full={card.full?.summary} style={styles.prose} />
+          ) : null}
         </View>
         <MobileNativeChatProofViewer media={card.media} />
-        <ProofChecks checks={card.checks} />
-        <ProofLinks links={card.links} />
+        <ProofMoreNote section="media" count={hidden.media} />
+        <ProofChecks checks={card.checks} hidden={hidden.checks} />
+        <ProofLinks links={card.links} hidden={hidden.links} />
+        <ProofMoreNote section="actions" count={hidden.actions} />
       </View>
       <MobileNativeChatCardActions
         actions={card.actions}
@@ -252,7 +281,7 @@ const styles = StyleSheet.create({
     lineHeight: 20
   },
   checkFail: { color: colors.statusAmber, fontWeight: '500' },
-  links: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  links: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
   link: {
     flexDirection: 'row',
     alignItems: 'center',

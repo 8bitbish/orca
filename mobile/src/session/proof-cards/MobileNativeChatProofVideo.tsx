@@ -90,9 +90,7 @@ function ProofVideoPlayer({ uri, label }: { uri: string; label: string }): React
 export function ProofVideo({ item }: { item: NativeChatProofMedia }): React.JSX.Element {
   const file = useMobileNativeChatProofFile(item.path)
   let body: React.JSX.Element
-  if (item.path === null) {
-    body = <ProofPlaceholder item={item} reason="outside-folder" />
-  } else if (file.status === 'loading') {
+  if (file.status === 'loading') {
     body = <ProofSkeleton width="100%" height={196} received={file.received} total={file.total} />
   } else if (file.status === 'missing') {
     body = <ProofPlaceholder item={item} reason={file.reason} />

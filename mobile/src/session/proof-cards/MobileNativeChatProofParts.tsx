@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Animated, StyleSheet, Text, View } from 'react-native'
 import { ImageOff, VideoOff } from 'lucide-react-native'
 import type { NativeChatProofMedia } from '../../../../src/shared/native-chat-proof-card-payload'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
 import type { MobileNativeChatProofMediaRefusal } from './mobile-native-chat-proof-media-loader'
+import { ProofToggleLabel, proofExpandableProps } from './MobileNativeChatProofOverflow'
 
 export const PROOF_STRIP_HEIGHT = 176
 export const PROOF_MAX_MEDIA_HEIGHT = 400
@@ -85,6 +86,7 @@ export function ProofPlaceholder({
   )
 }
 
+/** One line; a caption the card cut to fit opens in full on a tap. */
 export function ProofCaption({
   item,
   prefix
@@ -92,10 +94,27 @@ export function ProofCaption({
   item: NativeChatProofMedia
   prefix?: string
 }): React.JSX.Element | null {
+  const [expanded, setExpanded] = useState(false)
   const parts = [prefix, item.caption, item.where].filter(Boolean)
-  return parts.length === 0 ? null : (
-    <Text style={styles.caption} numberOfLines={1}>
-      {parts.join(' · ')}
+  if (parts.length === 0) {
+    return null
+  }
+  if (!item.full) {
+    return (
+      <Text style={styles.caption} numberOfLines={1}>
+        {parts.join(' · ')}
+      </Text>
+    )
+  }
+  const full = [prefix, item.full.caption ?? item.caption, item.full.where ?? item.where]
+  return (
+    <Text
+      style={styles.caption}
+      numberOfLines={expanded ? undefined : 1}
+      {...proofExpandableProps(expanded, () => setExpanded((open) => !open))}
+    >
+      {expanded ? full.filter(Boolean).join(' · ') : parts.join(' · ')}
+      {expanded ? <ProofToggleLabel expanded /> : null}
     </Text>
   )
 }

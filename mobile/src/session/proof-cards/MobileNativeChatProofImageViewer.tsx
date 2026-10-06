@@ -243,7 +243,7 @@ export function ProofImageViewer({
     <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <ZoomableImage
-          key={item.path ?? item.source}
+          key={item.path}
           path={item.path}
           uri={uri}
           size={size}

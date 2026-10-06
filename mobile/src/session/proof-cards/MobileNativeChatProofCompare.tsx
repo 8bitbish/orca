@@ -72,12 +72,7 @@ export function ProofCompare({
       }),
     []
   )
-  if (
-    before.path === null ||
-    after.path === null ||
-    beforeImage.status === 'missing' ||
-    afterImage.status === 'missing'
-  ) {
+  if (beforeImage.status === 'missing' || afterImage.status === 'missing') {
     return fallback
   }
   const box = mobileNativeChatProofCompareBox(cardWidth)
