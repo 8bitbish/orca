@@ -17,7 +17,14 @@ import {
   type NativeChatProofMediaReadReply,
   type NativeChatProofMediaRpcRefusal
 } from '../../shared/native-chat-proof-media-rpc-contract'
-import { proofMediaRoot, resolveProofMediaPath, sniffProofVideo } from './proof-media'
+import { proofImageCacheKey } from './proof-image-cache'
+import {
+  knownProofImageSize,
+  proofMediaRoot,
+  rememberProofImageSize,
+  resolveProofMediaPath,
+  sniffProofVideo
+} from './proof-media'
 import {
   slackCacheImageCodec,
   sniffSlackCacheImageMime,
@@ -26,17 +33,19 @@ import {
 
 const SNIFF_BYTES = 16
 
-type OpenMedia = {
+export type OpenProofMedia = {
   handle: FileHandle
   type: NativeChatProofMediaType
   mimeType: NativeChatProofMediaMime
   byteLength: number
   mtimeMs: number
+  /** The proof image caches' key for this exact file version. */
+  cacheKey: string
 }
 
-type Refused = { ok: false; reason: NativeChatProofMediaRpcRefusal }
+export type Refused = { ok: false; reason: NativeChatProofMediaRpcRefusal }
 
-function refuse(reason: NativeChatProofMediaRpcRefusal): Refused {
+export function refuse(reason: NativeChatProofMediaRpcRefusal): Refused {
   return { ok: false, reason }
 }
 
@@ -57,10 +66,10 @@ async function sniff(
 }
 
 /** Opens a proof file for one call and always closes it; any refusal comes back typed. */
-async function withProofMedia<T extends { ok: boolean }>(
+export async function withProofMedia<T extends { ok: boolean }>(
   requested: unknown,
   root: string,
-  read: (media: OpenMedia) => Promise<T>
+  read: (media: OpenProofMedia) => Promise<T>
 ): Promise<T | Refused> {
   const type = mediaTypeOf(requested)
   const resolved = await resolveProofMediaPath(requested, type, root)
@@ -91,7 +100,14 @@ async function withProofMedia<T extends { ok: boolean }>(
     if (mimeType === null) {
       return refuse('wrong-type')
     }
-    return await read({ handle, type, mimeType, byteLength: info.size, mtimeMs: info.mtimeMs })
+    return await read({
+      handle,
+      type,
+      mimeType,
+      byteLength: info.size,
+      mtimeMs: info.mtimeMs,
+      cacheKey: proofImageCacheKey(resolved.path, info)
+    })
   } catch {
     return refuse('unavailable')
   } finally {
@@ -116,10 +132,18 @@ export async function readProofMediaInfo(args: {
     if (media.type !== 'image' || !codec) {
       return info
     }
+    const known = knownProofImageSize(media.cacheKey)
+    if (known) {
+      return { ...info, width: known.width, height: known.height }
+    }
     const bytes = Buffer.alloc(media.byteLength)
     const { bytesRead } = await media.handle.read(bytes, 0, media.byteLength, 0)
     const decoded = codec.decode(bytes.subarray(0, bytesRead))
-    return decoded ? { ...info, width: decoded.width, height: decoded.height } : info
+    if (!decoded) {
+      return info
+    }
+    rememberProofImageSize(media.cacheKey, decoded)
+    return { ...info, width: decoded.width, height: decoded.height }
   })
 }
 

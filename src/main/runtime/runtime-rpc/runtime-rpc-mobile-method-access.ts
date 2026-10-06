@@ -1,4 +1,7 @@
-import { NATIVE_CHAT_PROOF_MEDIA_MOBILE_METHODS } from '../../../shared/native-chat-proof-media-capability'
+import {
+  NATIVE_CHAT_PROOF_IMAGE_REGION_MOBILE_METHODS,
+  NATIVE_CHAT_PROOF_MEDIA_MOBILE_METHODS
+} from '../../../shared/native-chat-proof-media-capability'
 import { MOBILE_RPC_METHOD_ALLOWLIST } from './runtime-rpc-mobile-method-allowlist'
 import { TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS } from './runtime-rpc-mobile-terminal-message-queue-methods'
 
@@ -6,6 +9,7 @@ import { TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS } from './runtime-rpc-mobile-term
 export const PERSONAL_MOBILE_RPC_METHODS: ReadonlySet<string> = new Set([
   'nativeChat.slackImage',
   ...NATIVE_CHAT_PROOF_MEDIA_MOBILE_METHODS,
+  ...NATIVE_CHAT_PROOF_IMAGE_REGION_MOBILE_METHODS,
   ...TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS
 ])
 

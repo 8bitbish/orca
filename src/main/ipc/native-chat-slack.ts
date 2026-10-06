@@ -1,4 +1,4 @@
-import { ipcMain, nativeImage, shell } from 'electron'
+import { ipcMain, nativeImage, shell, type NativeImage } from 'electron'
 import { parseNativeChatSlackHref } from '../../shared/native-chat-slack-href'
 import { buildNativeChatSlackLinks } from '../../shared/native-chat-slack-links'
 import type { NativeChatSlackImageResult } from '../../shared/native-chat-slack-image-contract'
@@ -6,24 +6,30 @@ import {
   readSlackCacheImage,
   setSlackCacheImageCodec,
   SLACK_CACHE_IMAGE_MAX_FILE_BYTES,
+  type SlackCacheDecodedImage,
   type SlackCacheImageCodec
 } from '../native-chat/slack-cache-image'
+
+function decodedNativeImage(image: NativeImage): SlackCacheDecodedImage {
+  const { width, height } = image.getSize()
+  return {
+    width,
+    height,
+    resizeToWidth: (target) => {
+      const resized = target >= width ? image : image.resize({ width: target, quality: 'good' })
+      return { png: () => resized.toPNG(), jpeg: (quality) => resized.toJPEG(quality) }
+    },
+    crop: (rect) =>
+      rect.x === 0 && rect.y === 0 && rect.width >= width && rect.height >= height
+        ? decodedNativeImage(image)
+        : decodedNativeImage(image.crop(rect))
+  }
+}
 
 const electronImageCodec: SlackCacheImageCodec = {
   decode: (bytes) => {
     const image = nativeImage.createFromBuffer(bytes)
-    if (image.isEmpty()) {
-      return null
-    }
-    const { width, height } = image.getSize()
-    return {
-      width,
-      height,
-      resizeToWidth: (target) => {
-        const resized = target >= width ? image : image.resize({ width: target, quality: 'good' })
-        return { png: () => resized.toPNG(), jpeg: (quality) => resized.toJPEG(quality) }
-      }
-    }
+    return image.isEmpty() ? null : decodedNativeImage(image)
   }
 }
 

@@ -33,7 +33,13 @@ import {
   type ImageViewerTap,
   type ImageViewerTouch
 } from './mobile-native-chat-image-viewer-gesture'
+import {
+  proofImageDisplayRect,
+  proofTileKey,
+  proofTilePlacement
+} from './mobile-native-chat-proof-image-tiles'
 import { proofItemLabel, proofStyles } from './MobileNativeChatProofParts'
+import { useMobileNativeChatProofImageTiles } from './use-mobile-native-chat-proof-image-tiles'
 import { useMobileNativeChatProofFile } from './use-mobile-native-chat-proof-media'
 
 export type ProofViewerSide = 'before' | 'after'
@@ -43,13 +49,16 @@ type Thumbnail = { src: string; width: number | null; height: number | null }
 const UNKNOWN_SIZE = { width: 1600, height: 1000 }
 
 /** Pinch-to-zoom and one-finger pan over one image, starting at fit. Double-tap toggles
- *  fit and 100%; a tap beside the image at fit closes. */
+ *  fit and 100%; a tap beside the image at fit closes. Zoomed in, full-detail tiles from
+ *  the host are drawn over the base image in the same placement. */
 function ZoomableImage({
+  path,
   uri,
   size,
   label,
   onClose
 }: {
+  path: string | null
   uri: string
   size: ImageZoomSize
   label: string
@@ -65,6 +74,12 @@ function ZoomableImage({
   if (viewport) {
     shown = view ? clampImageZoomView(view, image, viewport) : imageZoomFitView(image, viewport)
   }
+  const { tiles, onTileLoad } = useMobileNativeChatProofImageTiles({
+    path,
+    view: shown,
+    image,
+    viewport
+  })
   const live = useRef({ image, viewport, shown, onClose })
   live.current = { image, viewport, shown, onClose }
 
@@ -177,6 +192,25 @@ function ZoomableImage({
               height: image.height * shown.scale
             }}
           />
+          {tiles.map((tile) => {
+            const at = proofTilePlacement(tile, proofImageDisplayRect(shown, image))
+            return (
+              <Image
+                key={proofTileKey(tile)}
+                testID="proof-image-tile"
+                source={{ uri: tile.uri }}
+                onLoad={() => onTileLoad(tile)}
+                resizeMode="stretch"
+                style={{
+                  position: 'absolute',
+                  left: at.x,
+                  top: at.y,
+                  width: at.width,
+                  height: at.height
+                }}
+              />
+            )
+          })}
         </View>
       ) : null}
     </View>
@@ -210,6 +244,7 @@ export function ProofImageViewer({
       <View style={styles.backdrop}>
         <ZoomableImage
           key={item.path ?? item.source}
+          path={item.path}
           uri={uri}
           size={size}
           label={label}

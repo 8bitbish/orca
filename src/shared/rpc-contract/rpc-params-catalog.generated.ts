@@ -354,6 +354,7 @@ import {
 import { CreateProject } from './linear-project-create-params'
 import { NativeChatSession, NativeChatUnsubscribe } from './native-chat-params'
 import {
+  NativeChatProofImageRegion,
   NativeChatProofMediaInfo,
   NativeChatProofMediaRead,
   NativeChatProofMediaThumbnail
@@ -1006,6 +1007,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'mobileWeb.bundle.chunk': MobileWebBundleChunkParamsSchema,
   'mobileWeb.bundle.manifest': null,
   'mobileWeb.bundle.range': MobileWebBundleChunkParamsSchema,
+  'nativeChat.proofImageRegion': NativeChatProofImageRegion,
   'nativeChat.proofMediaInfo': NativeChatProofMediaInfo,
   'nativeChat.proofMediaRead': NativeChatProofMediaRead,
   'nativeChat.proofMediaThumbnail': NativeChatProofMediaThumbnail,

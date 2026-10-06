@@ -4,9 +4,12 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  NATIVE_CHAT_PROOF_IMAGE_REGION_MOBILE_METHODS,
+  NATIVE_CHAT_PROOF_IMAGE_REGION_RUNTIME_CAPABILITY,
   NATIVE_CHAT_PROOF_MEDIA_MOBILE_METHODS,
   NATIVE_CHAT_PROOF_MEDIA_RUNTIME_CAPABILITY
 } from '../../../../shared/native-chat-proof-media-capability'
+import { parseNativeChatProofImageRegionReply } from '../../../../shared/native-chat-proof-image-region-contract'
 import {
   NATIVE_CHAT_PROOF_MEDIA_READ_MAX_CHUNK_BYTES,
   parseNativeChatProofMediaInfoReply,
@@ -17,6 +20,12 @@ import { RpcDispatcher } from '../dispatcher'
 import type { RpcRequest } from '../core'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import { isMobileRpcMethodAllowed } from '../../runtime-rpc/runtime-rpc-mobile-method-access'
+import { clearProofImageBitmaps } from '../../../native-chat/proof-image-region'
+import {
+  setSlackCacheImageCodec,
+  slackCacheImageCodec,
+  type SlackCacheImageCodec
+} from '../../../native-chat/slack-cache-image'
 import { ALL_RPC_METHODS } from './index'
 import { NATIVE_CHAT_PROOF_MEDIA_METHODS } from './native-chat-proof-media'
 
@@ -155,6 +164,105 @@ describe('nativeChat.proofMedia*', () => {
       ['nativeChat.proofMediaThumbnail', {}]
     ] as const) {
       expect(await dispatcher().dispatch(request(method, params))).toMatchObject({ ok: false })
+    }
+  })
+})
+
+describe('nativeChat.proofImageRegion', () => {
+  const crops: unknown[] = []
+  const codec: SlackCacheImageCodec = {
+    decode: () => ({
+      width: 4000,
+      height: 3000,
+      resizeToWidth: () => ({ png: () => Buffer.alloc(0), jpeg: () => Buffer.alloc(300, 9) }),
+      crop: (rect) => {
+        crops.push(rect)
+        return {
+          width: rect.width,
+          height: rect.height,
+          resizeToWidth: () => ({ png: () => Buffer.alloc(0), jpeg: () => Buffer.alloc(300, 9) })
+        }
+      }
+    })
+  }
+  let previous: SlackCacheImageCodec | null = null
+
+  beforeEach(() => {
+    previous = slackCacheImageCodec()
+    crops.length = 0
+    clearProofImageBitmaps()
+  })
+
+  afterEach(() => {
+    setSlackCacheImageCodec(previous)
+  })
+
+  const params = {
+    path: 'grid/2026-10-04-x/after.png',
+    x: 3500,
+    y: 0,
+    width: 1000,
+    height: 500,
+    maxWidth: 8192
+  }
+
+  it('is registered, open to paired phones and advertised by its own capability', () => {
+    expect(RUNTIME_CAPABILITIES).toContain(NATIVE_CHAT_PROOF_IMAGE_REGION_RUNTIME_CAPABILITY)
+    expect(NATIVE_CHAT_PROOF_IMAGE_REGION_RUNTIME_CAPABILITY).toBe(
+      'native-chat.proof-image-region.v1'
+    )
+    expect(NATIVE_CHAT_PROOF_IMAGE_REGION_MOBILE_METHODS).toEqual(['nativeChat.proofImageRegion'])
+    for (const name of NATIVE_CHAT_PROOF_IMAGE_REGION_MOBILE_METHODS) {
+      expect(ALL_RPC_METHODS.some((method) => method.name === name)).toBe(true)
+      expect(isMobileRpcMethodAllowed(name)).toBe(true)
+    }
+  })
+
+  it('serves a clamped region through the host codec', async () => {
+    setSlackCacheImageCodec(codec)
+    const reply = parseNativeChatProofImageRegionReply(
+      await call('nativeChat.proofImageRegion', params)
+    )
+    expect(reply).toMatchObject({
+      ok: true,
+      sourceWidth: 4000,
+      sourceHeight: 3000,
+      x: 3500,
+      width: 500,
+      height: 500,
+      outputWidth: 500
+    })
+    expect(crops).toEqual([{ x: 3500, y: 0, width: 500, height: 500 }])
+  })
+
+  it('answers unavailable on a host without an image codec', async () => {
+    setSlackCacheImageCodec(null)
+    expect(await call('nativeChat.proofImageRegion', params)).toEqual({
+      ok: false,
+      reason: 'unavailable'
+    })
+  })
+
+  it('answers a typed refusal for a path outside the folder', async () => {
+    setSlackCacheImageCodec(codec)
+    expect(
+      await call('nativeChat.proofImageRegion', { ...params, path: '../../outside.png' })
+    ).toEqual({ ok: false, reason: 'invalid-path' })
+  })
+
+  it('rejects params outside the schema', async () => {
+    for (const bad of [
+      { ...params, path: '' },
+      { ...params, x: -1 },
+      { ...params, y: 1.5 },
+      { ...params, width: 0 },
+      { ...params, height: 2 ** 21 },
+      { ...params, maxWidth: 0 },
+      { path: params.path }
+    ]) {
+      expect(
+        await dispatcher().dispatch(request('nativeChat.proofImageRegion', bad))
+      ).toMatchObject({ ok: false })
     }
   })
 })

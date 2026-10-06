@@ -1,4 +1,9 @@
 import {
+  parseNativeChatProofImageRegionReply,
+  type NativeChatProofImageRegionReply,
+  type NativeChatProofImageRegionRequest
+} from '../../../../src/shared/native-chat-proof-image-region-contract'
+import {
   parseNativeChatProofImageReply,
   type NativeChatProofImageReply
 } from '../../../../src/shared/native-chat-proof-media-contract'
@@ -62,6 +67,16 @@ const proofMediaThumbnail = bindDeferredRpcOperation(
   })
 )
 
+const proofImageRegion = bindDeferredRpcOperation(
+  defineRpcOperation({
+    name: 'nativeChat.proof-image-region-or-null',
+    method: 'nativeChat.proofImageRegion',
+    acceptance: 'object-result-or-null',
+    barrier: 'after-caller-barrier',
+    read: alwaysCompatible('proof-image-region', parseNativeChatProofImageRegionReply)
+  })
+)
+
 const TIMEOUT_MS = 30_000
 const UNAVAILABLE = { ok: false, reason: 'unavailable' } as const
 
@@ -100,6 +115,32 @@ export function createMobileNativeChatProofMediaHost(
           proofMediaThumbnail.interpret(
             await proofMediaThumbnail.request(client, { path }, options)
           ) ?? UNAVAILABLE
+        )
+      } catch {
+        return UNAVAILABLE
+      }
+    }
+  }
+}
+
+/** The host calls zoomed detail needs, for a host advertising native-chat.proof-image-region.v1. */
+export type MobileNativeChatProofImageRegionHost = {
+  info: MobileNativeChatProofMediaHost['info']
+  region: (request: NativeChatProofImageRegionRequest) => Promise<NativeChatProofImageRegionReply>
+}
+
+/** Like the media host, every failure reads as 'unavailable'. */
+export function createMobileNativeChatProofImageRegionHost(
+  client: ProofMediaClient
+): MobileNativeChatProofImageRegionHost {
+  const options = { timeoutMs: TIMEOUT_MS, failWhenDisconnected: true }
+  return {
+    info: createMobileNativeChatProofMediaHost(client).info,
+    region: async (request) => {
+      try {
+        return (
+          proofImageRegion.interpret(await proofImageRegion.request(client, request, options)) ??
+          UNAVAILABLE
         )
       } catch {
         return UNAVAILABLE
