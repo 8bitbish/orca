@@ -98,6 +98,7 @@ export const RPC_SUBSCRIPTION_SITES: readonly RpcSubscriptionSite[] = [
   {
     file: 'src/session/mobile-terminal-message-queue-subscription.ts',
     method: 'terminalMessageQueue.subscribe',
+    release: 'params',
     coverage: { kind: 'unwritten-scenario' }
   },
   {
