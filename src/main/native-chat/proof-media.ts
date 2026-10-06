@@ -3,7 +3,7 @@
 // realpath and refused when it lands outside the folder, has the wrong extension,
 // is too large, or does not sniff as the kind of file it claims to be.
 
-import { open, realpath } from 'node:fs/promises'
+import { open, realpath, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import {
@@ -21,8 +21,18 @@ import {
   NATIVE_CHAT_PROOF_IMAGE_MAX_FILE_BYTES,
   NATIVE_CHAT_PROOF_MEDIA_MAX_FILE_BYTES
 } from '../../shared/native-chat-proof-media-rpc-contract'
-import type { NativeChatSlackImageVariant } from '../../shared/native-chat-slack-image-contract'
-import { readSlackCacheImage, type SlackCacheImageCodec } from './slack-cache-image'
+import {
+  NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_MAX_PIXELS,
+  NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_WIDTH,
+  type NativeChatSlackImageVariant
+} from '../../shared/native-chat-slack-image-contract'
+import { ProofImageCache, proofImageCacheKey } from './proof-image-cache'
+import {
+  readSlackCacheImage,
+  slackCacheImageCodec,
+  type SlackCacheDecodedImage,
+  type SlackCacheImageCodec
+} from './slack-cache-image'
 
 export const PROOF_IMAGE_MAX_FILE_BYTES = NATIVE_CHAT_PROOF_IMAGE_MAX_FILE_BYTES
 /** Recordings are meant to be under ~5 MB; this leaves room without letting a stray file through. */
@@ -94,6 +104,63 @@ const IMAGE_REFUSALS: Record<string, NativeChatProofMediaRefusal> = {
   'too-large-to-send': 'too-large'
 }
 
+type ProofImageSize = { width: number; height: number }
+
+/** Encoded thumbnails (each at most 1 MB): enough for a long chat's cards, a few tens of MB at most. */
+export const PROOF_THUMBNAIL_CACHE_LIMITS = { maxEntries: 48, maxBytes: 32 * 1024 * 1024 }
+const THUMBNAIL_KEY = `thumbnail:${NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_WIDTH}:${NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_MAX_PIXELS}`
+
+const thumbnails = new ProofImageCache<
+  Extract<NativeChatProofImageReply, { ok: true }>,
+  NativeChatProofImageReply
+>(PROOF_THUMBNAIL_CACHE_LIMITS, (reply) => reply.image.src.length)
+// Source sizes, so the full variant and the phone's info call need no decode once known.
+const sizes = new ProofImageCache<ProofImageSize>({ maxEntries: 512, maxBytes: 512 }, () => 1)
+
+/** Drops every cached thumbnail and size. Exported for tests. */
+export function clearProofImageCaches(): void {
+  thumbnails.clear()
+  sizes.clear()
+}
+
+export function knownProofImageSize(key: string): ProofImageSize | undefined {
+  return sizes.get(key)
+}
+
+export function rememberProofImageSize(key: string, size: ProofImageSize): void {
+  sizes.set(key, { width: size.width, height: size.height })
+}
+
+/** Answers `decode` from the remembered size and only decodes when pixels are actually needed. */
+function sizeMemoCodec(codec: SlackCacheImageCodec, key: string): SlackCacheImageCodec {
+  return {
+    decode: (bytes) => {
+      const known = sizes.get(key)
+      if (!known) {
+        const decoded = codec.decode(bytes)
+        if (decoded) {
+          rememberProofImageSize(key, decoded)
+        }
+        return decoded
+      }
+      let decoded: SlackCacheDecodedImage | null | undefined
+      const pixels = (): SlackCacheDecodedImage => {
+        decoded ??= codec.decode(bytes)
+        if (!decoded) {
+          throw new Error('proof image no longer decodes')
+        }
+        return decoded
+      }
+      return { ...known, resizeToWidth: (width) => pixels().resizeToWidth(width) }
+    }
+  }
+}
+
+async function fileKey(realPath: string): Promise<string | null> {
+  const info = await stat(realPath).catch(() => null)
+  return info?.isFile() ? proofImageCacheKey(realPath, info) : null
+}
+
 export async function readProofImage(args: {
   path: unknown
   variant: NativeChatSlackImageVariant
@@ -105,17 +172,41 @@ export async function readProofImage(args: {
   if (!resolved.ok) {
     return resolved
   }
+  const key = await fileKey(resolved.path)
+  if (key === null) {
+    return { ok: false, reason: 'missing' }
+  }
+  const baseCodec = args.codec === undefined ? slackCacheImageCodec() : args.codec
+  const codec = baseCodec ? sizeMemoCodec(baseCodec, key) : null
   // The Slack card reader already bounds, sniffs and thumbnails images in a folder.
-  const read = await readSlackCacheImage({
-    path: resolved.path,
-    variant: args.variant,
-    maxBytes: PROOF_IMAGE_MAX_FILE_BYTES,
-    root,
-    ...(args.codec === undefined ? {} : { codec: args.codec })
-  })
-  return read.ok
-    ? { ok: true, image: read.image }
-    : { ok: false, reason: IMAGE_REFUSALS[read.reason] ?? 'unavailable' }
+  const read = async (): Promise<NativeChatProofImageReply> => {
+    const image = await readSlackCacheImage({
+      path: resolved.path,
+      variant: args.variant,
+      maxBytes: PROOF_IMAGE_MAX_FILE_BYTES,
+      root,
+      codec
+    })
+    return image.ok
+      ? { ok: true, image: image.image }
+      : { ok: false, reason: IMAGE_REFUSALS[image.reason] ?? 'unavailable' }
+  }
+  if (args.variant !== 'thumbnail') {
+    // Full images go straight to the renderer; caching them would hold up to 10 MB each.
+    return read()
+  }
+  let changed = false
+  return thumbnails.getOrLoad(
+    `${key}\0${THUMBNAIL_KEY}`,
+    (cached) => cached,
+    async () => {
+      const reply = await read()
+      // A file written while it was read is answered but not cached under its old key.
+      changed = (await fileKey(resolved.path)) !== key
+      return reply
+    },
+    (reply) => (reply.ok && !changed ? reply : null)
+  )
 }
 
 export function sniffProofVideo(bytes: Buffer): NativeChatProofVideoMime | null {

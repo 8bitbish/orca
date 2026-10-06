@@ -25,13 +25,17 @@ const FULL_REENCODE_WIDTH = 2048
 
 export type SlackCacheImageMime = 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp'
 
+/** A decoded bitmap. `crop` takes source pixels; a codec without it cannot serve proof regions. */
+export type SlackCacheDecodedImage = {
+  width: number
+  height: number
+  resizeToWidth: (width: number) => { png: () => Buffer; jpeg: (quality: number) => Buffer }
+  crop?: (rect: { x: number; y: number; width: number; height: number }) => SlackCacheDecodedImage
+}
+
 /** Decodes and re-encodes images; Electron's nativeImage in the app, absent on a bare Node host. */
 export type SlackCacheImageCodec = {
-  decode: (bytes: Buffer) => {
-    width: number
-    height: number
-    resizeToWidth: (width: number) => { png: () => Buffer; jpeg: (quality: number) => Buffer }
-  } | null
+  decode: (bytes: Buffer) => SlackCacheDecodedImage | null
 }
 
 let registeredCodec: SlackCacheImageCodec | null = null
@@ -165,7 +169,7 @@ function result(
 
 /** Re-encodes to at most `width` wide; PNG keeps transparency when it is small enough. */
 function reencode(
-  decoded: NonNullable<ReturnType<SlackCacheImageCodec['decode']>>,
+  decoded: SlackCacheDecodedImage,
   mimeType: SlackCacheImageMime,
   width: number,
   maxBytes: number

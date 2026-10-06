@@ -1,9 +1,11 @@
 import { defineMethod } from '../core'
 import {
+  NativeChatProofImageRegion,
   NativeChatProofMediaInfo,
   NativeChatProofMediaRead,
   NativeChatProofMediaThumbnail
 } from '../../../../shared/rpc-contract/native-chat-proof-media-params'
+import { readProofImageRegion } from '../../../native-chat/proof-image-region'
 import { readProofImage } from '../../../native-chat/proof-media'
 import {
   readProofMediaChunk,
@@ -28,5 +30,11 @@ export const NATIVE_CHAT_PROOF_MEDIA_METHODS = [
     params: NativeChatProofMediaThumbnail,
     // Thumbnails are capped at 1 MB encoded, so the base64 reply fits any RPC content budget.
     handler: async (params) => readProofImage({ path: params.path, variant: 'thumbnail' })
+  }),
+  // Gated separately by native-chat.proof-image-region.v1; replies are capped at 1 MB encoded.
+  defineMethod({
+    name: 'nativeChat.proofImageRegion',
+    params: NativeChatProofImageRegion,
+    handler: async (params) => readProofImageRegion(params)
   })
 ]
