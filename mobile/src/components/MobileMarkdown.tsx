@@ -1,6 +1,5 @@
 import { openExternalLink } from '../platform/external-link'
 import { createMarkdownInlineMatcher, type MarkdownInlineMatch } from './markdown-inline-matcher'
-import { MobileSelectableText } from './MobileSelectableText'
 import { Fragment, memo, useContext, useMemo, type ReactNode } from 'react'
 import { Pressable, ScrollView, Text as NativeText, View } from 'react-native'
 import { normalizeMobileMarkdownPreviewHtml } from './mobile-markdown-preview-html'
@@ -24,6 +23,7 @@ import {
   MarkdownText,
   MarkdownTextContext
 } from './mobile-markdown-text'
+import { useMarkdownTextSetup } from './use-markdown-text-setup'
 import { MobileMarkupPreview } from './markup-preview/MobileMarkupPreview'
 import { MobileInlineCode } from './MobileInlineCode'
 import { mobileMarkupPreviewKind } from './markup-preview/mobile-markup-preview-kind'
@@ -37,6 +37,8 @@ type Props = {
   fallback?: string
   /** Enables iOS range selection for native-chat transcript prose. */
   rangeSelectable?: boolean
+  /** Forward long presses from interactive Android transcript spans to the message. */
+  onLongPress?: () => void
   /** Multiplier for prose font size (paragraphs, lists, quotes). Defaults to 1;
    *  the chat view passes >1 so agent prose reads larger than the compact base. */
   textScale?: number
@@ -219,6 +221,9 @@ function MobileMarkdownContent({
   markupPreviews = false
 }: Props) {
   const renderers = useContext(MobileMarkdownRenderersContext)
+  // Interactive children own their touches and must forward the row action.
+  const setup = useContext(MarkdownTextContext)
+  const rowLongPress = setup.androidTranscript ? setup.onLongPress : undefined
   const text = content?.trim() ?? ''
   const previewText = useMemo(() => normalizeMobileMarkdownPreviewHtml(text), [text])
   const blocks = useMemo(() => parseMobileMarkdown(previewText), [previewText])
@@ -319,6 +324,7 @@ function MobileMarkdownContent({
               key={index}
               style={styles.imageFrame}
               onPress={() => openMarkdownHref(block.url, onOpenFile)}
+              onLongPress={rowLongPress}
             >
               <NativeText style={styles.link}>{block.alt || 'Open image'}</NativeText>
               <NativeText style={styles.imageCaption} numberOfLines={1}>
@@ -411,9 +417,9 @@ function MobileMarkdownContent({
 }
 
 function MobileMarkdownInner(props: Props): React.JSX.Element | null {
-  const TextComponent = props.rangeSelectable ? MobileSelectableText : NativeText
+  const setup = useMarkdownTextSetup(props.rangeSelectable ?? false, props.onLongPress)
   return (
-    <MarkdownTextContext.Provider value={TextComponent}>
+    <MarkdownTextContext.Provider value={setup}>
       <MarkdownSelectableContext.Provider value={props.selectable !== false}>
         <MarkdownProseSizeContext.Provider value={13 * (props.textScale ?? 1)}>
           <MobileMarkdownContent {...props} />

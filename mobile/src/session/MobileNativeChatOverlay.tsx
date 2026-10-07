@@ -123,6 +123,7 @@ export function MobileNativeChatOverlay({
           folded={folded}
           status={session.status}
           error={session.error}
+          readFailedFinally={session.readFailedFinally === true}
           agent={controller.nativeChatAgent}
           agentWorking={controller.nativeChatAgentWorking}
           canStop={controller.nativeChatCanStop}

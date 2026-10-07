@@ -1,15 +1,30 @@
 import { createContext, createElement, useContext, type ComponentType } from 'react'
 import { Text as NativeText, type TextProps } from 'react-native'
 
-/** The Text a Markdown block draws with (iOS range selection swaps it). */
-export const MarkdownTextContext = createContext<ComponentType<TextProps>>(NativeText)
+export type MarkdownTextSetup = {
+  /** The Text a Markdown block draws with (iOS range selection swaps it). */
+  TextComponent: ComponentType<TextProps>
+  /** Disable native selection only within the Android transcript. */
+  androidTranscript: boolean
+  onLongPress?: () => void
+}
+export const MarkdownTextContext = createContext<MarkdownTextSetup>({
+  TextComponent: NativeText,
+  androidTranscript: false
+})
 /** False turns selection off for every run in the block, whatever the run asks for. */
 export const MarkdownSelectableContext = createContext(true)
 
 export function MarkdownText(props: TextProps): React.JSX.Element {
-  const TextComponent = useContext(MarkdownTextContext)
+  const { TextComponent, androidTranscript, onLongPress } = useContext(MarkdownTextContext)
   const selectable = useContext(MarkdownSelectableContext)
-  return createElement(TextComponent, selectable ? props : { ...props, selectable: false })
+  const selectionOff = !selectable || (androidTranscript && props.selectable === true)
+  // Override selection without changing the nested spans' inherited behavior.
+  return createElement(TextComponent, {
+    ...props,
+    ...(selectionOff ? { selectable: false } : {}),
+    ...(androidTranscript && onLongPress && props.onPress ? { onLongPress } : {})
+  })
 }
 
 /** The prose font size around an inline element, which Android does not pass into a View

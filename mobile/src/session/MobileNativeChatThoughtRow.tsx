@@ -4,7 +4,7 @@ import { formatNativeChatDuration } from '../../../src/shared/native-chat-turn-s
 import { MobileMarkdown } from '../components/MobileMarkdown'
 import { colors, spacing } from '../theme/mobile-theme'
 import { TEXT_SIZE } from './mobile-native-chat-message-styles'
-import { NATIVE_CHAT_TEXT_SELECTABLE } from './MobileNativeChatProseCopy'
+import { INLINE_TEXT_SELECTION } from '../components/inline-text-selection'
 
 export type MobileNativeChatThought = {
   /** Whole seconds the thought took, when the host's stamps can say. */
@@ -77,7 +77,7 @@ export function MobileNativeChatThoughtRow({
             content={markdown}
             textScale={fontScale}
             onOpenFile={onOpenFile}
-            selectable={NATIVE_CHAT_TEXT_SELECTABLE}
+            selectable={INLINE_TEXT_SELECTION}
           />
         </View>
       ) : null}

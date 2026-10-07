@@ -6,10 +6,6 @@ import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import { AGENT_SESSION_HOST_STATUS_COPY } from '../../../src/shared/agent-session-host-status-rows'
 import { colors } from '../theme/mobile-theme'
 
-vi.mock('./MobileNativeChatProseCopy', () => ({
-  MobileNativeChatProseCopy: ({ children }: { children: unknown }) => children,
-  NATIVE_CHAT_TEXT_SELECTABLE: true
-}))
 vi.mock('react-native', async () => {
   const React = await import('react')
   const Text = ({ children, ...props }: { children?: unknown }): unknown =>
@@ -26,6 +22,7 @@ vi.mock('react-native', async () => {
       timing: () => ({ start: vi.fn(), stop: vi.fn() })
     },
     Image: 'Image',
+    Platform: { OS: 'ios' },
     Pressable: 'Pressable',
     Text,
     View: ({ children, ...props }: { children?: unknown }) =>
@@ -44,6 +41,9 @@ vi.mock('lucide-react-native', () => ({
   ChevronRight: 'ChevronRight'
 }))
 vi.mock('../components/MobileMarkdown', () => ({ MobileMarkdown: 'MobileMarkdown' }))
+vi.mock('./MobileNativeChatMessageActionsSheet', () => ({
+  MobileNativeChatMessageActionsSheet: 'MessageActionsSheet'
+}))
 
 import { MobileNativeChatMessage } from './MobileNativeChatMessage'
 
