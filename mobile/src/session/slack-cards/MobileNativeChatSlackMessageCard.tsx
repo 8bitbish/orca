@@ -6,6 +6,10 @@ import {
   parseNativeChatSlackMessageCard,
   type NativeChatSlackMessageCard
 } from '../../../../src/shared/native-chat-slack-card-payload'
+import {
+  EMPTY_NATIVE_CHAT_SLACK_NAMES,
+  nativeChatSlackCardKnownNames
+} from '../../../../src/shared/native-chat-slack-names-contract'
 import { replaceSlackEmojiShortcodes } from '../../../../src/shared/slack-emoji-shortcodes'
 import {
   MobileNativeChatMessageIdContext,
@@ -23,6 +27,7 @@ import {
 } from './MobileNativeChatSlackCardParts'
 import { MobileNativeChatSlackImages } from './MobileNativeChatSlackImages'
 import { MobileNativeChatSlackMrkdwn } from './MobileNativeChatSlackMrkdwn'
+import { useMobileNativeChatSlackNames } from './use-mobile-native-chat-slack-names'
 
 export function mobileNativeChatSlackThreadLine(
   thread: NonNullable<NativeChatSlackMessageCard['thread']>
@@ -46,10 +51,18 @@ export function MobileNativeChatSlackMessageCard({
   const chat = useContext(MobileNativeChatProjectsContext)
   const messageId = useContext(MobileNativeChatMessageIdContext)
   const card = useMemo(() => parseNativeChatSlackMessageCard(source), [source])
+  const known = useMemo(
+    () =>
+      card
+        ? nativeChatSlackCardKnownNames({ people: [card.from], conversations: [card.channel] })
+        : EMPTY_NATIVE_CHAT_SLACK_NAMES,
+    [card]
+  )
+  const names = useMobileNativeChatSlackNames(card?.text ?? '', known)
   if (!card || !chat) {
     return <>{fallback}</>
   }
-  const workspace = cardWorkspace(card)
+  const workspace = { ...cardWorkspace(card), names }
   const cardKey = messageId === undefined ? null : nativeChatProjectCardKey(messageId, source)
   return (
     <View

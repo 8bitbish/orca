@@ -5,6 +5,10 @@ import {
   parseNativeChatSlackDraftCard,
   type NativeChatSlackDraftCard as SlackDraftCard
 } from '../../../../shared/native-chat-slack-card-payload'
+import {
+  EMPTY_NATIVE_CHAT_SLACK_NAMES,
+  nativeChatSlackCardKnownNames
+} from '../../../../shared/native-chat-slack-names-contract'
 import { NativeChatFencePreviewContext } from './native-chat-fence-preview'
 import { nativeChatProjectCardKey } from './native-chat-project-card-choice'
 import { NativeChatProjectReplyContext } from './native-chat-project-reply-context'
@@ -14,6 +18,7 @@ import {
   NativeChatSlackPersonChip
 } from './NativeChatSlackCardChips'
 import { NativeChatSlackText } from './NativeChatSlackText'
+import { useNativeChatSlackNames } from './use-native-chat-slack-names'
 
 function Recipients({ card }: { card: SlackDraftCard }): React.JSX.Element {
   return (
@@ -52,16 +57,25 @@ export function NativeChatSlackDraftCard({
   const card = useMemo(() => parseNativeChatSlackDraftCard(source), [source])
   const { messageId } = useContext(NativeChatFencePreviewContext)
   const channel = useContext(NativeChatProjectReplyContext)
+  const known = useMemo(
+    () =>
+      card
+        ? nativeChatSlackCardKnownNames({ people: [card.to], conversations: [card.channel] })
+        : EMPTY_NATIVE_CHAT_SLACK_NAMES,
+    [card]
+  )
+  const names = useNativeChatSlackNames(card?.text ?? '', known)
   const textOptions = useMemo(
     () =>
       card
         ? {
             teamId: card.teamId,
             domain: card.domain,
-            userNames: card.to?.userId ? { [card.to.userId]: card.to.name } : undefined
+            userNames: names.users,
+            channelNames: names.channels
           }
         : {},
-    [card]
+    [card, names]
   )
   if (!card) {
     return <>{fallback}</>

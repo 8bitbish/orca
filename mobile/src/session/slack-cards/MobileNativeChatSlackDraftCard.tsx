@@ -3,6 +3,10 @@ import { Text, View } from 'react-native'
 import { nativeChatProjectCardKey } from '../../../../src/shared/native-chat-project-card-choice'
 import { parseNativeChatSlackDraftCard } from '../../../../src/shared/native-chat-slack-card-payload'
 import {
+  EMPTY_NATIVE_CHAT_SLACK_NAMES,
+  nativeChatSlackCardKnownNames
+} from '../../../../src/shared/native-chat-slack-names-contract'
+import {
   MobileNativeChatMessageIdContext,
   MobileNativeChatProjectsContext
 } from '../project-cards/mobile-native-chat-project-context'
@@ -14,6 +18,7 @@ import {
   slackCardStyles as styles
 } from './MobileNativeChatSlackCardParts'
 import { MobileNativeChatSlackMrkdwn } from './MobileNativeChatSlackMrkdwn'
+import { useMobileNativeChatSlackNames } from './use-mobile-native-chat-slack-names'
 
 /**
  * A ```slack-draft fence: a reply the assistant drafted, shown as not sent. The UI
@@ -30,14 +35,22 @@ export function MobileNativeChatSlackDraftCard({
   const chat = useContext(MobileNativeChatProjectsContext)
   const messageId = useContext(MobileNativeChatMessageIdContext)
   const card = useMemo(() => parseNativeChatSlackDraftCard(source), [source])
+  const known = useMemo(
+    () =>
+      card
+        ? nativeChatSlackCardKnownNames({ people: [card.to], conversations: [card.channel] })
+        : EMPTY_NATIVE_CHAT_SLACK_NAMES,
+    [card]
+  )
+  const names = useMobileNativeChatSlackNames(card?.text ?? '', known)
   if (!card || !chat) {
     return <>{fallback}</>
   }
   const cardKey = messageId === undefined ? null : nativeChatProjectCardKey(messageId, source)
   const workspace =
     card.domain === undefined
-      ? { teamId: card.teamId }
-      : { teamId: card.teamId, domain: card.domain }
+      ? { teamId: card.teamId, names }
+      : { teamId: card.teamId, domain: card.domain, names }
   return (
     <View
       style={styles.card}

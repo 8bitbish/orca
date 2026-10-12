@@ -8,6 +8,10 @@ import type {
   NativeChatSlackImageResult
 } from '../../shared/native-chat-slack-image-contract'
 import type {
+  NativeChatSlackNamesRequest,
+  NativeChatSlackNamesResult
+} from '../../shared/native-chat-slack-names-contract'
+import type {
   NativeChatProofImageReply,
   NativeChatProofImageRequest,
   NativeChatProofVideoReply,
@@ -84,6 +88,8 @@ export type NativeChatApi = {
   /** A Slack card image from the slack-mcp cache on the chat's host; null when refused,
    *  missing, or the host predates the call. */
   slackImage: (request: NativeChatSlackImageRequest) => Promise<NativeChatSlackImageResult | null>
+  /** Names for unlabelled mention ids from the slack-mcp cache on the chat's host. */
+  slackNames: (request: NativeChatSlackNamesRequest) => Promise<NativeChatSlackNamesResult>
   /** Opens a Slack chip href (`slack-user:` etc.) in Slack; false when nothing opened. */
   openSlack: (href: string) => Promise<boolean>
   /** A proof card image from ~/.orca-personal/proof/ on this machine. */

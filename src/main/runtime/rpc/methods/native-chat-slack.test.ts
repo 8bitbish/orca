@@ -89,3 +89,36 @@ describe('nativeChat.slackImage', () => {
     }
   })
 })
+
+describe('nativeChat.slackNames', () => {
+  function namesRequest(params: unknown): RpcRequest {
+    return { id: 'req-2', authToken: 'tok', method: 'nativeChat.slackNames', params }
+  }
+
+  it('is registered, open to paired phones, and names ids from the host cache', async () => {
+    expect(ALL_RPC_METHODS.some((method) => method.name === 'nativeChat.slackNames')).toBe(true)
+    expect(isMobileRpcMethodAllowed('nativeChat.slackNames')).toBe(true)
+    writeFileSync(
+      path.join(home.dir, 'Library', 'Caches', 'slack-mcp', 'users.json'),
+      JSON.stringify({ UFAKE0010: { info: { name: 'Ada' } } })
+    )
+    const response = await dispatcher().dispatch(
+      namesRequest({ userIds: ['UFAKE0010', 'UFAKE0011'], channelIds: ['CFAKE0013'] })
+    )
+    expect(response).toMatchObject({
+      ok: true,
+      result: { users: { UFAKE0010: 'Ada' }, channels: {} }
+    })
+  })
+
+  it('rejects ids off the Slack grammar or too many of them', async () => {
+    for (const params of [
+      { userIds: ['../users'], channelIds: [] },
+      { userIds: [], channelIds: ['cfake'] },
+      { userIds: Array.from({ length: 51 }, (_, i) => `UFAKE${1000 + i}`), channelIds: [] },
+      { userIds: [] }
+    ]) {
+      expect(await dispatcher().dispatch(namesRequest(params))).toMatchObject({ ok: false })
+    }
+  })
+})

@@ -9,6 +9,16 @@ import {
   type SlackCacheDecodedImage,
   type SlackCacheImageCodec
 } from '../native-chat/slack-cache-image'
+import { readSlackCacheNames } from '../native-chat/slack-cache-names'
+import {
+  EMPTY_NATIVE_CHAT_SLACK_NAMES,
+  NATIVE_CHAT_SLACK_NAMES_MAX_IDS,
+  type NativeChatSlackNamesResult
+} from '../../shared/native-chat-slack-names-contract'
+import {
+  isNativeChatSlackConversationId,
+  isNativeChatSlackUserId
+} from '../../shared/native-chat-slack-ids'
 
 function decodedNativeImage(image: NativeImage): SlackCacheDecodedImage {
   const { width, height } = image.getSize()
@@ -33,6 +43,14 @@ const electronImageCodec: SlackCacheImageCodec = {
   }
 }
 
+function idList(value: unknown, isId: (id: unknown) => id is string): string[] | null {
+  return Array.isArray(value) &&
+    value.length <= NATIVE_CHAT_SLACK_NAMES_MAX_IDS &&
+    value.every(isId)
+    ? value
+    : null
+}
+
 async function openFirst(urls: readonly string[]): Promise<boolean> {
   for (const url of urls) {
     try {
@@ -45,8 +63,8 @@ async function openFirst(urls: readonly string[]): Promise<boolean> {
   return false
 }
 
-// Desktop side of Slack chips and cards: images from this machine's slack-mcp cache,
-// and opening a chip in Slack. Both take only validated, bounded inputs.
+// Desktop side of Slack chips and cards: images and mention names from this machine's
+// slack-mcp cache, and opening a chip in Slack. Both take only validated, bounded inputs.
 export function registerNativeChatSlackHandlers(): void {
   setSlackCacheImageCodec(electronImageCodec)
   ipcMain.handle(
@@ -64,6 +82,23 @@ export function registerNativeChatSlackHandlers(): void {
         maxBytes: SLACK_CACHE_IMAGE_MAX_FILE_BYTES
       })
       return read.ok ? read.image : null
+    }
+  )
+  ipcMain.handle(
+    'nativeChat:slackNames',
+    async (_event, args: unknown): Promise<NativeChatSlackNamesResult> => {
+      const request = typeof args === 'object' && args !== null ? args : {}
+      const userIds = idList(
+        'userIds' in request ? request.userIds : undefined,
+        isNativeChatSlackUserId
+      )
+      const channelIds = idList(
+        'channelIds' in request ? request.channelIds : undefined,
+        isNativeChatSlackConversationId
+      )
+      return userIds && channelIds
+        ? readSlackCacheNames({ userIds, channelIds })
+        : EMPTY_NATIVE_CHAT_SLACK_NAMES
     }
   )
   // Takes a chip href, never a URL, so the renderer cannot open anything but Slack.

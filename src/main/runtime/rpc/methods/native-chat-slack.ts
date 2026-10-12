@@ -1,10 +1,14 @@
 import { defineMethod } from '../core'
-import { NativeChatSlackImage } from '../../../../shared/rpc-contract/native-chat-slack-params'
+import {
+  NativeChatSlackImage,
+  NativeChatSlackNames
+} from '../../../../shared/rpc-contract/native-chat-slack-params'
 import { remoteRpcContentBudget } from '../../../../shared/remote-rpc-content-budget'
 import {
   readSlackCacheImage,
   SLACK_CACHE_IMAGE_MAX_FILE_BYTES
 } from '../../../native-chat/slack-cache-image'
+import { readSlackCacheNames } from '../../../native-chat/slack-cache-names'
 
 // Base64 inflates 4:3; the rest of the reply (mime, sizes, data: prefix) is small.
 const REPLY_OVERHEAD_BYTES = 1024
@@ -30,5 +34,11 @@ export const NATIVE_CHAT_SLACK_METHODS = [
       })
       return read.ok ? read.image : null
     }
+  }),
+  defineMethod({
+    name: 'nativeChat.slackNames',
+    params: NativeChatSlackNames,
+    // An old host answers method_not_found; clients then show mentions by id.
+    handler: async (params) => readSlackCacheNames(params)
   })
 ]

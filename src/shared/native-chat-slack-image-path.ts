@@ -4,8 +4,11 @@
 // part, so only the relative path ever travels to the host. The host still resolves
 // it with realpath and refuses anything that lands outside the folder.
 
-/** The cache folder under the host user's home directory. */
-export const SLACK_MCP_IMAGE_CACHE_HOME_RELATIVE = ['Library', 'Caches', 'slack-mcp', 'files']
+/** slack-mcp's cache folder under the host user's home directory. */
+export const SLACK_MCP_CACHE_HOME_RELATIVE = ['Library', 'Caches', 'slack-mcp']
+
+/** The image folder inside it. */
+export const SLACK_MCP_IMAGE_CACHE_HOME_RELATIVE = [...SLACK_MCP_CACHE_HOME_RELATIVE, 'files']
 
 export const NATIVE_CHAT_SLACK_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp']
 

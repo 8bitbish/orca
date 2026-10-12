@@ -4,11 +4,13 @@ import {
   parseSlackMrkdwn,
   type SlackMrkdwnNode
 } from '../../../../src/shared/native-chat-slack-mrkdwn'
+import type { NativeChatSlackNamesResult } from '../../../../src/shared/native-chat-slack-names-contract'
 import { openExternalLink } from '../../platform/external-link'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
 import { MobileNativeChatSlackTargetChip } from './MobileNativeChatSlackChip'
 
-type Workspace = { teamId: string; domain?: string }
+// `names` labels mentions that carry only an id.
+type Workspace = { teamId: string; domain?: string; names?: NativeChatSlackNamesResult }
 
 const COLLAPSED_LINES = 3
 // Above this the collapsed text is assumed to run past three lines.
@@ -75,7 +77,7 @@ function renderNode(node: SlackMrkdwnNode, key: string, workspace: Workspace): R
           key={key}
           raised
           textSize={typography.bodySize}
-          label={`@${node.label ?? node.userId}`}
+          label={`@${node.label ?? workspace.names?.users[node.userId] ?? node.userId}`}
           target={{ kind: 'user', teamId: workspace.teamId, userId: node.userId, ...domain }}
         />
       )
@@ -85,7 +87,7 @@ function renderNode(node: SlackMrkdwnNode, key: string, workspace: Workspace): R
           key={key}
           raised
           textSize={typography.bodySize}
-          label={`#${node.label ?? node.channelId}`}
+          label={`#${node.label ?? workspace.names?.channels[node.channelId] ?? node.channelId}`}
           target={{
             kind: 'channel',
             teamId: workspace.teamId,

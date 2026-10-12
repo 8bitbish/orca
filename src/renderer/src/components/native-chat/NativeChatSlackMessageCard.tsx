@@ -8,6 +8,10 @@ import {
   parseNativeChatSlackMessageCard,
   type NativeChatSlackMessageCard as SlackMessageCard
 } from '../../../../shared/native-chat-slack-card-payload'
+import {
+  EMPTY_NATIVE_CHAT_SLACK_NAMES,
+  nativeChatSlackCardKnownNames
+} from '../../../../shared/native-chat-slack-names-contract'
 import { replaceSlackEmojiShortcodes } from '../../../../shared/slack-emoji-shortcodes'
 import { NativeChatFencePreviewContext } from './native-chat-fence-preview'
 import { nativeChatProjectCardKey } from './native-chat-project-card-choice'
@@ -21,6 +25,7 @@ import {
 } from './NativeChatSlackCardChips'
 import { NativeChatSlackImages } from './NativeChatSlackImages'
 import { NativeChatSlackText } from './NativeChatSlackText'
+import { useNativeChatSlackNames } from './use-native-chat-slack-names'
 
 function SentAt({ sentAt }: { sentAt: string }): React.JSX.Element {
   const date = new Date(sentAt)
@@ -77,16 +82,25 @@ export function NativeChatSlackMessageCard({
   const { messageId } = useContext(NativeChatFencePreviewContext)
   const channel = useContext(NativeChatProjectReplyContext)
   const target = useMemo(() => (card ? nativeChatSlackMessageCardTarget(card) : null), [card])
+  const known = useMemo(
+    () =>
+      card
+        ? nativeChatSlackCardKnownNames({ people: [card.from], conversations: [card.channel] })
+        : EMPTY_NATIVE_CHAT_SLACK_NAMES,
+    [card]
+  )
+  const names = useNativeChatSlackNames(card?.text ?? '', known)
   const textOptions = useMemo(
     () =>
       card
         ? {
             teamId: card.teamId,
             domain: target?.domain,
-            userNames: card.from.userId ? { [card.from.userId]: card.from.name } : undefined
+            userNames: names.users,
+            channelNames: names.channels
           }
         : {},
-    [card, target]
+    [card, names, target]
   )
   if (!card || !target) {
     return <>{fallback}</>

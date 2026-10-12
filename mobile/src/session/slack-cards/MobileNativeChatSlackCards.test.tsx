@@ -118,8 +118,13 @@ afterEach(() => {
 async function render(
   node: ReactNode,
   value: MobileNativeChatProjects = chat(),
-  slack: MobileNativeChatSlack = { loadImage: async () => IMAGE }
+  slack: Partial<MobileNativeChatSlack> = {}
 ): Promise<ReactTestRenderer> {
+  const loaders: MobileNativeChatSlack = {
+    loadImage: async () => IMAGE,
+    loadNames: async () => ({ users: {}, channels: {} }),
+    ...slack
+  }
   await act(async () => {
     renderer = create(
       createElement(
@@ -127,7 +132,7 @@ async function render(
         { value },
         createElement(
           MobileNativeChatSlackContext.Provider,
-          { value: slack },
+          { value: loaders },
           createElement(MobileNativeChatMessageIdContext.Provider, { value: 'm1' }, node)
         )
       )

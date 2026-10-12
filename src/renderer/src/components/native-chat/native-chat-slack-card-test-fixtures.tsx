@@ -78,9 +78,34 @@ export function renderSlackFence(
   )
 }
 
+// What the host's slack-mcp cache knows, by id. Made up.
+export const SLACK_CACHE_NAMES: Record<string, string> = {
+  UFAKE0010: 'Ada',
+  UFAKE0011: 'Linus',
+  UFAKE0012: 'Grace',
+  CFAKE0013: 'launch'
+}
+
 export function stubSlackApi() {
   const api = {
     openSlack: vi.fn(async () => true),
+    slackNames: vi.fn(
+      async ({ userIds, channelIds }: { userIds: string[]; channelIds: string[] }) => {
+        const users: Record<string, string> = {}
+        const channels: Record<string, string> = {}
+        for (const id of userIds) {
+          if (SLACK_CACHE_NAMES[id]) {
+            users[id] = SLACK_CACHE_NAMES[id]
+          }
+        }
+        for (const id of channelIds) {
+          if (SLACK_CACHE_NAMES[id]) {
+            channels[id] = SLACK_CACHE_NAMES[id]
+          }
+        }
+        return { users, channels }
+      }
+    ),
     slackImage: vi.fn(async ({ path }: { path: string }) =>
       path.includes('missing')
         ? null

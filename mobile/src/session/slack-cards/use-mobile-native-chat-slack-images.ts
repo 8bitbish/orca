@@ -6,11 +6,12 @@ import type {
 import type { RpcClient } from '../../transport/rpc-client'
 import type { MobileNativeChatSlack } from './mobile-native-chat-slack-context'
 import { fetchMobileNativeChatSlackImage } from './mobile-native-chat-slack-image-operation'
+import { fetchMobileNativeChatSlackNames } from './mobile-native-chat-slack-names-operation'
 
 // Data URIs are large; keep only the few a scrolled transcript is likely to redraw.
 const MAX_CACHED = 24
 
-/** Image loads for one host's chat, shared across rows so a recycled row does not refetch. */
+/** Image and mention-name loads for one host's chat, shared across rows so a recycled row does not refetch. */
 export function useMobileNativeChatSlackImages(
   client: RpcClient | null,
   hostId: string
@@ -42,7 +43,11 @@ export function useMobileNativeChatSlackImages(
           cache.current.delete(cache.current.keys().next().value!)
         }
         return load
-      }
+      },
+      loadNames: (request) =>
+        client
+          ? fetchMobileNativeChatSlackNames(client, request)
+          : Promise.resolve({ users: {}, channels: {} })
     }
   }, [client, hostId])
 }

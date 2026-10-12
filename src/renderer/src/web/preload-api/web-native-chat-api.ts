@@ -2,6 +2,10 @@ import type { NativeChatApi, NativeChatAppendedMessages } from '../../../../prel
 import { buildNativeChatUnsubscribe } from '../../../../shared/native-chat-stream-unsubscribe'
 import { parseNativeChatSlackHref } from '../../../../shared/native-chat-slack-href'
 import { parseNativeChatSlackImageResult } from '../../../../shared/native-chat-slack-image-contract'
+import {
+  EMPTY_NATIVE_CHAT_SLACK_NAMES,
+  parseNativeChatSlackNamesResult
+} from '../../../../shared/native-chat-slack-names-contract'
 import { buildNativeChatSlackLinks } from '../../../../shared/native-chat-slack-links'
 import {
   parseRuntimeNativeChatReadSessionResult,
@@ -18,6 +22,10 @@ export function createWebNativeChatApi(): NativeChatApi {
       parseNativeChatSlackImageResult(
         await callRuntimeResult<unknown>('nativeChat.slackImage', request).catch(() => null)
       ),
+    slackNames: async (request) =>
+      parseNativeChatSlackNamesResult(
+        await callRuntimeResult<unknown>('nativeChat.slackNames', request).catch(() => null)
+      ) ?? EMPTY_NATIVE_CHAT_SLACK_NAMES,
     openSlack: async (href) => {
       const target = parseNativeChatSlackHref(href)
       if (!target) {

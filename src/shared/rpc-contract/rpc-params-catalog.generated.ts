@@ -359,7 +359,7 @@ import {
   NativeChatProofMediaRead,
   NativeChatProofMediaThumbnail
 } from './native-chat-proof-media-params'
-import { NativeChatSlackImage } from './native-chat-slack-params'
+import { NativeChatSlackImage, NativeChatSlackNames } from './native-chat-slack-params'
 import {
   NotificationGetMissedSinceParams,
   NotificationRegisterPushParams,
@@ -1013,6 +1013,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'nativeChat.proofMediaThumbnail': NativeChatProofMediaThumbnail,
   'nativeChat.readSession': NativeChatSession,
   'nativeChat.slackImage': NativeChatSlackImage,
+  'nativeChat.slackNames': NativeChatSlackNames,
   'nativeChat.subscribe': NativeChatSession,
   'nativeChat.unsubscribe': NativeChatUnsubscribe,
   'network.browserTunnel': BrowserNetworkTunnelAttachParams,
