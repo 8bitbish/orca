@@ -37,7 +37,9 @@ function readCatalogFile<T>(variable: string, key: string): T[] | null {
   const result =
     typeof parsed === 'object' && parsed !== null && 'result' in parsed ? parsed.result : parsed
   const rows =
-    typeof result === 'object' && result !== null && key in result ? Reflect.get(result, key) : null
+    typeof result === 'object' && result !== null
+      ? new Map<string, unknown>(Object.entries(result)).get(key)
+      : null
   return Array.isArray(rows) ? rows : null
 }
 

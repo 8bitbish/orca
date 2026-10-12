@@ -2,6 +2,7 @@ import { Image as ImageIcon, Loader2, Minus, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
+import { keepPreviewOpenForChatMenu } from './native-chat-image-copy'
 import { useNativeChatImageZoom } from './use-native-chat-image-zoom'
 
 const isMac = typeof navigator !== 'undefined' && navigator.userAgent.includes('Mac')
@@ -22,12 +23,14 @@ function ZoomableImage({
   src,
   label,
   onDismiss,
-  accessory
+  accessory,
+  copySrc
 }: {
   src: string
   label: string
   onDismiss: () => void
   accessory?: React.ReactNode
+  copySrc?: string
 }): React.JSX.Element {
   const zoom = useNativeChatImageZoom(onDismiss)
   const { view, image } = zoom
@@ -106,6 +109,7 @@ function ZoomableImage({
           src={src}
           alt={label}
           draggable={false}
+          data-native-chat-copy-image-src={copySrc}
           onLoad={zoom.onImageLoad}
           data-image-viewer-image=""
           className="absolute left-0 top-0 max-w-none origin-top-left"
@@ -133,7 +137,8 @@ export function NativeChatImagePreviewDialog({
   label,
   src,
   pendingLabel,
-  accessory
+  accessory,
+  copySrc
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -143,12 +148,15 @@ export function NativeChatImagePreviewDialog({
   pendingLabel?: string
   /** Extra header controls, such as a before/after switch. */
   accessory?: React.ReactNode
+  /** The chat menu's Copy Image source for the shown image. */
+  copySrc?: string
 }): React.JSX.Element {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
         data-native-chat-image-viewer=""
+        onInteractOutside={keepPreviewOpenForChatMenu}
         onOpenAutoFocus={(event) => {
           // The image surface takes focus so the zoom keys work straight away.
           const surface = document.querySelector<HTMLElement>(
@@ -169,6 +177,7 @@ export function NativeChatImagePreviewDialog({
             src={src}
             label={label}
             accessory={accessory}
+            copySrc={copySrc}
             onDismiss={() => onOpenChange(false)}
           />
         ) : (

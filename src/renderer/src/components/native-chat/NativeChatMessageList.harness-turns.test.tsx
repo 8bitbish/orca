@@ -164,7 +164,6 @@ describe('terminal-backed transcript with background-task notifications', () => 
         session={session}
         isWorking={false}
         expandSignal={false}
-        fontScale={1}
         settledTurns={nativeChatTranscriptSettledTurns(session.messages)}
       />
     )
@@ -193,7 +192,6 @@ describe('terminal-backed transcript with background-task notifications', () => 
         isWorking
         workingStartedAt={startedAt}
         expandSignal={false}
-        fontScale={1}
         settledTurns={nativeChatTranscriptSettledTurns(upToNotification)}
       />
     )

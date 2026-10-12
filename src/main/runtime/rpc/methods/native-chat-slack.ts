@@ -24,6 +24,7 @@ function maxImageBytes(requestId: string | undefined): number {
 export const NATIVE_CHAT_SLACK_METHODS = [
   defineMethod({
     name: 'nativeChat.slackImage',
+    permission: 'workspace',
     params: NativeChatSlackImage,
     // Null for any refusal: an old host answers method_not_found, and clients show no image either way.
     handler: async (params, { requestId }) => {
@@ -37,6 +38,7 @@ export const NATIVE_CHAT_SLACK_METHODS = [
   }),
   defineMethod({
     name: 'nativeChat.slackNames',
+    permission: 'workspace',
     params: NativeChatSlackNames,
     // An old host answers method_not_found; clients then show mentions by id.
     handler: async (params) => readSlackCacheNames(params)

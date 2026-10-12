@@ -2,7 +2,7 @@
 // install build B from the fork, then report the version on disk. See DECISIONS.md.
 // Usage: PLAYWRIGHT_PATH=$(node -p 'require.resolve("playwright")') node personal-build/verify-update.cjs <A.app>
 const { _electron } = require(process.env.PLAYWRIGHT_PATH)
-const { mkdtempSync, readFileSync } = require('node:fs')
+const { mkdtempSync } = require('node:fs')
 const { execFileSync } = require('node:child_process')
 const os = require('node:os')
 const path = require('node:path')
@@ -18,7 +18,7 @@ async function main() {
   require('node:fs').mkdirSync(home, { recursive: true })
   const before = plistVersion()
   console.log('on disk before:', before)
-  const { ELECTRON_RUN_AS_NODE, ...env } = process.env
+  const { ELECTRON_RUN_AS_NODE: _electronRunAsNode, ...env } = process.env
   const app = await _electron.launch({
     executablePath: path.join(appPath, 'Contents/MacOS/Orca'),
     // The isolated HOME has no Keychain; without this macOS prompts to create one.
@@ -30,11 +30,17 @@ async function main() {
   let page = null
   for (let i = 0; i < 120 && !page; i++) {
     for (const w of app.windows()) {
-      if (await w.evaluate(() => Boolean(window.api?.updater)).catch(() => false)) page = w
+      if (await w.evaluate(() => Boolean(window.api?.updater)).catch(() => false)) {
+        page = w
+      }
     }
-    if (!page) await new Promise((r) => setTimeout(r, 1000))
+    if (!page) {
+      await new Promise((r) => setTimeout(r, 1000))
+    }
   }
-  if (!page) throw new Error('no window exposes window.api.updater')
+  if (!page) {
+    throw new Error('no window exposes window.api.updater')
+  }
   console.log('running version:', await page.evaluate(() => window.api.updater.getVersion()))
 
   const statuses = []
@@ -47,7 +53,9 @@ async function main() {
     const end = Date.now() + ms
     while (Date.now() < end) {
       const s = await page.evaluate(() => window.api.updater.getStatus())
-      if (states.includes(s.state)) return s
+      if (states.includes(s.state)) {
+        return s
+      }
       await new Promise((r) => setTimeout(r, 1000))
     }
     throw new Error(`timed out waiting for ${states.join('/')}; last: ${JSON.stringify(statuses.at(-1))}`)
@@ -56,11 +64,15 @@ async function main() {
   await page.evaluate(() => window.api.updater.check())
   const found = await waitFor(['available', 'not-available', 'error'], 120_000)
   console.log('check result:', JSON.stringify(found))
-  if (found.state !== 'available') throw new Error('no update offered')
+  if (found.state !== 'available') {
+    throw new Error('no update offered')
+  }
   await page.evaluate(() => window.api.updater.download())
   const downloaded = await waitFor(['downloaded', 'error'], 600_000)
   console.log('download result:', JSON.stringify(downloaded))
-  if (downloaded.state !== 'downloaded') throw new Error('download failed')
+  if (downloaded.state !== 'downloaded') {
+    throw new Error('download failed')
+  }
 
   const closed = new Promise((r) => app.process().once('exit', r))
   page.evaluate(() => window.api.updater.quitAndInstall()).catch(() => {})

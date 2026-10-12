@@ -1,8 +1,7 @@
 import { openExternalLink } from '../platform/external-link'
 import { createMarkdownInlineMatcher, type MarkdownInlineMatch } from './markdown-inline-matcher'
-import { Fragment, memo, useContext, useMemo, type ReactNode } from 'react'
+import { Fragment, memo, useContext, type ReactNode } from 'react'
 import { Pressable, ScrollView, Text as NativeText, View } from 'react-native'
-import { normalizeMobileMarkdownPreviewHtml } from './mobile-markdown-preview-html'
 import { styles } from './mobile-markdown-styles'
 import {
   detectFilePathSegments,
@@ -15,7 +14,8 @@ import {
   trimAutolinkTrailingPunctuation
 } from './markdown-inline-token-rules'
 import { isMobileMermaidLanguage } from './mobile-mermaid-language'
-import { parseMobileMarkdown } from './mobile-markdown-parser'
+import { useMobileMarkdownBlocks } from './use-mobile-markdown-blocks'
+import type { NativeChatVisualDirective } from '../../../src/shared/native-chat-visual-directive'
 import { MermaidDiagram } from './pr-sidebar/MermaidDiagram'
 import {
   MarkdownProseSizeContext,
@@ -24,9 +24,11 @@ import {
   MarkdownTextContext
 } from './mobile-markdown-text'
 import { useMarkdownTextSetup } from './use-markdown-text-setup'
-import { MobileMarkupPreview } from './markup-preview/MobileMarkupPreview'
 import { MobileInlineCode } from './MobileInlineCode'
-import { mobileMarkupPreviewKind } from './markup-preview/mobile-markup-preview-kind'
+import {
+  mobileMarkdownMarkupPreview,
+  mobileMarkdownRenderedFence
+} from './mobile-markdown-agent-fences'
 import {
   MobileMarkdownRenderersContext,
   type MobileMarkdownLinkRenderer
@@ -52,6 +54,9 @@ type Props = {
   /** False turns off text selection everywhere in this block (a scrolling transcript on
    *  Android, where a drag over selectable text starts a selection). */
   selectable?: boolean
+  /** Native-chat assistant prose only: renders `::orca-visual{...}` directive lines. Without it,
+   *  a directive line is ordinary text. Must be referentially stable (this component is memoized). */
+  renderVisual?: (directive: NativeChatVisualDirective, index: number) => ReactNode
 }
 
 const MAX_TABLE_ROWS = 40
@@ -218,15 +223,15 @@ function MobileMarkdownContent({
   rangeSelectable = false,
   textScale = 1,
   onOpenFile,
-  markupPreviews = false
+  markupPreviews = false,
+  renderVisual
 }: Props) {
   const renderers = useContext(MobileMarkdownRenderersContext)
   // Interactive children own their touches and must forward the row action.
   const setup = useContext(MarkdownTextContext)
   const rowLongPress = setup.androidTranscript ? setup.onLongPress : undefined
   const text = content?.trim() ?? ''
-  const previewText = useMemo(() => normalizeMobileMarkdownPreviewHtml(text), [text])
-  const blocks = useMemo(() => parseMobileMarkdown(previewText), [previewText])
+  const { blocks, directives } = useMobileMarkdownBlocks(text, renderVisual !== undefined)
   // Scale prose sizes; inline spans inherit fontSize from the wrapping Text.
   const scaled = (size: number): { fontSize: number; lineHeight: number } | null =>
     textScale !== 1 ? { fontSize: size * textScale, lineHeight: (size + 6) * textScale } : null
@@ -246,6 +251,14 @@ function MobileMarkdownContent({
   return (
     <View style={styles.root}>
       {blocks.map((block, index) => {
+        if (block.type === 'visual') {
+          const directive = directives[block.index]
+          return directive && renderVisual ? (
+            <Fragment key={`visual:${block.index}:${directive.file}`}>
+              {renderVisual(directive, block.index)}
+            </Fragment>
+          ) : null
+        }
         if (block.type === 'heading') {
           return (
             <MarkdownText
@@ -270,19 +283,11 @@ function MobileMarkdownContent({
           // Mermaid fences render as diagrams (WebView), not as raw code — same as PR sidebar.
           // Unclosed fences are still streaming: mounting the WebView per tick would
           // reload its document up to 20x/sec, so they stay raw code until terminated.
-          const markupKind =
-            markupPreviews && block.closed ? mobileMarkupPreviewKind(block.language) : null
-          if (markupKind) {
-            const previewKey = `${markupKind}:${block.text}`
-            const occurrence = markupSourceOccurrences.get(previewKey) ?? 0
-            markupSourceOccurrences.set(previewKey, occurrence + 1)
-            return (
-              <MobileMarkupPreview
-                key={`${previewKey}:${occurrence}`}
-                source={block.text}
-                kind={markupKind}
-              />
-            )
+          const markup = markupPreviews
+            ? mobileMarkdownMarkupPreview(block, markupSourceOccurrences)
+            : null
+          if (markup) {
+            return markup
           }
           if (isMobileMermaidLanguage(block.language) && block.closed) {
             const occurrence = mermaidSourceOccurrences.get(block.text) ?? 0
@@ -305,17 +310,14 @@ function MobileMarkdownContent({
               </MarkdownText>
             </View>
           )
-          const fenceKey = `${block.language ?? ''}:${block.text}`
-          const occurrence = markupSourceOccurrences.get(fenceKey) ?? 0
-          markupSourceOccurrences.set(fenceKey, occurrence + 1)
-          const rendered =
-            markupPreviews && block.closed
-              ? renderers.renderFence?.(
-                  { language: block.language, text: block.text },
-                  codeBlock,
-                  `${fenceKey}:${occurrence}`
-                )
-              : null
+          const rendered = markupPreviews
+            ? mobileMarkdownRenderedFence(
+                block,
+                codeBlock,
+                markupSourceOccurrences,
+                renderers.renderFence
+              )
+            : null
           return rendered ?? codeBlock
         }
         if (block.type === 'image') {

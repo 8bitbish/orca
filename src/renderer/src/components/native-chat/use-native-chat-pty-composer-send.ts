@@ -13,7 +13,6 @@ import { sendNativeChatMessageWithImageAttachments } from './native-chat-runtime
 import { resolveNativeChatLaunchDraftSend } from './native-chat-launch-draft-send'
 import { nativeChatComposerTargetIsRemote } from './native-chat-composer-target'
 import type { NativeChatResolvedTarget } from './native-chat-composer-target'
-import { pushHistory, type HistoryState } from './native-chat-composer-state'
 import { isSlashCommandDraft } from '../../../../shared/native-chat-slash-commands'
 import type { NativeChatPickerState } from './use-native-chat-picker-state'
 import type { NativeChatSendLifecycle } from './use-native-chat-send-lifecycle'
@@ -22,6 +21,10 @@ import type {
   NativeChatComposerQueue,
   NativeChatOptimisticSendOutcome
 } from './native-chat-composer-types'
+import {
+  answerNativeChatCommandInComposer,
+  type NativeChatLocalCommandAnswer
+} from './use-native-chat-local-command-answer'
 
 type PtyComposerSendArgs = {
   agent: AgentType
@@ -36,16 +39,17 @@ type PtyComposerSendArgs = {
   classifySend: NativeChatPickerState['classifySend']
   onOptimisticSend?: (text: string, imagePaths?: string[]) => string | undefined
   optimisticSendOutcome?: NativeChatOptimisticSendOutcome
-  onSlashCommand?: (command: string) => void
+  onSlashCommand?: (command: string, output?: string) => void
+  answerCommandLocally?: NativeChatLocalCommandAnswer
+  onSubmitted?: () => void
   sessionOptionsSurface: NativeChatPtySessionOptionsSurface | null
   terminalTabId: string
   trackPendingSend: NativeChatSendLifecycle['trackPendingSend']
-  setHistory: Dispatch<SetStateAction<HistoryState>>
   setDraft: (value: string) => void
   setCaret: Dispatch<SetStateAction<number>>
   clearSkillOrigin: () => void
   clearImageAttachments: () => void
-  setNotice: Dispatch<SetStateAction<string | null>>
+  setNotice: (notice: string | null) => void
   /** Present when the host holds mid-turn prompts; absent keeps every send direct, as before. */
   queue?: NativeChatComposerQueue | null
 }
@@ -71,6 +75,14 @@ export function useNativeChatPtyComposerSend(
         return false
       }
       const classification = args.classifySend(text)
+      // A card reply is never a composer-answered command; only the typed draft can be.
+      if (
+        reply === undefined &&
+        classification === 'command' &&
+        answerNativeChatCommandInComposer(args)
+      ) {
+        return true
+      }
       const queue = args.queue
       if (classification === 'chat' && queue?.willQueue) {
         // Why: typed into a mid-turn TUI, the prompt is absorbed into the running turn. The host
@@ -81,11 +93,11 @@ export function useNativeChatPtyComposerSend(
             sendNow(args, target, text, imagePaths, classification)
           }
         })
-        finishSend(args, text, reply)
+        finishSend(args, reply)
         return true
       }
       sendNow(args, target, text, imagePaths, classification)
-      finishSend(args, text, reply)
+      finishSend(args, reply)
       return true
     },
     [args]
@@ -165,8 +177,8 @@ function sendNow(
   useAppStore.getState().clearNativeChatLaunchDraft(args.terminalTabId)
 }
 
-function finishSend(args: PtyComposerSendArgs, text: string, reply: string | undefined): void {
-  args.setHistory((previous) => pushHistory(previous, text))
+function finishSend(args: PtyComposerSendArgs, reply: string | undefined): void {
+  args.onSubmitted?.()
   if (reply !== undefined) {
     return
   }

@@ -108,7 +108,8 @@ export function useMobileNativeChatMessageSend(args: {
       images: string[] | undefined,
       syncComposer: boolean,
       recordControlSend: boolean,
-      sharedDeadline?: number
+      sharedDeadline?: number,
+      requireWriteSettlement?: true
     ): Promise<MobileNativeChatSendOutcome> => {
       // The host writes trailing whitespace verbatim onto the agent's input line,
       // where it can glue the next rapid send onto this one (#14262). Only the
@@ -215,6 +216,7 @@ export function useMobileNativeChatMessageSend(args: {
             client,
             terminal: handle,
             command: text,
+            ...(requireWriteSettlement ? { requireWriteSettlement } : {}),
             ...(resolvedLaunchDraft ? { resolvedLaunchDraft } : {}),
             ...(mobileClient ? { mobileClient } : {}),
             deadline
@@ -223,6 +225,7 @@ export function useMobileNativeChatMessageSend(args: {
             client,
             terminal: handle,
             text,
+            ...(requireWriteSettlement ? { requireWriteSettlement } : {}),
             ...(resolvedLaunchDraft ? { resolvedLaunchDraft } : {}),
             deadline,
             ...(mobileClient ? { mobileClient } : {})
@@ -304,7 +307,7 @@ export function useMobileNativeChatMessageSend(args: {
         return false
       }
       try {
-        return (await sendMessage(text, undefined, false, true)) !== 'rejected'
+        return (await sendMessage(text, undefined, false, true, undefined, true)) === 'accepted'
       } finally {
         if (terminal) {
           releaseMobileNativeChatTerminalWrite(terminal)

@@ -4,21 +4,21 @@ import type {
   NativeChatComposerHandle,
   NativeChatStructuredComposerTransport
 } from './native-chat-composer-types'
-import type { NativeChatComposerImageAttachment } from './NativeChatComposerField'
 import {
   useNativeChatComposerPaste,
   type UseNativeChatComposerPasteArgs
 } from './use-native-chat-composer-paste'
 import { useNativeChatTypedInsertion } from './use-native-chat-typed-insertion'
+import {
+  useNativeChatStructuredComposerSend,
+  type UseNativeChatStructuredComposerSendArgs
+} from './use-native-chat-structured-composer-send'
 
 type UseNativeChatComposerHandleArgs = Parameters<typeof useNativeChatTypedInsertion>[0] &
   Omit<UseNativeChatComposerPasteArgs, 'insertTypedText'> & {
     sendPty: (reply?: string) => boolean
-    sendStructured: (
-      text: string,
-      attachments?: readonly NativeChatComposerImageAttachment[],
-      options?: { keepDraft?: boolean }
-    ) => void
+    /** A card's reply goes straight out and leaves the draft, past the held queue's question. */
+    structuredSendArgs: UseNativeChatStructuredComposerSendArgs
     structuredTransport: NativeChatStructuredComposerTransport | undefined
   }
 
@@ -33,23 +33,23 @@ export function useNativeChatComposerHandle(
     textareaRef,
     draft,
     setDraft,
-    setHistory,
     setActiveSuggestion,
     sendPty,
-    sendStructured,
+    structuredSendArgs,
     structuredTransport,
     ...pasteArgs
   } = args
   const { disabled, attachResolvedPaths, setCaret } = pasteArgs
-  const { insertTypedText, insertPastedText, focus, contains } = useNativeChatTypedInsertion({
-    textareaRef,
-    caret: args.caret,
-    draft,
-    setDraft,
-    setCaret,
-    setHistory,
-    setActiveSuggestion
-  })
+  const sendStructured = useNativeChatStructuredComposerSend(structuredSendArgs)
+  const { insertTypedText, appendText, acceptsText, insertPastedText, focus, contains } =
+    useNativeChatTypedInsertion({
+      textareaRef,
+      caret: args.caret,
+      draft,
+      setDraft,
+      setCaret,
+      setActiveSuggestion
+    })
 
   const { handlePaste: handlePasteEvent, pasteFromClipboard } = useNativeChatComposerPaste({
     ...pasteArgs,
@@ -65,7 +65,7 @@ export function useNativeChatComposerHandle(
       if (disabled || text.trim() === '') {
         return false
       }
-      sendStructured(text, [], { keepDraft: true })
+      void sendStructured(text, [], undefined, { keepDraft: true })
       return true
     },
     [disabled, sendPty, sendStructured, structuredTransport]
@@ -88,6 +88,8 @@ export function useNativeChatComposerHandle(
     () => ({
       focus,
       insertTypedText,
+      acceptsText,
+      appendText,
       handlePasteEvent,
       pasteFromClipboard,
       contains,
@@ -97,6 +99,8 @@ export function useNativeChatComposerHandle(
     [
       focus,
       insertTypedText,
+      acceptsText,
+      appendText,
       handlePasteEvent,
       pasteFromClipboard,
       contains,

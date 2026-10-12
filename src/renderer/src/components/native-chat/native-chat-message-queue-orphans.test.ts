@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { findVanishedQueueItems } from './native-chat-message-queue-orphans'
 
-const queued = (id: string, extra: object = {}) => ({
+const queued = (id: string, extra: Readonly<Record<string, unknown>> = {}) => ({
   id,
   text: id,
   queuedAt: 1,

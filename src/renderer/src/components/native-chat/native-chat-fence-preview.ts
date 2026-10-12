@@ -119,6 +119,10 @@ export function nativeChatFenceRoute({
       ? 'shell-run'
       : 'code'
   }
+  // Paced replies reveal a finished fence a little at a time; until all of it shows, it is code.
+  if (scope.fenceBodies && !scope.fenceBodies.some((body) => sameFenceBody(body, code))) {
+    return 'code'
+  }
   if (normalized === 'mermaid') {
     return 'mermaid'
   }

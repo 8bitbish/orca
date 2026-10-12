@@ -40,7 +40,6 @@ function harness(draft: string, queue: NativeChatComposerQueue | null) {
       sessionOptionsSurface: null,
       terminalTabId: 'tab-1',
       trackPendingSend: vi.fn(),
-      setHistory: vi.fn(),
       setDraft,
       setCaret: vi.fn(),
       clearSkillOrigin: vi.fn(),

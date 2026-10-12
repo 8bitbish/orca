@@ -1,4 +1,4 @@
-import { OrcaRuntimeWithResolveWaiter } from './orca-runtime-resolve-waiter'
+import { OrcaRuntimeWithMigrationCatalog } from './orca-runtime-migration-catalog'
 import {
   TerminalMessageQueueHost,
   type ResolvedTerminalMessageQueueTarget,
@@ -16,7 +16,7 @@ import type { PtyIncarnationId } from '../../shared/pty-incarnation'
 import type { TerminalExitCause } from '../../shared/terminal-exit-cause'
 
 /** Hosts the per-terminal message queue next to the PTYs it writes to. */
-export class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeWithResolveWaiter {
+export class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeWithMigrationCatalog {
   readonly terminalMessageQueue = new TerminalMessageQueueHost(
     {
       resolveTarget: (ref) => this.resolveTerminalMessageQueueTarget(ref),

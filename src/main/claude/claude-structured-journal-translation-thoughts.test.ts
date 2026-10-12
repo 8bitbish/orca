@@ -51,8 +51,18 @@ describe('Claude thinking with no text', () => {
     )
 
     expect(reasoningBodies(state.items)).toEqual([
-      { kind: 'message', role: 'reasoning', blocks: [{ type: 'text', text: '' }] },
-      { kind: 'message', role: 'reasoning', blocks: [{ type: 'text', text: '' }] }
+      {
+        kind: 'message',
+        role: 'reasoning',
+        blocks: [{ type: 'text', text: '' }],
+        state: 'completed'
+      },
+      {
+        kind: 'message',
+        role: 'reasoning',
+        blocks: [{ type: 'text', text: '' }],
+        state: 'completed'
+      }
     ])
     // Modeled content: no "Claude sent content Orca cannot display yet" fallback row.
     expect(state.items.some((item) => item.body.kind === 'status')).toBe(false)
@@ -71,7 +81,8 @@ describe('Claude thinking with no text', () => {
       {
         kind: 'message',
         role: 'reasoning',
-        blocks: [{ type: 'text', text: 'Check the parser first.' }]
+        blocks: [{ type: 'text', text: 'Check the parser first.' }],
+        state: 'completed'
       }
     ])
   })

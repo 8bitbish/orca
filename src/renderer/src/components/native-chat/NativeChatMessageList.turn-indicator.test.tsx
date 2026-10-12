@@ -85,7 +85,6 @@ describe('NativeChatMessageList turn indicator', () => {
         }}
         isWorking
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -125,7 +124,6 @@ describe('NativeChatMessageList turn indicator', () => {
         }}
         isWorking
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -169,7 +167,6 @@ describe('NativeChatMessageList turn indicator', () => {
         isWorking
         awaitingInput="shown"
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -200,7 +197,6 @@ describe('NativeChatMessageList turn indicator', () => {
         workingStartedAt={Date.now() - 5000}
         awaitingInput="unshown"
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -242,7 +238,6 @@ describe('NativeChatMessageList turn indicator', () => {
         isWorking
         turnActivity={{ kind: 'description', text: 'Preparing the answer' }}
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -263,7 +258,6 @@ describe('NativeChatMessageList turn indicator', () => {
         isWorking={false}
         turnActivity={{ kind: 'description', text: 'Preparing the answer' }}
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -305,12 +299,7 @@ describe('NativeChatMessageList turn indicator', () => {
       transcriptLifecycle: { state: 'working', turnId: user.id, timestamp: 1 }
     }
     const rendered = render(
-      <NativeChatMessageList
-        session={bridgeSession}
-        isWorking={false}
-        expandSignal={false}
-        fontScale={1}
-      />
+      <NativeChatMessageList session={bridgeSession} isWorking={false} expandSignal={false} />
     )
 
     expect(screen.getByText('Awaiting user input:')).toBeInTheDocument()
@@ -335,7 +324,6 @@ describe('NativeChatMessageList turn indicator', () => {
         }}
         isWorking={false}
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -363,7 +351,6 @@ describe('NativeChatMessageList turn indicator', () => {
         journalItems={[journalItem(1, turnItem), journalItem(2, reasoningRow)]}
         isWorking
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -378,46 +365,6 @@ describe('NativeChatMessageList turn indicator', () => {
       'animate-spin'
     )
     expect(container.querySelector('.animate-bounce')).toBeNull()
-  })
-
-  it('lets a live thought row carry "Thinking…" while the indicator keeps its clock', () => {
-    const now = Date.now()
-    render(
-      <NativeChatMessageList
-        session={{
-          ...session,
-          agent: 'claude',
-          status: 'working',
-          messages: [
-            {
-              id: 'user-thinking',
-              role: 'user',
-              blocks: [{ type: 'text', text: 'Start the task' }],
-              timestamp: now,
-              source: 'transcript'
-            },
-            {
-              id: 'item-2',
-              role: 'reasoning',
-              blocks: [{ type: 'text', text: 'Considering the layout.' }],
-              timestamp: now + 1,
-              source: 'transcript'
-            }
-          ]
-        }}
-        journalItems={[journalItem(1, turnItem), journalItem(2, reasoningRow)]}
-        isWorking
-        expandSignal={false}
-        fontScale={1}
-      />
-    )
-
-    expect(screen.getByRole('button', { name: 'Thinking…' })).toHaveAttribute(
-      'aria-expanded',
-      'false'
-    )
-    expect(screen.queryByText('Thinking')).toBeNull()
-    expect(screen.getByText(/^Working for/)).toBeInTheDocument()
   })
 
   it('does not reuse completed-turn reasoning while the next dispatch is pending', () => {
@@ -442,7 +389,6 @@ describe('NativeChatMessageList turn indicator', () => {
         ]}
         isWorking
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -470,7 +416,6 @@ describe('NativeChatMessageList turn indicator', () => {
         turnActivity={{ kind: 'description', text: 'Exploring the repo layout' }}
         isWorking
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -505,7 +450,6 @@ describe('NativeChatMessageList turn indicator', () => {
         }}
         isWorking
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -557,7 +501,6 @@ describe('NativeChatMessageList turn indicator', () => {
         isWorking
         workingStartedAt={Date.now() - 3000}
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -592,7 +535,6 @@ describe('NativeChatMessageList turn indicator', () => {
         isWorking
         workingStartedAt={startedAt}
         expandSignal={false}
-        fontScale={1}
       />
     )
     // The live bar sits where the settled one will, so settling never moves it.
@@ -607,7 +549,6 @@ describe('NativeChatMessageList turn indicator', () => {
         isWorking={false}
         workingStartedAt={null}
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -640,7 +581,6 @@ describe('NativeChatMessageList turn indicator', () => {
         isWorking
         workingStartedAt={Date.now()}
         expandSignal={false}
-        fontScale={1}
       />
     )
 
@@ -716,7 +656,6 @@ describe('NativeChatMessageList turn indicator', () => {
           session={{ ...session, status: 'working', messages }}
           isWorking
           expandSignal={false}
-          fontScale={1}
           {...props}
         />
       )
@@ -822,7 +761,6 @@ describe('NativeChatMessageList turn indicator', () => {
         isWorking={false}
         workingStartedAt={startedAt}
         expandSignal={false}
-        fontScale={1}
       />
     )
 

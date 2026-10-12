@@ -11,7 +11,7 @@ afterEach(() => {
   }
 })
 
-function line(record: object): string {
+function line(record: Readonly<Record<string, unknown>>): string {
   return `${JSON.stringify({ sessionId: 's-1', timestamp: new Date().toISOString(), ...record })}\n`
 }
 

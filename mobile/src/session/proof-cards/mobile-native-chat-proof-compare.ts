@@ -2,6 +2,9 @@
 import type { ImageThumbnailBox } from '../../../../src/shared/image-thumbnail-frame'
 
 export const MOBILE_NATIVE_CHAT_PROOF_COMPARE_START = 50
+/** A press's event: React Native's touch or react-native-web's DOM click. */
+type ProofPressEvent = { locationX?: unknown; offsetX?: unknown }
+
 /** How far one accessibility increment moves the divider, in percent. */
 export const MOBILE_NATIVE_CHAT_PROOF_COMPARE_STEP = 10
 const DEFAULT_ASPECT = 16 / 10
@@ -40,7 +43,7 @@ export function mobileNativeChatProofCompareTapSide(
 
 /** Where a press landed, in points from the pressed view's left edge. Native presses carry
  *  `locationX`; react-native-web hands `onPress` the DOM click, which has `offsetX`. */
-export function mobileNativeChatProofPressX(nativeEvent: object): number {
+export function mobileNativeChatProofPressX(nativeEvent: ProofPressEvent): number {
   if ('locationX' in nativeEvent && typeof nativeEvent.locationX === 'number') {
     return nativeEvent.locationX
   }

@@ -19,8 +19,8 @@ const DOM_DELTA_LINE = 1
 const DOM_DELTA_PAGE = 2
 const PIXELS_PER_LINE = 16
 const PIXELS_PER_PAGE = 800
-const MAX_WHEEL_ZOOM_DELTA = 200
-const WHEEL_ZOOM_SENSITIVITY = 300
+const MAX_WHEEL_ZOOM_DELTA = 100
+const WHEEL_ZOOM_SENSITIVITY = 150
 /** Scales this close count as the same, so a fit view reads as "at fit". */
 const SCALE_EPSILON = 0.001
 

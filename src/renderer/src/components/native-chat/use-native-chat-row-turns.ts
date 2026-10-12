@@ -3,6 +3,7 @@ import type {
   AgentJournalRenderItem,
   AgentJournalSubmission
 } from '../../../../shared/agent-session-journal-types'
+import type { AgentSessionLatestTurn } from '../../../../shared/agent-session-wire'
 import type { AgentType, NativeChatMessage } from '../../../../shared/native-chat-types'
 import {
   nativeChatHarnessTurns,
@@ -11,21 +12,31 @@ import {
 import { nativeChatSessionThoughtSeconds } from '../../../../shared/native-chat-thought-duration'
 import { compareMessages } from './native-chat-session-assembler'
 import {
+  nativeChatThoughtTiming,
+  type NativeChatThoughtTiming
+} from './native-chat-thought-markers'
+import {
   useNativeChatTurnMembership,
   type NativeChatTurnRows
 } from './use-native-chat-turn-membership'
 
 /** `useNativeChatTurnMembership`, plus terminal transcripts' harness turns (a turn a harness
  *  delivery opened, such as a background-task notification, is keyed by that delivery, which the
- *  projection has already stripped) and each reasoning row's duration. */
+ *  projection has already stripped) and each reasoning row's fallback timing. */
 export function useNativeChatRowTurns(
   /** `messages` are the unprojected rows, harness deliveries included. */
   session: { agent: AgentType; messages: readonly NativeChatMessage[] },
   messages: readonly NativeChatMessage[],
   journalItems: readonly AgentJournalRenderItem[] | undefined,
-  journalSubmissions: readonly AgentJournalSubmission[] | undefined
-): NativeChatTurnRows & { thoughtSeconds: ReadonlyMap<string, number> } {
-  const membership = useNativeChatTurnMembership(messages, journalItems, journalSubmissions)
+  journalSubmissions: readonly AgentJournalSubmission[] | undefined,
+  latestTurn?: AgentSessionLatestTurn | null
+): NativeChatTurnRows & { thoughtTiming: NativeChatThoughtTiming } {
+  const membership = useNativeChatTurnMembership(
+    messages,
+    journalItems,
+    journalSubmissions,
+    latestTurn
+  )
   const harnessTurns = useMemo(
     () => (journalItems ? null : nativeChatHarnessTurns(session.messages, compareMessages)),
     [journalItems, session.messages]
@@ -34,16 +45,22 @@ export function useNativeChatRowTurns(
     () => nativeChatSessionThoughtSeconds(session.agent, journalItems, messages),
     [journalItems, messages, session.agent]
   )
-  return useMemo(
+  const rows = useMemo(
     () =>
       harnessTurns
         ? {
             messages: membership.messages,
             turnKeys: nativeChatRowTurnKeys(membership.messages, harnessTurns.turnKeysByItemId),
-            liveTurnKey: harnessTurns.latestTurnOpenedBy ?? membership.liveTurnKey,
-            thoughtSeconds
+            liveTurnKey: harnessTurns.latestTurnOpenedBy ?? membership.liveTurnKey
           }
-        : { ...membership, thoughtSeconds },
-    [harnessTurns, membership, thoughtSeconds]
+        : membership,
+    [harnessTurns, membership]
+  )
+  return useMemo(
+    () => ({
+      ...rows,
+      thoughtTiming: nativeChatThoughtTiming(rows.messages, rows.turnKeys, thoughtSeconds)
+    }),
+    [rows, thoughtSeconds]
   )
 }

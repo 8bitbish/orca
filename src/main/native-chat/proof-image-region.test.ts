@@ -256,7 +256,7 @@ describe('readProofImageRegion', () => {
       if (args[2] === JPEG.length) {
         writeFileSync(file, Buffer.concat([JPEG, Buffer.alloc(10)]))
       }
-      return Reflect.apply(read, this, args)
+      return read.apply(this, args)
     })
     const codec = fakeCodec()
     expect(await region(codec)).toEqual({ ok: false, reason: 'changed' })

@@ -74,6 +74,11 @@ const KNOWN_PREEXISTING_I2_FAILURES: Record<string, number> = {
   'codex-0-158-0-approval': 12,
   'codex-0-158-0-timed-turn': 20,
   'codex-0-158-0-trustprompt': 36,
+  // Fullscreen startup captures diverge identically with the base b58f8197dc36 serializer.
+  'codex-fullscreen-custom-footer': 18,
+  'codex-fullscreen-early-input': 4,
+  'codex-fullscreen-multiline-early-input': 10,
+  'codex-fullscreen-startup': 14,
   'claude-dialog-trust-workspace-answered': 13,
   // Jittered resize: the live pen's 256-colour background leaks onto row 0's restored cells.
   // Replayed against the previous build (`build-serialize-addon-at-ref.mjs`): I1 and I3 hold.

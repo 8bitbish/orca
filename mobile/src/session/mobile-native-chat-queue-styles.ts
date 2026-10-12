@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native'
 import { colors, radii, spacing, typography } from '../theme/mobile-theme'
+import { TEXT_INPUT_FONT_SIZE } from '../platform/text-input-font-size'
 
 // 44pt is the platform minimum touch target; icons sit centred inside it.
 const TOUCH = 44
@@ -133,8 +134,8 @@ export const queueStyles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
     color: colors.textPrimary,
-    fontSize: typography.bodySize,
-    lineHeight: typography.bodySize + 6,
+    fontSize: TEXT_INPUT_FONT_SIZE,
+    lineHeight: TEXT_INPUT_FONT_SIZE + 6,
     backgroundColor: colors.editorSurface,
     borderRadius: radii.input,
     borderWidth: StyleSheet.hairlineWidth,

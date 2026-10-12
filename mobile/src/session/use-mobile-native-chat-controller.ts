@@ -10,13 +10,13 @@ import { mobileNativeChatStreamPreview } from './mobile-native-chat-streaming-ga
 import { useMobileNativeChatSessionOptionController } from './use-mobile-native-chat-session-option-controller'
 import { useMobileNativeChatSessionLane } from './use-mobile-native-chat-session-lane'
 import { useMobileStructuredNativeChatSendBridge } from './use-mobile-structured-native-chat-send-bridge'
-import { useMobileNativeChatBridgeAsk } from './use-mobile-native-chat-bridge-ask'
+import { useMobileNativeChatTerminalLane } from './use-mobile-native-chat-terminal-lane'
 import { useNativeChatAcceptedAction } from './use-native-chat-action-outcomes'
 import { useThrottledLatestValue } from './use-throttled-latest-value'
 import type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
 import { useMobileBridgeChatPromptWrites } from './use-mobile-bridge-chat-prompt-writes'
 import { useMobileNativeChatActiveResolution } from './use-mobile-native-chat-active-resolution'
-import { useMobileNativeChatTerminalQueue } from './use-mobile-native-chat-terminal-queue'
+import { useMobileNativeChatPromptCards } from './use-mobile-native-chat-prompt-cards'
 import { mobileNativeChatScopeKey } from './mobile-native-chat-scope-key'
 
 export type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
@@ -41,7 +41,8 @@ export function useMobileNativeChatController(args: {
   connState: ConnectionState
   /** Host capability fact from the shared runtime status probe. */
   agentSessionHostSupport?: StructuredAgentSessionHostSupport | null
-  onSendError: (message: string) => void
+  /** Forwarded to the session lane, a refusal's cause with it. */
+  onSendError: Parameters<typeof useMobileNativeChatSessionLane>[0]['onSendError']
   /** Retires a held failure banner. Any accepted chat write clears it — a delivered
    *  answer or permission reply must not sit under a stale "not sent". */
   onSendResolved: () => void
@@ -98,7 +99,6 @@ export function useMobileNativeChatController(args: {
       transcriptPath: activeChatResolution?.transcriptPath ?? null,
       sessionId: activeChatSessionId,
       sourceIdentity,
-      callerIdentity: deviceTokenRef.current ?? '',
       enabled: showNativeChat,
       connState,
       hostSupport: agentSessionHostSupport,
@@ -144,8 +144,7 @@ export function useMobileNativeChatController(args: {
     : activeTabAgentWorking
   const nativeChatAgentWorking =
     nativeChatStreamLive && (activeChatStructured || activeChatResolution != null)
-  // Read at send time (not render time) so an echo can be tiered against the
-  // streaming bubble without re-creating the send callback on every status tick.
+  // Read at send time, so an echo is tiered against the bubble without a callback per status tick.
   const nativeChatAgentWorkingRef = useRef(nativeChatAgentWorking)
   nativeChatAgentWorkingRef.current = nativeChatAgentWorking
   // Throttle the streaming bubble: OpenCode emits a status frame per streamed
@@ -156,23 +155,18 @@ export function useMobileNativeChatController(args: {
       : mobileNativeChatStreamPreview(nativeChatStatus, nativeChatAgentWorking),
     NATIVE_CHAT_STREAM_THROTTLE_MS
   )
+  const promptScopeKey = mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId)
   // Only a terminal-backed chat has a bridge prompt lane and a host queue.
-  const bridgeAsk = useMobileNativeChatBridgeAsk({
-    enabled: activeChatResolution != null && !activeChatStructured,
-    status: nativeChatStatus,
-    session: nativeChatSession,
-    tabId: activeSessionTabId,
-    sessionId: activeChatSessionId,
-    showNativeChat
-  })
-  const terminalQueue = useMobileNativeChatTerminalQueue({
+  const { bridgeAsk, terminalQueue } = useMobileNativeChatTerminalLane({
     client,
-    supported: agentSessionHostSupport?.terminalMessageQueue === true,
-    unsubscribeSupported: agentSessionHostSupport?.terminalMessageQueueUnsubscribe === true,
+    hostSupport: agentSessionHostSupport,
     resolution: activeChatStructured ? null : activeChatResolution,
     terminal: args.activeHandle ?? null,
-    scopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId),
-    messages: nativeChatSession.messages,
+    scopeKey: promptScopeKey,
+    status: nativeChatStatus,
+    session: nativeChatSession,
+    sessionId: activeChatSessionId,
+    showNativeChat,
     captureSendOrigin,
     acceptSend,
     clearDraftForSend,
@@ -203,7 +197,7 @@ export function useMobileNativeChatController(args: {
     hostStop: terminalQueue.queue.active ? terminalQueue.queue.stop : null
   })
 
-  const fileSearch = useMobileNativeChatFileSearch({ client, worktreeId })
+  const nativeChatFiles = useMobileNativeChatFileSearch({ client, worktreeId })
 
   // Why: the send seam reports outgoing catalog commands to session-option
   // tracking, but the options hook needs the seam's dispatcher — a ref breaks
@@ -274,14 +268,20 @@ export function useMobileNativeChatController(args: {
   // Card actions retire the route's held failure banner too, not just sends.
   const answerAsk = useNativeChatAcceptedAction(handleNativeChatAnswerAsk, onSendResolved)
   const cancelAsk = useNativeChatAcceptedAction(handleNativeChatCancelAsk, onSendResolved)
-  const handleNativeChatRespondPermission = activeChatStructured
-    ? structuredNativeChat.respondPermission
-    : legacyHandleNativeChatRespondPermission
-  const respond = useNativeChatAcceptedAction(handleNativeChatRespondPermission, onSendResolved)
-  const structuredCancelPrompt = useNativeChatAcceptedAction(
-    activeChatStructured ? structuredNativeChat.cancelPrompt : async () => false,
+  const promptCards = useMobileNativeChatPromptCards({
+    terminal: {
+      permission: bridgeAsk.permission,
+      question: bridgeAsk.question,
+      waitStartedAt: nativeChatStatus?.stateStartedAt ?? null,
+      scopeKey: promptScopeKey,
+      sessionKey: streamIdentity,
+      observing: showNativeChat && !activeChatStructured && nativeChatStatus != null,
+      respondPermission: legacyHandleNativeChatRespondPermission,
+      answerQuestion: legacyHandleNativeChatQuestionAnswer
+    },
+    structured: activeChatStructured ? structuredNativeChat : null,
     onSendResolved
-  )
+  })
 
   return {
     isTabChatView,
@@ -297,37 +297,34 @@ export function useMobileNativeChatController(args: {
     nativeChatSession,
     /** Structured lane: drives the per-turn status row and live tool progress. */
     nativeChatStructured: activeChatStructured,
+    nativeChatVisualSource: activeChatStructured ? structuredNativeChat.visualSource : null,
     nativeChatAgentWorking,
     nativeChatTurnIndicator: activeChatStructured ? structuredNativeChat.turnIndicator : null,
     nativeChatWorkingStartedAt: activeChatStructured ? structuredNativeChat.workingStartedAt : null,
     nativeChatSettledTurns: activeChatStructured ? structuredNativeChat.settledTurns : null,
     nativeChatTurnJournal: activeChatStructured ? structuredNativeChat.turnJournal : null,
+    // Only the structured lane names a refusal's cause; the bridge lane's starved ones drop none.
+    nativeChatCommandRefusalCauses: structuredNativeChat.commandRefusalCauses,
     nativeChatCanStop: activeChatStructured
       ? structuredNativeChat.turnId !== null
       : nativeChatAgentWorking,
     nativeChatStreamingText,
     nativeChatStreamLive,
     nativeChatStreamScopeKey: streamScopeKey,
-    nativeChatPermission: activeChatStructured
-      ? structuredNativeChat.permission
-      : bridgeAsk.permission,
-    nativeChatQuestion: activeChatStructured ? structuredNativeChat.question : bridgeAsk.question,
-    nativeChatAsk: !activeChatStructured && bridgeAsk.showAsk ? bridgeAsk.ask : null,
+    ...promptCards,
+    nativeChatAsk:
+      !activeChatStructured && (bridgeAsk.showAsk || bridgeAsk.collapsedAsk) ? bridgeAsk.ask : null,
     nativeChatAskKey: bridgeAsk.askKey,
     dismissNativeChatAsk: bridgeAsk.dismissAsk,
+    collapseNativeChatAsk: bridgeAsk.collapseAsk,
+    nativeChatCollapsedPrompt: bridgeAsk.collapsedAsk ?? promptCards.nativeChatCollapsedPrompt,
     handleNativeChatAnswerAsk: answerAsk,
     handleNativeChatCancelAsk: cancelAsk,
-    // Heuristic/legacy cards have no durable prompt identity, so keep their
-    // cancel affordance absent instead of exposing a dead action.
-    handleNativeChatCancelPrompt: activeChatStructured ? structuredCancelPrompt : undefined,
-    handleNativeChatRespondPermission: respond,
     handleNativeChatStop: activeChatStructured ? structuredNativeChat.cancel : handleNativeChatStop,
     // The inactive lane's session is starved of identity, so its cards stay empty.
     nativeChatQueued: structuredNativeChat.queued,
-    ...fileSearch,
-    handleNativeChatQuestionAnswer: activeChatStructured
-      ? structuredNativeChat.respondQuestion
-      : legacyHandleNativeChatQuestionAnswer,
+    nativeChatBackgroundTasks: activeChatStructured ? structuredNativeChat.backgroundTasks : null,
+    ...nativeChatFiles,
     handleNativeChatSend: activeChatStructured
       ? structuredNativeChatSend.send
       : handleNativeChatSend,

@@ -17,16 +17,19 @@ import {
 export const NATIVE_CHAT_PROOF_MEDIA_METHODS = [
   defineMethod({
     name: 'nativeChat.proofMediaInfo',
+    permission: 'workspace',
     params: NativeChatProofMediaInfo,
     handler: async (params) => readProofMediaInfo({ path: params.path })
   }),
   defineMethod({
     name: 'nativeChat.proofMediaRead',
+    permission: 'workspace',
     params: NativeChatProofMediaRead,
     handler: async (params) => readProofMediaChunk(params)
   }),
   defineMethod({
     name: 'nativeChat.proofMediaThumbnail',
+    permission: 'workspace',
     params: NativeChatProofMediaThumbnail,
     // Thumbnails are capped at 1 MB encoded, so the base64 reply fits any RPC content budget.
     handler: async (params) => readProofImage({ path: params.path, variant: 'thumbnail' })
@@ -34,6 +37,7 @@ export const NATIVE_CHAT_PROOF_MEDIA_METHODS = [
   // Gated separately by native-chat.proof-image-region.v1; replies are capped at 1 MB encoded.
   defineMethod({
     name: 'nativeChat.proofImageRegion',
+    permission: 'workspace',
     params: NativeChatProofImageRegion,
     handler: async (params) => readProofImageRegion(params)
   })

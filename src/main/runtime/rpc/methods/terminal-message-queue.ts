@@ -37,6 +37,7 @@ function queueOf(ctx: RpcContext): RpcContext['runtime']['terminalMessageQueue']
 export const TERMINAL_MESSAGE_QUEUE_METHODS = [
   defineMethod({
     name: 'terminalMessageQueue.submit',
+    permission: 'workspace',
     params: TerminalMessageQueueSubmit,
     handler: async (params, ctx) =>
       queueOf(ctx).submit(targetOf(params), params.session, {
@@ -46,11 +47,13 @@ export const TERMINAL_MESSAGE_QUEUE_METHODS = [
   }),
   defineMethod({
     name: 'terminalMessageQueue.list',
+    permission: 'workspace',
     params: TerminalMessageQueueTarget,
     handler: async (params, ctx) => ({ snapshot: queueOf(ctx).list(targetOf(params)) })
   }),
   defineMethod({
     name: 'terminalMessageQueue.remove',
+    permission: 'workspace',
     params: TerminalMessageQueueRemove,
     handler: async (params, ctx) => ({
       snapshot: queueOf(ctx).remove(targetOf(params), params.itemId)
@@ -58,6 +61,7 @@ export const TERMINAL_MESSAGE_QUEUE_METHODS = [
   }),
   defineMethod({
     name: 'terminalMessageQueue.edit',
+    permission: 'workspace',
     params: TerminalMessageQueueEdit,
     handler: async (params, ctx) =>
       queueOf(ctx).edit(targetOf(params), params.itemId, {
@@ -67,16 +71,19 @@ export const TERMINAL_MESSAGE_QUEUE_METHODS = [
   }),
   defineMethod({
     name: 'terminalMessageQueue.stop',
+    permission: 'workspace',
     params: TerminalMessageQueueTarget,
     handler: async (params, ctx) => queueOf(ctx).stop(targetOf(params), params.session)
   }),
   defineMethod({
     name: 'terminalMessageQueue.sendNext',
+    permission: 'workspace',
     params: TerminalMessageQueueTarget,
     handler: async (params, ctx) => queueOf(ctx).sendNext(targetOf(params))
   }),
   defineStreamingMethod({
     name: 'terminalMessageQueue.subscribe',
+    permission: 'workspace',
     params: TerminalMessageQueueSubscribe,
     handler: async (params, ctx, emit) => {
       const subscriptionId = subscriptionIdFor(ctx, ctx.requestId ?? randomUUID())
@@ -98,6 +105,7 @@ export const TERMINAL_MESSAGE_QUEUE_METHODS = [
   // stream it carried; this ends one while the socket stays up.
   defineMethod({
     name: 'terminalMessageQueue.unsubscribe',
+    permission: 'workspace',
     params: TerminalMessageQueueUnsubscribe,
     handler: async (params, ctx) => {
       ctx.runtime.cleanupSubscription(subscriptionIdFor(ctx, params.subscriptionId))

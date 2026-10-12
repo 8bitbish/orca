@@ -1,26 +1,44 @@
 // @vitest-environment happy-dom
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NativeChatMessage } from '../../../../shared/native-chat-types'
 import { MessageRow, type NativeChatDeliveryNotice } from './NativeChatMessageRow'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import type { NativeChatRewindSurface } from './use-native-chat-rewind'
+import { readNativeChatQuotableSelection } from './native-chat-quote-selection'
+import {
+  NativeChatThoughtTimingContext,
+  type NativeChatThoughtTiming
+} from './native-chat-thought-markers'
+
+const confirm = vi.hoisted(() => vi.fn())
+vi.mock('@/components/confirmation-dialog-context', () => ({
+  useConfirmationDialog: () => confirm
+}))
 
 afterEach(cleanup)
 
-function renderMessage(role: NativeChatMessage['role'], timestamp: number | null = 0) {
+function renderMessage(
+  role: NativeChatMessage['role'],
+  timestamp: number | null = 0,
+  rewind?: NativeChatRewindSurface
+) {
   return render(
-    <MessageRow
-      message={{
-        id: 'message',
-        role,
-        timestamp,
-        source: 'transcript',
-        blocks: [{ type: 'text', text: 'Message text' }]
-      }}
-      expandSignal={false}
-      onScrollMessageToTop={vi.fn()}
-    />
+    <TooltipProvider>
+      <MessageRow
+        message={{
+          id: 'message',
+          role,
+          timestamp,
+          source: 'transcript',
+          blocks: [{ type: 'text', text: 'Message text' }]
+        }}
+        expandSignal={false}
+        onScrollMessageToTop={vi.fn()}
+        rewind={rewind}
+      />
+    </TooltipProvider>
   )
 }
 
@@ -51,43 +69,18 @@ describe('MessageRow control visibility', () => {
     })
   })
 
-  it('appends time to the existing agent controls and inherits their reveal', () => {
-    renderMessage('assistant')
-    const copy = screen.getByRole('button', { name: 'Copy message' })
-    const scroll = screen.getByRole('button', { name: 'Scroll this message to top' })
-    const time = screen.getByRole('time')
-    expect(Array.from(copy.parentElement!.children)).toEqual([copy, scroll, time])
-    expect(copy.parentElement).toHaveClass(
-      'can-hover:opacity-0',
-      'can-hover:pointer-events-none',
-      'group-hover:opacity-100',
-      '[.group:has(:focus-visible)_&]:opacity-100',
-      'group-hover:pointer-events-auto',
-      '[.group:has(:focus-visible)_&]:pointer-events-auto'
-    )
-    expect(copy.parentElement).not.toHaveClass('opacity-0', 'pointer-events-none')
-    expect(time).not.toHaveAttribute('tabindex')
-    copy.focus()
-    expect(copy).toHaveFocus()
-  })
-
-  it('gives user bubbles a copy button and timestamp that only hide on hover-capable devices', () => {
-    renderMessage('user')
+  it('composes the edit-from-here action into the user hover/focus strip', () => {
+    const request = vi.fn()
+    renderMessage('user', 0, { disabledReason: null, request })
     const copy = screen.getByRole('button', { name: 'Copy message' })
     const time = screen.getByRole('time')
-    expect(Array.from(copy.parentElement!.children)).toEqual([copy, time])
-    expect(copy.parentElement).toHaveClass(
-      'can-hover:opacity-0',
-      'can-hover:pointer-events-none',
-      'group-hover:opacity-100',
-      '[.group:has(:focus-visible)_&]:opacity-100',
-      'group-hover:pointer-events-auto',
-      '[.group:has(:focus-visible)_&]:pointer-events-auto'
-    )
-    expect(copy.parentElement).not.toHaveClass('opacity-0', 'pointer-events-none')
-    expect(copy.parentElement!.parentElement).toHaveClass('group')
-    time.focus()
-    expect(time).toHaveFocus()
+    const edit = screen.getByRole('button', { name: 'Rewind to here' })
+    expect(Array.from(copy.parentElement!.children)).toEqual([copy, time, edit])
+    expect(copy.parentElement).toHaveClass('can-hover:opacity-0', 'group-hover:opacity-100')
+    edit.focus()
+    expect(edit).toHaveFocus()
+    fireEvent.click(edit)
+    expect(request).toHaveBeenCalledWith('message', confirm)
   })
 
   it('copies the sent message text from a user bubble', async () => {
@@ -99,6 +92,37 @@ describe('MessageRow control visibility', () => {
 
     await waitFor(() => {
       expect(writeClipboardText).toHaveBeenCalledWith('Message text')
+    })
+  })
+
+  it('copies an assistant reply without its visual lines, which mean nothing outside Orca', async () => {
+    const writeClipboardText = vi.fn().mockResolvedValue(undefined)
+    Object.assign(window, { api: { ui: { writeClipboardText } } })
+
+    render(
+      <TooltipProvider>
+        <MessageRow
+          message={{
+            id: 'message',
+            role: 'assistant',
+            timestamp: 0,
+            source: 'transcript',
+            blocks: [
+              {
+                type: 'text',
+                text: 'Here it is.\n\n::orca-visual{file="usage.html" title="Usage"}\n\nDone.'
+              }
+            ]
+          }}
+          expandSignal={false}
+          onScrollMessageToTop={vi.fn()}
+        />
+      </TooltipProvider>
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Copy message' }))
+
+    await waitFor(() => {
+      expect(writeClipboardText).toHaveBeenCalledWith('Here it is.\n\nDone.')
     })
   })
 
@@ -127,115 +151,110 @@ describe('MessageRow control visibility', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(role === 'assistant' ? 2 : 1)
   })
 
-  it('preserves chrome-free system rows', () => {
-    renderMessage('system')
-    expect(screen.queryByRole('time')).toBeNull()
-    expect(screen.queryByRole('button')).toBeNull()
+  it.each(['reasoning', 'system'] as const)(
+    'omits timestamp and agent controls on %s rows',
+    (role) => {
+      renderMessage(role)
+      expect(screen.queryByRole('time')).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Copy message' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Scroll this message to top' })).toBeNull()
+      expect(screen.queryAllByRole('button')).toHaveLength(role === 'reasoning' ? 1 : 0)
+    }
+  )
+})
+
+describe('which messages can be quoted', () => {
+  it.each([
+    ['assistant', 'Message text'],
+    ['user', undefined],
+    ['system', undefined]
+  ] as const)('a selection in a %s message', (role, quoted) => {
+    const { container } = renderMessage(role)
+    window.getSelection()!.selectAllChildren(screen.getByText('Message text'))
+
+    expect(readNativeChatQuotableSelection(container)?.text).toBe(quoted)
   })
 })
 
-describe('MessageRow reasoning', () => {
-  function renderThought(props: { thoughtSeconds?: number | null; thoughtLive?: boolean } = {}) {
+function withThoughtTiming(
+  timing: NativeChatThoughtTiming,
+  row: React.JSX.Element
+): React.JSX.Element {
+  return (
+    <NativeChatThoughtTimingContext.Provider value={timing}>
+      {row}
+    </NativeChatThoughtTimingContext.Provider>
+  )
+}
+
+describe('MessageRow thoughts', () => {
+  function renderThought(
+    text: string,
+    timing: { seconds?: Record<string, number | null>; merged?: string[] } = {}
+  ) {
     return render(
-      <MessageRow
-        message={{
-          id: 'thought',
-          role: 'reasoning',
-          timestamp: 0,
-          source: 'transcript',
-          blocks: [{ type: 'text', text: 'Weighing the parser options.' }]
-        }}
-        expandSignal={false}
-        onScrollMessageToTop={vi.fn()}
-        {...props}
-      />
+      withThoughtTiming(
+        {
+          seconds: new Map(Object.entries(timing.seconds ?? {})),
+          merged: new Set(timing.merged ?? [])
+        },
+        <MessageRow
+          message={{
+            id: 'thought',
+            role: 'reasoning',
+            timestamp: 1_000,
+            source: 'transcript',
+            blocks: [{ type: 'text', text }]
+          }}
+          expandSignal={false}
+          onScrollMessageToTop={vi.fn()}
+        />
+      )
     )
   }
 
-  it('folds a settled thought to its derived duration and opens it on click', () => {
-    renderThought({ thoughtSeconds: 12 })
-    const toggle = screen.getByRole('button', { name: 'Thought for 12s' })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByText('Weighing the parser options.')).toBeNull()
-    expect(screen.queryByRole('time')).toBeNull()
-    // Folded, the chevron is the row's only sign that it opens, so it never hides.
-    const chevron = toggle.querySelector('svg')
-    expect(chevron).not.toBeNull()
-    expect(chevron?.getAttribute('class')).not.toMatch(/opacity-0/)
-
-    fireEvent.click(toggle)
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    const body = screen.getByText('Weighing the parser options.')
-    expect(toggle.getAttribute('aria-controls')).toBe(body.closest('[id]')?.id)
-
-    fireEvent.click(toggle)
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByText('Weighing the parser options.')).toBeNull()
-  })
-
-  it('opens from the keyboard', async () => {
-    const user = userEvent.setup()
-    renderThought({ thoughtSeconds: 3 })
-    await user.tab()
-    const toggle = screen.getByRole('button', { name: 'Thought for 3s' })
-    expect(toggle).toHaveFocus()
-    await user.keyboard('{Enter}')
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    await user.keyboard(' ')
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-  })
-
-  it('says only "Thought" when no duration could be derived', () => {
-    renderThought()
-    expect(screen.getByRole('button', { name: 'Thought' })).toBeInTheDocument()
-    expect(screen.queryByText(/Thought for/)).toBeNull()
-  })
-
-  it('reads "Thinking…" while it is the turn\'s newest output', () => {
-    renderThought({ thoughtLive: true, thoughtSeconds: 4 })
-    const toggle = screen.getByRole('button', { name: 'Thinking…' })
-    expect(toggle.closest('[data-native-chat-thought]')).toHaveAttribute(
-      'data-native-chat-thought',
-      'live'
-    )
-  })
-})
-
-describe('MessageRow thought with no text', () => {
-  function renderMarker(props: { thoughtSeconds?: number | null; thoughtLive?: boolean } = {}) {
-    return render(
-      <MessageRow
-        message={{
-          id: 'marker',
-          role: 'reasoning',
-          timestamp: 0,
-          source: 'transcript',
-          blocks: [{ type: 'text', text: '' }]
-        }}
-        expandSignal={false}
-        onScrollMessageToTop={vi.fn()}
-        {...props}
-      />
-    )
-  }
-
-  it('reads "Thought for Ns" as plain text with nothing to open', () => {
-    renderMarker({ thoughtSeconds: 2 })
-    const line = screen.getByText('Thought for 2s')
-    expect(screen.queryByRole('button')).toBeNull()
-    expect(line.closest('[data-native-chat-thought]')?.querySelector('svg')).toBeNull()
-  })
-
-  it('reads "Thinking…" while it is the newest output, and "Thought" with no duration', () => {
-    renderMarker({ thoughtLive: true })
-    expect(screen.getByText('Thinking…').closest('[data-native-chat-thought]')).toHaveAttribute(
-      'data-native-chat-thought',
-      'live'
-    )
-    cleanup()
-    renderMarker()
+  it('draws a thought with no text as one line with nothing to open', () => {
+    const { container } = renderThought('')
     expect(screen.getByText('Thought')).toBeInTheDocument()
+    expect(container.querySelector('[data-native-chat-thought-marker]')).not.toBeNull()
     expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('times a thought with no text from the journal when the host kept no timing', () => {
+    renderThought('', { seconds: { thought: 7 } })
+    expect(screen.getByText('Thought for 7s')).toBeInTheDocument()
+  })
+
+  it('draws nothing for a thought folded into the one before it', () => {
+    const { container } = renderThought('', { merged: ['thought'] })
+    expect(container.textContent).toBe('')
+  })
+
+  it("keeps the host's own timing over the journal's", () => {
+    render(
+      withThoughtTiming(
+        { seconds: new Map([['thought', 99]]), merged: new Set<string>() },
+        <MessageRow
+          message={{
+            id: 'thought',
+            role: 'reasoning',
+            timestamp: 1_000,
+            state: 'completed',
+            completedAt: 4_000,
+            source: 'transcript',
+            blocks: [{ type: 'text', text: 'Weighing options' }]
+          }}
+          expandSignal={false}
+          onScrollMessageToTop={vi.fn()}
+        />
+      )
+    )
+    expect(screen.getByRole('button', { name: /Thought for 3s/ })).toBeInTheDocument()
+  })
+
+  it('uses the journal duration for a thought with text only when the host gave none', () => {
+    renderThought('Weighing options', { seconds: { thought: 12 } })
+    expect(screen.getByRole('button', { name: /Thought for 12s/ })).toBeInTheDocument()
   })
 })
 
@@ -287,27 +306,16 @@ describe('what a user message says about its delivery', () => {
     )
   }
 
-  it('says why under the message, with a Retry that sends this one', () => {
-    const onRetry = vi.fn()
-    renderUser({ text: "The agent couldn't restart. Your message was not sent.", onRetry })
-
-    expect(
-      screen.getByText("The agent couldn't restart. Your message was not sent.")
-    ).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
-    expect(onRetry).toHaveBeenCalledOnce()
-  })
-
-  it('offers no Retry where the surface cannot send it again', () => {
+  it('says why under the message, with no control where the surface has none', () => {
     renderUser({ text: 'Not delivered — check the terminal' })
 
     expect(screen.getByText('Not delivered — check the terminal')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
   })
 
   it('says nothing when it went through', () => {
     renderUser()
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
   })
 
   // Muted, in the time's place, and shown without hover: a message nothing confirmed yet never
@@ -317,13 +325,13 @@ describe('what a user message says about its delivery', () => {
 
     const sending = screen.getByText('Sending…')
     const copy = screen.getByRole('button', { name: 'Copy message' })
-    expect(sending).toHaveClass('text-xs', 'text-muted-foreground')
+    expect(sending).toHaveClass('text-xs', 'text-chat-foreground-faint')
     expect(Array.from(sending.parentElement!.children)).toEqual([copy, sending])
     expect(sending.parentElement).not.toHaveClass('can-hover:opacity-0')
     expect(sending.parentElement!.parentElement).toHaveClass('group')
     expect(copy).toHaveClass('can-hover:opacity-0', 'group-hover:opacity-100')
     expect(screen.queryByRole('time')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
   })
 
   it('keeps the same row when the message is confirmed, with the time back in its place', () => {

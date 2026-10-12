@@ -25,7 +25,7 @@ vi.mock('react-native', () => ({
   Modal: 'Modal',
   PixelRatio: { get: () => 2 },
   // The handlers land on the view as props, so a test can drive them directly.
-  PanResponder: { create: (config: object) => ({ panHandlers: config }) },
+  PanResponder: { create: (config: Record<string, unknown>) => ({ panHandlers: config }) },
   Pressable: 'Pressable',
   ScrollView: 'ScrollView',
   StyleSheet: {

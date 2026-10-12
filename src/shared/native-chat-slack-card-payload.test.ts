@@ -43,7 +43,7 @@ const DRAFT = {
   ]
 }
 
-function withField(base: object, key: string, value: unknown): string {
+function withField(base: Readonly<Record<string, unknown>>, key: string, value: unknown): string {
   return JSON.stringify({ ...base, [key]: value })
 }
 

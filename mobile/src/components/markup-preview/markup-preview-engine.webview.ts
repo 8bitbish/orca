@@ -14,7 +14,7 @@ import {
 type NativeBridge = { postMessage(message: string): void }
 
 function nativeBridge(): NativeBridge | null {
-  const bridge: unknown = Reflect.get(window, 'ReactNativeWebView')
+  const bridge: unknown = 'ReactNativeWebView' in window ? window.ReactNativeWebView : undefined
   if (typeof bridge !== 'object' || bridge === null || !('postMessage' in bridge)) {
     return null
   }
