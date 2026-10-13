@@ -199,6 +199,7 @@ Connect from the app using endpoint `ws://localhost:6768` and token `mock-device
 - `MOCK_NATIVE_CHAT=1` — serve the native-chat scenario (one live agent tab, empty transcript, image upload) instead of the default terminal fixtures.
 - `MOCK_CHAT_AGENT=omp` — with `MOCK_NATIVE_CHAT=1`, present an OMP tab and four decoded transcript messages, including a tool call and result, instead of the default Claude scenario. It deliberately omits `transcriptPath` to exercise legacy-hook readability discovery; current OMP hooks may report a path.
 - `MOCK_CHAT_TRANSCRIPT_FILE` — with `MOCK_NATIVE_CHAT=1`, serve the JSON array of `NativeChatMessage`s in this file as the transcript, re-read on every request. Useful for checking how replies render (fences, cards, thoughts) on a real device.
+- `MOCK_CHAT_SCENARIO=proof-scroll` — serve the native-chat scenario with a ~43-message transcript of proof cards (read from real bundles in `~/.orca-personal/proof/`), project cards and Slack cards, and answer `nativeChat.proofMedia*` / `nativeChat.proofImageRegion` with the desktop's readers (macOS `sips` stands in for Electron's image codec). `scripts/run-proof-scroll-test.sh <apk> <out.mp4>` pairs an Android emulator with it and records a scroll test.
 - `MOCK_SERVER_KEY_FILE` — persist the server keypair across restarts so a paired device keeps its public-key pin. A missing or invalid file is re-keyed with a warning, which forces a re-pair.
 
 ### Scenario control files

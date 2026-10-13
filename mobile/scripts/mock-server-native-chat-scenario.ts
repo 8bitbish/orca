@@ -8,6 +8,7 @@ import type {
   RuntimeMobileSessionTabsResult,
   RuntimeMobileSessionTerminalClientTab
 } from '../../src/shared/runtime-types'
+import { proofScrollTranscript } from './mock-server-proof-scroll-transcript'
 import type { RpcRequest, RpcResponse } from './mock-server-rpc-handlers'
 
 // Why: native chat needs a live agent tab, an empty-but-subscribed transcript,
@@ -30,6 +31,7 @@ const MOCK_IMAGE_PATH = join(tmpdir(), 'mock-image.png')
 const CHAT_AGENT = process.env.MOCK_CHAT_AGENT === 'omp' ? 'omp' : 'claude'
 const CHAT_TITLE = CHAT_AGENT === 'omp' ? 'OMP' : 'Claude Code'
 const TRANSCRIPT_START = Date.now() - 1000 * 60 * 5
+const PROOF_SCROLL = process.env.MOCK_CHAT_SCENARIO === 'proof-scroll'
 
 function readControl(file: string): string {
   try {
@@ -118,6 +120,9 @@ function mockTranscript(): NativeChatMessage[] {
     const parsed: unknown = JSON.parse(readFileSync(fixtureFile, 'utf-8'))
     return Array.isArray(parsed) ? parsed : []
   }
+  if (PROOF_SCROLL) {
+    return proofScrollTranscript(TRANSCRIPT_START - 1000 * 60 * 60)
+  }
   if (CHAT_AGENT !== 'omp') {
     return []
   }
@@ -201,7 +206,7 @@ type Failure = (id: string, code: string, message: string) => RpcResponse
 
 /** Mock backend for the native-chat surface: session tabs, a fixture transcript
  *  snapshot, terminal send, and image upload. Opt-in via MOCK_NATIVE_CHAT=1
- *  because it replaces the default terminal fixtures. No transcript or terminal
+ *  (or MOCK_CHAT_SCENARIO=proof-scroll) because it replaces the default terminal fixtures. No transcript or terminal
  *  output frames are pushed. Returns false for methods it does not own. */
 export function handleMockNativeChatRequest(
   request: RpcRequest,
@@ -210,7 +215,7 @@ export function handleMockNativeChatRequest(
   error: Failure,
   ws: WebSocket
 ): boolean {
-  if (process.env.MOCK_NATIVE_CHAT !== '1') {
+  if (process.env.MOCK_NATIVE_CHAT !== '1' && !PROOF_SCROLL) {
     return false
   }
   switch (request.method) {
