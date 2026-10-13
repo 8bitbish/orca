@@ -212,6 +212,15 @@ function isErrorVariant(value: unknown): boolean {
   )
 }
 
+function isErrorEntry(key: string, nested: unknown): boolean {
+  return (
+    ((key === 'isError' || key === 'is_error') && nested === true) ||
+    (key === 'success' && nested === false) ||
+    (ERROR_VARIANT_KEYS.has(key) && isErrorVariant(nested)) ||
+    (ERROR_VALUE_KEYS.has(key) && nested !== null && nested !== false && nested !== '')
+  )
+}
+
 function hasProviderError(payload: unknown): boolean {
   const pending = [payload]
   const seen = new WeakSet<object>()
@@ -226,22 +235,22 @@ function hasProviderError(payload: unknown): boolean {
       continue
     }
     for (const [key, nested] of Object.entries(value)) {
-      if ((key === 'isError' || key === 'is_error') && nested === true) {
-        return true
-      }
-      if (key === 'success' && nested === false) {
-        return true
-      }
-      if (ERROR_VARIANT_KEYS.has(key) && isErrorVariant(nested)) {
-        return true
-      }
-      if (ERROR_VALUE_KEYS.has(key) && nested !== null && nested !== false && nested !== '') {
+      if (isErrorEntry(key, nested)) {
         return true
       }
       pending.push(nested)
     }
   }
   return false
+}
+
+function hasOwnProviderError(payload: unknown): boolean {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    !Array.isArray(payload) &&
+    Object.entries(payload).some(([key, nested]) => isErrorEntry(key, nested))
+  )
 }
 
 /** Codex thread-item types with no typed renderer, dispositioned by hand so a
@@ -323,14 +332,21 @@ export function classifyProviderFrame(
   kind: string,
   payload: unknown
 ): ProviderFrameClassification {
+  const catalogued = PROVIDER_FRAME_CATALOGS.get(provider)?.(kind, payload)
+  // A Claude status frame like `system:init` snapshots the session: a failed MCP server listed
+  // inside it is that server's state, not the frame failing, so only its own fields count.
+  const reportsError =
+    provider === 'claude' && catalogued === 'status-chrome'
+      ? hasOwnProviderError(payload)
+      : hasProviderError(payload)
   // Payload failure inspection outranks the name-shape heuristic below: an
   // unknown frame that reports an error must reach the user even when its
   // method name happens to look like a stream delta.
-  if (hasProviderError(payload)) {
+  if (reportsError) {
     return 'error-surface'
   }
   if (isDeltaProviderFrameKind(kind)) {
     return 'stream-into-item'
   }
-  return PROVIDER_FRAME_CATALOGS.get(provider)?.(kind, payload) ?? 'timeline-substantive'
+  return catalogued ?? 'timeline-substantive'
 }

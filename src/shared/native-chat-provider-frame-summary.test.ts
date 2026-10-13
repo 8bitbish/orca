@@ -31,4 +31,13 @@ describe('isWordlessProviderFrame', () => {
       false
     )
   })
+
+  it('hides the start-up snapshot an older host stored as an error row, but not other errors', () => {
+    expect(
+      isWordlessProviderFrame(frameRow('claude', 'message:system:init', { tone: 'error' }))
+    ).toBe(true)
+    expect(
+      isWordlessProviderFrame(frameRow('claude', 'message:system:status', { tone: 'error' }))
+    ).toBe(false)
+  })
 })

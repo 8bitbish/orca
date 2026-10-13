@@ -80,6 +80,30 @@ describe('provider frame classification catalog', () => {
     ).toBe('error-surface')
   })
 
+  it('keeps a session snapshot off the transcript when a component inside it failed', () => {
+    const init = {
+      type: 'system',
+      subtype: 'init',
+      mcp_servers: [
+        { name: 'docs', status: 'connected' },
+        { name: 'tracker', status: 'needs-auth' },
+        { name: 'notes', status: 'failed' }
+      ],
+      plugins: [{ name: 'kit', error: 'missing manifest' }]
+    }
+    expect(classifyProviderFrame('claude', 'message:system:init', init)).toBe('status-chrome')
+    expect(unhandledProviderFrameJournalItem('claude', 'message:system:init', init)).toBeNull()
+    // Its own fields still count, and a frame outside the status catalogue is still searched deep.
+    expect(
+      classifyProviderFrame('claude', 'message:system:plugin_install', { status: 'failed' })
+    ).toBe('error-surface')
+    expect(
+      classifyProviderFrame('claude', 'message:system:future_kind', {
+        servers: [{ status: 'failed' }]
+      })
+    ).toBe('error-surface')
+  })
+
   it('keeps unknown future frames on the substantive bounded fallback path', () => {
     expect(classifyProviderFrame('codex', 'notification:future/event', {})).toBe(
       'timeline-substantive'

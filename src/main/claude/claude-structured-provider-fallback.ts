@@ -23,6 +23,7 @@ import {
   claudeApiRetryRowBody,
   createClaudeApiRetryRuns
 } from './claude-api-retry-row'
+import { CLAUDE_INIT_FRAME_KIND, createClaudeMcpStatusChanges } from './claude-mcp-status-changes'
 import {
   CLAUDE_INFORMATIONAL_FRAME_KIND,
   claudeInformationalRowBody
@@ -155,6 +156,7 @@ export function createClaudeProviderFrameFallback(
 } {
   let sequence = 0
   const retryRun = createClaudeApiRetryRuns()
+  const mcpStatusChanges = createClaudeMcpStatusChanges()
   return {
     append: (kind, payload, displayText, beforeAppend, options, stamp) => {
       sequence += 1
@@ -167,6 +169,20 @@ export function createClaudeProviderFrameFallback(
           clientMessageId: `provider-retry:claude:${acquisitionId}:${retryRun(retrying)}`
         } as const
         const body = claudeApiRetryRowBody(retrying)
+        sink.appendItem(identity, body, stamp?.(identity, body) ?? { turnScope: turnScope() })
+        sink.publish()
+        return true
+      }
+      if (kind === CLAUDE_INIT_FRAME_KIND) {
+        const body = mcpStatusChanges(payload)
+        if (!body) {
+          return false
+        }
+        beforeAppend?.()
+        const identity = {
+          provider: 'orca',
+          clientMessageId: `provider-frame:claude:${acquisitionId}:${sequence}`
+        } as const
         sink.appendItem(identity, body, stamp?.(identity, body) ?? { turnScope: turnScope() })
         sink.publish()
         return true

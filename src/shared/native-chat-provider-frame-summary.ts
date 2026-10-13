@@ -25,6 +25,16 @@ export type ProviderFrameRowText = {
   providerFrame?: { provider: string; kind: string }
 }
 
+/** Claude's per-cycle start-up snapshot, which older hosts stored as an error row whenever an MCP
+ *  server inside it had failed. The frame never fails itself, so the tone is no reason to draw it. */
+function isPromotedClaudeInit(frame: { provider: string; kind: string }, text: string): boolean {
+  return (
+    frame.provider === 'claude' &&
+    frame.kind === 'message:system:init' &&
+    text === `${frame.provider} · ${frame.kind}`
+  )
+}
+
 /**
  * An unrecognised provider event stored with no words of its own: the host's fallback label is
  * its only text. Kept in the journal for readers of the frame (the Codex task list), never drawn.
@@ -35,7 +45,7 @@ export function isWordlessProviderFrame(row: ProviderFrameRowText): boolean {
   const frame = row.providerFrame
   return (
     frame !== undefined &&
-    row.tone === undefined &&
+    (row.tone === undefined || isPromotedClaudeInit(frame, row.text)) &&
     row.presentation === undefined &&
     row.failure === undefined &&
     !frame.kind.startsWith('request:') &&
