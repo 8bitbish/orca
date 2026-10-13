@@ -6,6 +6,7 @@ import { MobileDiagramHeader } from '../MobileDiagramHeader'
 import { MERMAID_DIAGRAM_CONFIG } from './mermaid-diagram-config'
 import { MERMAID_ENGINE_JS } from './mermaid-webview-engine.generated'
 import { encodeJsonForScript } from '../inline-script-json'
+import { mobileNativeChatHeightMemory } from '../../session/mobile-native-chat-size-memory'
 
 export type MermaidDiagramProps = {
   source: string
@@ -22,7 +23,10 @@ export type MermaidDiagramProps = {
 // per frame during pinch-to-zoom (textScale updates), marshalling the full HTML
 // string across the Fabric boundary each time.
 export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: MermaidDiagramProps) {
-  const [height, setHeight] = useState(0)
+  // Starts at its last height, so a remount while scrolling doesn't resize the row.
+  const [height, setHeight] = useState(
+    () => mobileNativeChatHeightMemory.get(`mermaid:${source}`) ?? 0
+  )
   const [failed, setFailed] = useState(false)
   const [showSource, setShowSource] = useState(false)
   const html = useMemo(() => buildHtml(source), [source])
@@ -73,6 +77,7 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
               }
               const parsed = Number(data)
               if (Number.isFinite(parsed) && parsed > 0) {
+                mobileNativeChatHeightMemory.set(`mermaid:${source}`, Math.ceil(parsed))
                 setHeight(Math.ceil(parsed))
               }
             }}

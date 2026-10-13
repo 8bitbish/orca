@@ -21,8 +21,11 @@ const links = vi.hoisted(() => ({
   tryOpen: vi.fn(async (_url: string) => true),
   open: vi.fn((_url: string) => undefined)
 }))
+type FakePlayer = Record<string, unknown> & {
+  listeners: Record<string, (event: unknown) => void>
+}
 const video = vi.hoisted(() => {
-  const players: Record<string, unknown>[] = []
+  const players: FakePlayer[] = []
   return { players }
 })
 
@@ -88,9 +91,14 @@ vi.mock('react-native-svg', () => ({
 vi.mock('expo-video', () => ({
   VideoView: 'VideoView',
   useVideoPlayer: (_uri: string, setup: (player: Record<string, unknown>) => void) => {
-    const player: Record<string, unknown> = {
+    const listeners: Record<string, (event: unknown) => void> = {}
+    const player: FakePlayer = {
       play: vi.fn(),
-      addListener: () => ({ remove: () => {} })
+      listeners,
+      addListener: (name: string, listener: (event: unknown) => void) => {
+        listeners[name] = listener
+        return { remove: () => {} }
+      }
     }
     setup(player)
     video.players.push(player)
@@ -351,6 +359,55 @@ describe('MobileNativeChatProofCard', () => {
     expect(video.players[0]).toMatchObject({ muted: true, loop: true })
     expect(video.players[0].play).toHaveBeenCalled()
     expect(byLabel(root, 'Play Switching tiles full screen')).toHaveLength(1)
+  })
+
+  it('draws a remounted card at its settled size at once, so the chat does not jump', async () => {
+    const file = { ok: true, uri: 'file:///cache/flow.mp4', mimeType: 'video/mp4' } as const
+    const loader = readyLoader({
+      peekFile: () => file,
+      peekThumbnail: () => ({ ok: true, image: IMAGE })
+    })
+    const media = { status: 'supported', loader } as const
+    const first = await render(fence(CARD), media)
+    layOut(first)
+    // The mock makes a player per render; the effect listens on the latest one it ran for.
+    const listeners = video.players
+      .map((player) => player.listeners)
+      .findLast((entry) => entry.sourceLoad)!
+    // A portrait recording reports its size.
+    act(() =>
+      listeners.sourceLoad({ availableVideoTracks: [{ size: { width: 900, height: 1950 } }] })
+    )
+    const frameOf = (root: ReactTestRenderer) =>
+      Object.assign(
+        {},
+        ...[
+          root.root.findAll((node) => String(node.type) === 'VideoView')[0].parent!.props.style
+        ].flat()
+      )
+    const settled = frameOf(first)
+    expect(settled).toMatchObject({ height: 400 })
+    act(() => first.unmount())
+    renderer = null
+
+    // FlatList brings the row back: no loading blocks, the same frames from the first render.
+    act(() => {
+      renderer = create(
+        createElement(
+          MobileNativeChatProjectsContext.Provider,
+          { value: chat() },
+          createElement(
+            MobileNativeChatProofMediaContext.Provider,
+            { value: media },
+            createElement(MobileNativeChatMessageIdContext.Provider, { value: 'm1' }, fence(CARD))
+          )
+        )
+      )
+    })
+    const again = renderer!
+    expect(byLabel(again, /^Loading/)).toHaveLength(0)
+    expect(frameOf(again)).toMatchObject({ width: settled.width, height: settled.height })
+    expect(again.root.findAll((node) => node.props.testID === 'proof-compare-tap')).toHaveLength(1)
   })
 
   it('shows download progress, then a placeholder for a refusal', async () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   nativeChatProofCheckTone,
-  nativeChatProofComparePair,
+  nativeChatProofComparePairs,
   normalizeNativeChatProofMediaPath
 } from './native-chat-proof-card-payload'
 
@@ -45,27 +45,40 @@ describe('nativeChatProofCheckTone', () => {
   })
 })
 
-describe('nativeChatProofComparePair', () => {
-  const image = (role?: 'before' | 'after') => ({
+describe('nativeChatProofComparePairs', () => {
+  const image = (role?: 'before' | 'after', path = 'a.png') => ({
     type: 'image' as const,
-    path: 'a.png',
-    source: 'a.png',
+    path,
+    source: path,
     ...(role ? { role } : {})
   })
 
-  it('pairs exactly one before with one after', () => {
+  it('pairs one before with one after', () => {
     const before = image('before')
     const after = image('after')
-    expect(nativeChatProofComparePair([image(), before, after])).toEqual({
-      before,
-      after
-    })
+    expect(nativeChatProofComparePairs([image(), before, after])).toEqual([{ before, after }])
   })
 
-  it('does not pair two befores or a lone after', () => {
+  it('pairs the nth before with the nth after, in card order', () => {
+    const b1 = image('before', 'b1.png')
+    const a1 = image('after', 'a1.png')
+    const b2 = image('before', 'b2.png')
+    const a2 = image('after', 'a2.png')
+    expect(nativeChatProofComparePairs([b1, b2, a1, image(), a2])).toEqual([
+      { before: b1, after: a1 },
+      { before: b2, after: a2 }
+    ])
+  })
+
+  it('leaves an image without a partner out of every pair', () => {
+    const before = image('before', 'b.png')
+    const first = image('after', 'a1.png')
+    expect(nativeChatProofComparePairs([before, first, image('after', 'a2.png')])).toEqual([
+      { before, after: first }
+    ])
+    expect(nativeChatProofComparePairs([image('after')])).toEqual([])
     expect(
-      nativeChatProofComparePair([image('before'), image('before'), image('after')])
-    ).toBeNull()
-    expect(nativeChatProofComparePair([image('after')])).toBeNull()
+      nativeChatProofComparePairs([{ ...image('before'), type: 'video' as const }, image('after')])
+    ).toEqual([])
   })
 })

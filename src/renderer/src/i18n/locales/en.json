@@ -18785,6 +18785,7 @@
         "tallImage": "Tall image, click to see it all",
         "compareFullScreen": "View before and after full screen",
         "compareSide": "Show side",
+        "compareMode": "Compare",
         "showLess": "Show less",
         "showMore": "Show more",
         "moreMedia": "{{count}} more media not shown",

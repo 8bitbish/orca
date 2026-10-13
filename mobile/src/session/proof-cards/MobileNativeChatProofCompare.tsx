@@ -17,11 +17,9 @@ import {
   mobileNativeChatProofCompareBox,
   mobileNativeChatProofCompareClaimsDrag,
   mobileNativeChatProofComparePosition,
-  mobileNativeChatProofCompareTapSide,
-  mobileNativeChatProofPressX,
   stepMobileNativeChatProofComparePosition
 } from './mobile-native-chat-proof-compare'
-import { ProofImageViewer, type ProofViewerSide } from './MobileNativeChatProofImageViewer'
+import { ProofCompareViewer } from './MobileNativeChatProofImageViewer'
 import {
   ProofCaption,
   ProofSkeleton,
@@ -30,11 +28,15 @@ import {
 } from './MobileNativeChatProofParts'
 import { ProofFramedImage, ProofTallCue } from './MobileNativeChatProofThumbnail'
 import { useMobileNativeChatProofThumbnail } from './use-mobile-native-chat-proof-media'
+import {
+  mobileNativeChatMediaColumnWidth,
+  rememberMobileNativeChatMediaColumnWidth
+} from '../mobile-native-chat-size-memory'
 
 const HANDLE = 28
 
 /** Before over after, split by a divider dragged across a fixed frame. A tap that does not
- *  drag opens the side it landed on full screen. `fallback` shows if either cannot load. */
+ *  drag opens the pair full screen on the same slider. `fallback` shows if either cannot load. */
 export function ProofCompare({
   before,
   after,
@@ -47,8 +49,9 @@ export function ProofCompare({
   const beforeImage = useMobileNativeChatProofThumbnail(before.path)
   const afterImage = useMobileNativeChatProofThumbnail(after.path)
   const [position, setPosition] = useState(MOBILE_NATIVE_CHAT_PROOF_COMPARE_START)
-  const [openSide, setOpenSide] = useState<ProofViewerSide | null>(null)
-  const [cardWidth, setCardWidth] = useState(0)
+  const [open, setOpen] = useState(false)
+  // The last card's width, so a slider FlatList remounts draws at its size straight away.
+  const [cardWidth, setCardWidth] = useState(mobileNativeChatMediaColumnWidth)
   const width = useRef(0)
   const grantX = useRef(0)
   const responder = useMemo(
@@ -81,7 +84,7 @@ export function ProofCompare({
     if (name === 'increment' || name === 'decrement') {
       setPosition((current) => stepMobileNativeChatProofComparePosition(current, name))
     } else if (name === 'activate') {
-      setOpenSide('after')
+      setOpen(true)
     }
   }
   let body: React.JSX.Element
@@ -119,10 +122,7 @@ export function ProofCompare({
         >
           <Pressable
             testID="proof-compare-tap"
-            onPress={(event) => {
-              const x = mobileNativeChatProofPressX(event.nativeEvent)
-              setOpenSide(mobileNativeChatProofCompareTapSide(x, width.current, position))
-            }}
+            onPress={() => setOpen(true)}
             style={StyleSheet.absoluteFill}
           >
             <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -157,24 +157,28 @@ export function ProofCompare({
           accessibilityRole="button"
           accessibilityLabel="View before and after full screen"
           hitSlop={8}
-          onPress={() => setOpenSide('after')}
+          onPress={() => setOpen(true)}
           style={[proofStyles.badge, styles.expand]}
         >
           <Maximize2 size={14} color={colors.onAccent} />
         </Pressable>
-        {openSide ? (
-          <ProofImageViewer
-            item={openSide === 'before' ? before : after}
-            thumbnail={openSide === 'before' ? beforeValue : afterValue}
-            onClose={() => setOpenSide(null)}
-            side={{ current: openSide, onChange: setOpenSide }}
+        {open ? (
+          <ProofCompareViewer
+            before={{ item: before, thumbnail: beforeValue }}
+            after={{ item: after, thumbnail: afterValue }}
+            onClose={() => setOpen(false)}
           />
         ) : null}
       </View>
     )
   }
   return (
-    <View onLayout={(event: LayoutChangeEvent) => setCardWidth(event.nativeEvent.layout.width)}>
+    <View
+      onLayout={(event: LayoutChangeEvent) => {
+        rememberMobileNativeChatMediaColumnWidth(event.nativeEvent.layout.width)
+        setCardWidth(event.nativeEvent.layout.width)
+      }}
+    >
       {body}
       <ProofCaption item={before} prefix="Before" />
       <ProofCaption item={after} prefix="After" />

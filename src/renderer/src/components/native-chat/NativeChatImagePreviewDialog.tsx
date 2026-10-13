@@ -3,6 +3,10 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
 import { keepPreviewOpenForChatMenu } from './native-chat-image-copy'
+import {
+  NativeChatImageCompareLayer,
+  type NativeChatImageCompare
+} from './NativeChatImageCompareLayer'
 import { useNativeChatImageZoom } from './use-native-chat-image-zoom'
 
 const isMac = typeof navigator !== 'undefined' && navigator.userAgent.includes('Mac')
@@ -24,13 +28,15 @@ function ZoomableImage({
   label,
   onDismiss,
   accessory,
-  copySrc
+  copySrc,
+  compare
 }: {
   src: string
   label: string
   onDismiss: () => void
   accessory?: React.ReactNode
   copySrc?: string
+  compare?: NativeChatImageCompare
 }): React.JSX.Element {
   const zoom = useNativeChatImageZoom(onDismiss)
   const { view, image } = zoom
@@ -123,6 +129,9 @@ function ZoomableImage({
               : { visibility: 'hidden' }
           }
         />
+        {compare && view && image ? (
+          <NativeChatImageCompareLayer compare={compare} view={view} image={image} />
+        ) : null}
       </div>
       <p className="shrink-0 truncate pt-2 text-[11px] text-muted-foreground">{hint}</p>
     </div>
@@ -138,7 +147,8 @@ export function NativeChatImagePreviewDialog({
   src,
   pendingLabel,
   accessory,
-  copySrc
+  copySrc,
+  compare
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -150,6 +160,8 @@ export function NativeChatImagePreviewDialog({
   accessory?: React.ReactNode
   /** The chat menu's Copy Image source for the shown image. */
   copySrc?: string
+  /** A before image to compare `src` against with a slider. */
+  compare?: NativeChatImageCompare
 }): React.JSX.Element {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -178,6 +190,7 @@ export function NativeChatImagePreviewDialog({
             label={label}
             accessory={accessory}
             copySrc={copySrc}
+            compare={compare}
             onDismiss={() => onOpenChange(false)}
           />
         ) : (

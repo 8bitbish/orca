@@ -211,22 +211,74 @@ describe('proof image thumbnails and full-screen viewer', () => {
     expect(modals(root)).toHaveLength(0)
   })
 
-  it('opens the slider side a tap lands on, and switches sides in the viewer', async () => {
+  it('opens the pair full screen on a slider, and switches to either side alone', async () => {
     const root = await render([BEFORE, AFTER])
     // Twice: the card's width first, then the slider that appears at that width.
     layOut(root, 340, 360)
     layOut(root, 340, 360)
     const [tap] = root.root.findAll((node) => node.props.testID === 'proof-compare-tap')
     await act(async () => tap.props.onPress({ nativeEvent: { locationX: 60 } }))
+    expect(viewerLabel(root)).toEqual(['Before and after: after.png'])
+    layOut(root, 390, 844)
+    const divider = () => root.root.findAll((n) => n.props.testID === 'proof-viewer-divider')
+    const clipWidth = () =>
+      styleOf(find(root, (n) => n.props.testID === 'proof-viewer-before-clip')[0]).width
+    expect(divider()[0].props.accessibilityValue.now).toBe(50)
+    expect(clipWidth()).toBe(195)
+
+    // Dragging the full-screen divider moves the before clip with it.
+    act(() => divider()[0].props.onPanResponderGrant({}, { dx: 0 }))
+    act(() => divider()[0].props.onPanResponderMove({}, { dx: 117 }))
+    expect(divider()[0].props.accessibilityValue.now).toBe(80)
+    expect(clipWidth()).toBeCloseTo(312, 0)
+
+    const tabs = () => find(root, (node) => node.props.accessibilityRole === 'tab')
+    expect(tabs().map((tab) => tab.props.accessibilityState.selected)).toEqual([false, true, false])
+    await act(async () => tabs()[0].props.onPress())
     expect(viewerLabel(root)).toEqual(['Before: before.png'])
-    const after = find(root, (node) => node.props.accessibilityRole === 'tab')[1]
-    await act(async () => after.props.onPress())
+    expect(divider()).toHaveLength(0)
+    await act(async () => tabs()[2].props.onPress())
     expect(viewerLabel(root)).toEqual(['After: after.png'])
     act(() => byLabel(root, 'Close')[0].props.onPress())
     expect(modals(root)).toHaveLength(0)
 
-    await act(async () => tap.props.onPress({ nativeEvent: { locationX: 300 } }))
-    expect(viewerLabel(root)).toEqual(['After: after.png'])
+    await act(async () => byLabel(root, 'View before and after full screen')[0].props.onPress())
+    expect(viewerLabel(root)).toEqual(['Before and after: after.png'])
+  })
+
+  it('gives every before/after pair its own slider, in card order', async () => {
+    const second = (item: NativeChatProofMedia): NativeChatProofMedia => ({
+      ...item,
+      source: item.source.replace('.png', '-2.png'),
+      path: item.path.replace('.png', '-2.png')
+    })
+    SIZES['before-2.png'] = [1000, 625]
+    SIZES['after-2.png'] = [1000, 625]
+    const root = await render([BEFORE, second(BEFORE), AFTER, BOARD, second(AFTER)])
+    layOut(root, 340, 360)
+    layOut(root, 340, 360)
+    const taps = root.root.findAll((node) => node.props.testID === 'proof-compare-tap')
+    expect(taps).toHaveLength(2)
+    // Only the unpaired board is left for the strip.
+    expect(root.root.findAll((node) => node.props.testID === 'proof-strip-tile')).toHaveLength(1)
+    await act(async () => taps[1].props.onPress({ nativeEvent: { locationX: 10 } }))
+    expect(viewerLabel(root)).toEqual(['Before and after: after-2.png'])
+  })
+
+  it('keeps a strip tile as wide as its image, whatever its caption', async () => {
+    const caption = 'A very long caption that would otherwise stretch the tile far past its image'
+    SIZES['phone.png'] = [400, 868]
+    const root = await render([
+      { ...BOARD, source: 'demo/phone.png', path: 'demo/phone.png', caption }
+    ])
+    const [tile] = root.root.findAll((node) => node.props.testID === 'proof-strip-tile')
+    const [frame] = byLabel(root, `${caption}, show full size`)
+    expect(styleOf(tile).width).toBe(styleOf(frame).width)
+    expect(styleOf(frame).width).toBe(128)
+    const captionText = find(root, (node) => String(node.type) === 'Text').find((node) =>
+      node.children.includes(caption)
+    )!
+    expect(captionText.props.numberOfLines).toBe(2)
   })
 
   it('drags the divider without opening anything, and keeps a fixed frame', async () => {

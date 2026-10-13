@@ -238,19 +238,8 @@ export function MobileNativeChatView({
       }),
     [messages, folded, streaming, pending, imagePreviewsByMessageId]
   )
-  const {
-    listRef,
-    showJumpToTail,
-    pinToTail,
-    pinToTailAfterContentResize,
-    jumpToTail,
-    beginUserScroll,
-    endUserDrag,
-    beginMomentum,
-    endMomentum,
-    detachFromTail,
-    recordScrollMetrics
-  } = useMobileNativeChatTailFollow<NativeChatMessage>({ hasItems: data.length > 0 })
+  const { listRef, showJumpToTail, jumpToTail, detachFromTail, recordScrollMetrics, listProps } =
+    useMobileNativeChatTailFollow<NativeChatMessage>({ hasItems: data.length > 0 })
 
   const handleSend = useCallback(
     async (text: string): Promise<boolean> => {
@@ -363,13 +352,8 @@ export function MobileNativeChatView({
               // instead of being swallowed by the dismiss gesture.
               keyboardShouldPersistTaps="handled"
               onScroll={onScroll}
-              onScrollBeginDrag={beginUserScroll}
-              onScrollEndDrag={endUserDrag}
-              onMomentumScrollBegin={beginMomentum}
-              onMomentumScrollEnd={endMomentum}
               scrollEventThrottle={32}
-              onContentSizeChange={pinToTailAfterContentResize}
-              onLayout={pinToTail}
+              {...listProps}
               ListHeaderComponent={
                 hasMore ? (
                   <Pressable

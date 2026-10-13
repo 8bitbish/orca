@@ -196,11 +196,21 @@ export function nativeChatProofCheckTone(result: string): NativeChatProofCheckTo
   return PASS.test(result) ? 'pass' : 'neutral'
 }
 
-/** The before/after pair the card compares with a slider: exactly one of each image. */
-export function nativeChatProofComparePair(
+export type NativeChatProofComparePair = {
+  before: NativeChatProofMedia
+  after: NativeChatProofMedia
+}
+
+/** The before/after pairs the card compares with sliders: the nth `before` image with the
+ *  nth `after`, in card order. An image left without a partner is not in a pair. */
+export function nativeChatProofComparePairs(
   items: readonly NativeChatProofMedia[]
-): { before: NativeChatProofMedia; after: NativeChatProofMedia } | null {
+): NativeChatProofComparePair[] {
   const before = items.filter((item) => item.type === 'image' && item.role === 'before')
   const after = items.filter((item) => item.type === 'image' && item.role === 'after')
-  return before.length === 1 && after.length === 1 ? { before: before[0], after: after[0] } : null
+  const count = Math.min(before.length, after.length)
+  return Array.from({ length: count }, (_, index) => ({
+    before: before[index],
+    after: after[index]
+  }))
 }

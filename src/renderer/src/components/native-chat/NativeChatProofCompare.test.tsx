@@ -53,6 +53,20 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+function rect(width: number, height: number): DOMRect {
+  return {
+    x: 0,
+    y: 0,
+    left: 0,
+    top: 0,
+    right: width,
+    bottom: height,
+    width,
+    height,
+    toJSON: () => ({})
+  }
+}
+
 describe('proof card thumbnails', () => {
   it('keep one fixed height whatever the image’s shape', async () => {
     render(
@@ -89,6 +103,18 @@ describe('proof card thumbnails', () => {
     ])
     // The card asks for thumbnails only; the full file waits for the viewer.
     expect(proofImage.mock.calls.every(([args]) => args.variant === 'thumbnail')).toBe(true)
+  })
+
+  it('stay as wide as their image, with a long caption wrapped to two lines', async () => {
+    const caption = 'A very long caption that would otherwise stretch the tile far past its image'
+    render(<NativeChatProofViewer media={[{ ...image('phone.png'), caption }]} />)
+    const tile = await screen.findByRole('button', { name: `View image: ${caption}` })
+    const figure = tile.closest<HTMLElement>('[data-proof-media="image"]')!
+    expect(figure.style.width).toBe('128px')
+    const shown = figure.querySelector<HTMLElement>('[data-proof-caption]')!
+    expect(shown).toHaveAttribute('data-wrap')
+    expect(shown.className).toContain('data-[wrap]:line-clamp-2')
+    expect(shown).toHaveAttribute('title', caption)
   })
 
   it('open the full image in the zoom viewer', async () => {
@@ -163,28 +189,70 @@ describe('proof card before/after slider', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('opens the clicked side full screen on a click, with a switch to the other side', async () => {
+  it('opens the pair full screen on a slider, with Before and After on their own', async () => {
     const frame = await renderPair()
     fireEvent.pointerDown(frame, { pointerId: 1, button: 0, clientX: 80, clientY: 100 })
     fireEvent.pointerUp(frame, { pointerId: 1, clientX: 81, clientY: 100 })
     expect(clipOf()).toBe('inset(0 50% 0 0)')
-    let dialog = await screen.findByRole('dialog')
-    expect(viewerImage(dialog)).toHaveAttribute('alt', 'Before: tall.png')
-    expect(within(dialog).getByRole('button', { name: 'Before' })).toHaveAttribute(
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('button', { name: 'Compare' })).toHaveAttribute(
       'aria-pressed',
       'true'
     )
+    // The viewer's image is the after side; before sits over it, cut at the divider.
+    expect(viewerImage(dialog)).toHaveAttribute('alt', expect.stringContaining('After: board.png'))
+    const surface = dialog.querySelector<HTMLElement>('[data-image-viewer-surface]')!
+    vi.spyOn(surface, 'getBoundingClientRect').mockReturnValue(rect(1000, 800))
+    const image = viewerImage(dialog)
+    Object.defineProperty(image, 'naturalWidth', { value: 1534 })
+    Object.defineProperty(image, 'naturalHeight', { value: 3600 })
+    fireEvent.load(image)
+    const clip = await waitFor(() => {
+      const element = dialog.querySelector<HTMLElement>('[data-image-viewer-compare-clip]')
+      if (!element) {
+        throw new Error('no full-screen slider yet')
+      }
+      return element
+    })
+    expect(clip.style.clipPath).toBe('inset(0 50% 0 0)')
+    expect(dialog.querySelector('[data-image-viewer-compare-before]')).toHaveAttribute(
+      'src',
+      FULL_JPEG
+    )
+    const divider = dialog.querySelector<HTMLElement>('[data-image-viewer-compare-divider]')!
+    fireEvent.pointerDown(divider, { pointerId: 3, button: 0, clientX: 500, clientY: 400 })
+    fireEvent.pointerMove(divider, { pointerId: 3, clientX: 800, clientY: 400 })
+    fireEvent.pointerUp(divider, { pointerId: 3, clientX: 800, clientY: 400 })
+    expect(clip.style.clipPath).toBe('inset(0 20% 0 0)')
+    fireEvent.change(
+      within(dialog).getByRole('slider', { name: 'Drag to compare before and after' }),
+      { target: { value: '40' } }
+    )
+    expect(clip.style.clipPath).toBe('inset(0 60% 0 0)')
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Before' }))
+    expect(viewerImage(dialog)).toHaveAttribute('alt', 'Before: tall.png')
+    expect(dialog.querySelector('[data-image-viewer-compare-clip]')).toBeNull()
     fireEvent.click(within(dialog).getByRole('button', { name: 'After' }))
     expect(viewerImage(dialog)).toHaveAttribute('alt', 'After: board.png')
-    fireEvent.keyDown(viewerImage(dialog), {
-      key: 'Escape'
-    })
+    fireEvent.keyDown(viewerImage(dialog), { key: 'Escape' })
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
 
-    fireEvent.pointerDown(frame, { pointerId: 2, button: 0, clientX: 320, clientY: 100 })
-    fireEvent.pointerUp(frame, { pointerId: 2, clientX: 320, clientY: 100 })
-    dialog = await screen.findByRole('dialog')
-    expect(viewerImage(dialog)).toHaveAttribute('alt', 'After: board.png')
+  it('gives every before/after pair its own slider', async () => {
+    render(
+      <NativeChatProofViewer
+        media={[
+          image('tall.png', 'before'),
+          image('phone.png', 'before'),
+          image('board.png', 'after'),
+          image('banner.png'),
+          image('wide.png', 'after')
+        ]}
+      />
+    )
+    await waitFor(() => expect(document.querySelectorAll('[data-proof-compare]')).toHaveLength(2))
+    expect(document.querySelectorAll('[data-proof-image]')).toHaveLength(1)
   })
 
   it('keeps the keyboard slider and a full-screen button', async () => {
@@ -195,6 +263,9 @@ describe('proof card before/after slider', () => {
     expect(clipOf()).toBe('inset(0 70% 0 0)')
     fireEvent.click(screen.getByRole('button', { name: 'View before and after full screen' }))
     const dialog = await screen.findByRole('dialog')
-    expect(viewerImage(dialog)).toHaveAttribute('alt', 'After: board.png')
+    expect(within(dialog).getByRole('button', { name: 'Compare' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
   })
 })

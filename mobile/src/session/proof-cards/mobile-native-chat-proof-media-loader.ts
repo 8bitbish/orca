@@ -33,11 +33,15 @@ export type MobileNativeChatProofMediaLoader = {
   ) => Promise<MobileNativeChatProofFile>
   /** The host's ≤1024 px rendition of an image, kept in memory. */
   loadThumbnail: (path: string) => Promise<MobileNativeChatProofThumbnail>
+  /** What a load already settled on, synchronously, so a remounted card starts drawn. */
+  peekFile?: (path: string) => Extract<MobileNativeChatProofFile, { ok: true }> | null
+  peekThumbnail?: (path: string) => Extract<MobileNativeChatProofThumbnail, { ok: true }> | null
 }
 
 const UNAVAILABLE = { ok: false, reason: 'unavailable' } as const
-// Data URIs are large; keep only the few a scrolled transcript is likely to redraw.
-const MAX_THUMBNAILS = 24
+// Data URIs are large; keep the ones a long scrolled transcript is likely to redraw.
+const MAX_THUMBNAILS = 64
+const MAX_SETTLED_FILES = 64
 
 type Flight = {
   controller: AbortController
@@ -97,6 +101,8 @@ export function createMobileNativeChatProofMediaLoader({
 }): MobileNativeChatProofMediaLoader {
   const flights = new Map<string, Flight>()
   const thumbnails = new Map<string, Promise<MobileNativeChatProofThumbnail>>()
+  const settledThumbnails = new Map<string, Extract<MobileNativeChatProofThumbnail, { ok: true }>>()
+  const settledFiles = new Map<string, Extract<MobileNativeChatProofFile, { ok: true }>>()
   const slots = createSlots(maxConcurrentDownloads)
 
   async function download(
@@ -253,6 +259,13 @@ export function createMobileNativeChatProofMediaLoader({
         }
         signal?.addEventListener('abort', abandon, { once: true })
         void flight.result.then((result) => {
+          if (result.ok) {
+            settledFiles.delete(path)
+            settledFiles.set(path, result)
+            while (settledFiles.size > MAX_SETTLED_FILES) {
+              settledFiles.delete(settledFiles.keys().next().value!)
+            }
+          }
           if (!left) {
             leave()
             resolve(result)
@@ -274,14 +287,20 @@ export function createMobileNativeChatProofMediaLoader({
           // A miss may be a dropped connection; a later mount may try again.
           if (!reply.ok) {
             thumbnails.delete(path)
+          } else if (thumbnails.get(path) === load) {
+            settledThumbnails.set(path, reply)
           }
           return reply
         })
       thumbnails.set(path, load)
       while (thumbnails.size > MAX_THUMBNAILS) {
-        thumbnails.delete(thumbnails.keys().next().value!)
+        const oldest = thumbnails.keys().next().value!
+        thumbnails.delete(oldest)
+        settledThumbnails.delete(oldest)
       }
       return load
-    }
+    },
+    peekFile: (path) => settledFiles.get(path) ?? null,
+    peekThumbnail: (path) => (thumbnails.has(path) ? (settledThumbnails.get(path) ?? null) : null)
   }
 }

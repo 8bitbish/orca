@@ -316,4 +316,31 @@ describe('proof media loader', () => {
     await proofs.loadThumbnail('a.png')
     expect(thumbnail).toHaveBeenCalledTimes(2)
   })
+
+  it('hands back what already settled synchronously, so a remounted card starts drawn', async () => {
+    const image = {
+      src: 'data:image/png;base64,iVBORw0KGgo=',
+      mimeType: 'image/png',
+      width: 10,
+      height: 20,
+      byteLength: 8
+    } as const
+    let fail = true
+    const thumbnail = vi.fn(async () =>
+      fail ? ({ ok: false, reason: 'unavailable' } as const) : ({ ok: true, image } as const)
+    )
+    const proofs = loader(fakeHost(bytes(CHUNK + 5), { thumbnail }))
+    expect(proofs.peekThumbnail?.('a.png')).toBeNull()
+    await proofs.loadThumbnail('a.png')
+    // A miss is never held: the next mount asks again.
+    expect(proofs.peekThumbnail?.('a.png')).toBeNull()
+    fail = false
+    await proofs.loadThumbnail('a.png')
+    expect(proofs.peekThumbnail?.('a.png')).toEqual({ ok: true, image })
+
+    expect(proofs.peekFile?.(PATH)).toBeNull()
+    const file = await proofs.loadFile(PATH)
+    expect(file.ok).toBe(true)
+    expect(proofs.peekFile?.(PATH)).toEqual(file)
+  })
 })

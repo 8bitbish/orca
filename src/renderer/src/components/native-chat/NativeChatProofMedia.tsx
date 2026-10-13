@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
 import {
-  nativeChatProofComparePair,
+  nativeChatProofComparePairs,
   type NativeChatProofMedia
 } from '../../../../shared/native-chat-proof-card-payload'
 import type { NativeChatProofMediaRefusal } from '../../../../shared/native-chat-proof-media-contract'
@@ -15,6 +15,8 @@ import { useNativeChatProofImage, useNativeChatProofVideo } from './use-native-c
 
 /** Strip tiles: one fixed height, a width that follows the image within bounds. */
 const STRIP_BOX = { height: 176, minWidth: 128, maxWidth: 320 }
+/** A strip placeholder's width: `w-56`. */
+const STRIP_PLACEHOLDER_WIDTH = 224
 
 function itemLabel(item: NativeChatProofMedia): string {
   return item.caption ?? basename(item.source)
@@ -72,8 +74,17 @@ function ProofPlaceholder({
   )
 }
 
-/** One line, cut by CSS; the tooltip has the whole caption, even where the card cut it. */
-function ProofCaption({ item, prefix }: { item: NativeChatProofMedia; prefix?: string }) {
+/** One line (two in the strip), cut by CSS; the tooltip has the whole caption, even where
+ *  the card cut it. */
+function ProofCaption({
+  item,
+  prefix,
+  wrap = false
+}: {
+  item: NativeChatProofMedia
+  prefix?: string
+  wrap?: boolean
+}) {
   const parts = [prefix, item.caption, item.where].filter(Boolean)
   if (parts.length === 0) {
     return null
@@ -82,7 +93,8 @@ function ProofCaption({ item, prefix }: { item: NativeChatProofMedia; prefix?: s
   return (
     <figcaption
       data-proof-caption=""
-      className="mt-1 min-w-0 truncate text-[11px] leading-4 text-muted-foreground"
+      data-wrap={wrap ? '' : undefined}
+      className="mt-1 min-w-0 truncate text-[11px] leading-4 text-muted-foreground data-[wrap]:line-clamp-2 data-[wrap]:whitespace-normal data-[wrap]:break-words"
       title={full.filter(Boolean).join(' · ')}
     >
       {parts.join(' · ')}
@@ -186,7 +198,8 @@ function ProofVideo({ item }: { item: NativeChatProofMedia }): React.JSX.Element
   )
 }
 
-/** One screenshot in the strip; a click shows it full size. */
+/** One screenshot in the strip; a click shows it full size. The tile is as wide as its
+ *  image, so a long caption wraps under it instead of stretching the tile. */
 function ProofImage({ item }: { item: NativeChatProofMedia }): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const thumbnail = useNativeChatProofImage(item.path, 'thumbnail')
@@ -199,12 +212,15 @@ function ProofImage({ item }: { item: NativeChatProofMedia }): React.JSX.Element
         ? translate('components.native-chat.proof.after', 'After')
         : undefined
   let body: React.JSX.Element
+  let width: number = STRIP_BOX.minWidth
   if (thumbnail.status === 'loading') {
     body = <Skeleton className="h-44 w-32" />
   } else if (thumbnail.status === 'missing') {
+    width = STRIP_PLACEHOLDER_WIDTH
     body = <ProofPlaceholder item={item} reason={thumbnail.reason} inStrip />
   } else {
     const frame = imageThumbnailFrame(thumbnail.value.width, thumbnail.value.height, STRIP_BOX)
+    width = frame.width
     body = (
       <>
         <button
@@ -239,9 +255,10 @@ function ProofImage({ item }: { item: NativeChatProofMedia }): React.JSX.Element
     <figure
       data-proof-media="image"
       className="m-0 flex min-w-0 max-w-[85%] shrink-0 snap-start flex-col"
+      style={{ width }}
     >
       {body}
-      <ProofCaption item={item} prefix={prefix} />
+      <ProofCaption item={item} prefix={prefix} wrap />
     </figure>
   )
 }
@@ -262,8 +279,8 @@ function ProofStrip({ items }: { items: readonly NativeChatProofMedia[] }) {
   )
 }
 
-/** A proof card's media: recordings first, then a before/after slider when the card
- *  has exactly one of each, then the other screenshots as a scrolling strip. */
+/** A proof card's media: recordings first, then a before/after slider for each pair,
+ *  then the other screenshots as a scrolling strip. */
 export function NativeChatProofViewer({
   media
 }: {
@@ -272,18 +289,18 @@ export function NativeChatProofViewer({
   if (media.length === 0) {
     return null
   }
-  const pair = nativeChatProofComparePair(media)
+  const pairs = nativeChatProofComparePairs(media)
+  const paired = new Set(pairs.flatMap((pair) => [pair.before, pair.after]))
   const videos = media.filter((item) => item.type === 'video')
-  const images = media.filter(
-    (item) => item.type === 'image' && item !== pair?.before && item !== pair?.after
-  )
+  const images = media.filter((item) => item.type === 'image' && !paired.has(item))
   return (
     <div data-proof-viewer="" className="flex min-w-0 flex-col gap-2.5">
       {videos.map((item, index) => (
         <ProofVideo key={`${index}:${item.source}`} item={item} />
       ))}
-      {pair ? (
+      {pairs.map((pair) => (
         <NativeChatProofCompare
+          key={`${pair.before.path}|${pair.after.path}`}
           before={pair.before}
           after={pair.after}
           fallback={<ProofStrip items={[pair.before, pair.after]} />}
@@ -301,7 +318,7 @@ export function NativeChatProofViewer({
             </>
           }
         />
-      ) : null}
+      ))}
       <ProofStrip items={images} />
     </div>
   )

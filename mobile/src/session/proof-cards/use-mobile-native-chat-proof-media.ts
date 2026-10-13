@@ -18,9 +18,11 @@ const LOADING = { status: 'loading' } as const
 const UNAVAILABLE = { status: 'missing', reason: 'unavailable' } as const
 
 /** Runs `load` once the host's support is known, for as long as the card shows `key`;
- *  unmounting or a new key aborts it. A null key waits. */
+ *  unmounting or a new key aborts it. A null key waits. Until it settles, what the loader
+ *  already holds (`peek`) shows, so a card FlatList remounts keeps its size. */
 function useProofLoad<T>(
   key: string | null,
+  peek: (loader: MobileNativeChatProofMediaLoader) => T | null,
   load: (
     loader: MobileNativeChatProofMediaLoader,
     signal: AbortSignal,
@@ -58,27 +60,40 @@ function useProofLoad<T>(
   if (settledWithout) {
     return UNAVAILABLE
   }
-  return state !== null && state.key === key && loader !== null ? state.value : LOADING
+  const settled = state !== null && state.key === key && loader !== null ? state.value : null
+  if (settled !== null && settled.status !== 'loading') {
+    return settled
+  }
+  const held = loader === null ? null : peek(loader)
+  return held === null ? (settled ?? LOADING) : { status: 'ready', value: held }
 }
 
 /** A proof file (recording or full-size image) in the phone's cache. Null `path` waits. */
 export function useMobileNativeChatProofFile(
   path: string | null
 ): MobileNativeChatProofMediaState<ReadyFile> {
-  return useProofLoad(path, async (loader, signal, onProgress) => {
-    const file = await loader.loadFile(path ?? '', { signal, onProgress })
-    return file.ok ? { status: 'ready', value: file } : { status: 'missing', reason: file.reason }
-  })
+  return useProofLoad(
+    path,
+    (loader) => (path === null ? null : (loader.peekFile?.(path) ?? null)),
+    async (loader, signal, onProgress) => {
+      const file = await loader.loadFile(path ?? '', { signal, onProgress })
+      return file.ok ? { status: 'ready', value: file } : { status: 'missing', reason: file.reason }
+    }
+  )
 }
 
 /** The host's ≤1024 px rendition of a proof image. Null `path` waits. */
 export function useMobileNativeChatProofThumbnail(
   path: string | null
 ): MobileNativeChatProofMediaState<NativeChatSlackImageResult> {
-  return useProofLoad(path, async (loader) => {
-    const reply = await loader.loadThumbnail(path ?? '')
-    return reply.ok
-      ? { status: 'ready', value: reply.image }
-      : { status: 'missing', reason: reply.reason }
-  })
+  return useProofLoad(
+    path,
+    (loader) => (path === null ? null : (loader.peekThumbnail?.(path)?.image ?? null)),
+    async (loader) => {
+      const reply = await loader.loadThumbnail(path ?? '')
+      return reply.ok
+        ? { status: 'ready', value: reply.image }
+        : { status: 'missing', reason: reply.reason }
+    }
+  )
 }

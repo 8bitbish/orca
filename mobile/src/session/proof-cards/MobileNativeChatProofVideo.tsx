@@ -17,10 +17,47 @@ import {
   proofStyles
 } from './MobileNativeChatProofParts'
 import { useMobileNativeChatProofFile } from './use-mobile-native-chat-proof-media'
+import {
+  mobileNativeChatMediaColumnWidth,
+  mobileNativeChatMediaSizeMemory,
+  rememberMobileNativeChatMediaColumnWidth
+} from '../mobile-native-chat-size-memory'
+
+/** The recording's frame at `width`: its own shape once known (remembered across remounts),
+ *  16:10 until then, so the loading block and the player take the same space. */
+function videoFrame(path: string, width: number): { width: number; height: number } {
+  const size = mobileNativeChatMediaSizeMemory.get(path)
+  return mobileNativeChatProofFrame(
+    mobileNativeChatProofAspect(size?.width, size?.height),
+    width,
+    PROOF_MAX_MEDIA_HEIGHT
+  )
+}
+
+/** Tracks the media column's width, starting from the last one laid out. */
+function useColumnWidth(): [number, (event: LayoutChangeEvent) => void] {
+  const [width, setWidth] = useState(mobileNativeChatMediaColumnWidth)
+  return [
+    width,
+    (event) => {
+      const next = event.nativeEvent.layout.width
+      rememberMobileNativeChatMediaColumnWidth(next)
+      setWidth(next)
+    }
+  ]
+}
 
 /** Plays muted and looped in the card, as on desktop; a tap opens the system full-screen
  *  player with its controls, still muted until Jake turns the sound on. */
-function ProofVideoPlayer({ uri, label }: { uri: string; label: string }): React.JSX.Element {
+function ProofVideoPlayer({
+  path,
+  uri,
+  label
+}: {
+  path: string
+  uri: string
+  label: string
+}): React.JSX.Element {
   const player = useVideoPlayer(uri, (created) => {
     created.muted = true
     created.loop = true
@@ -28,11 +65,12 @@ function ProofVideoPlayer({ uri, label }: { uri: string; label: string }): React
   })
   const view = useRef<VideoView>(null)
   const [fullScreen, setFullScreen] = useState(false)
-  const [size, setSize] = useState<{ width: number; height: number } | null>(null)
-  const [maxWidth, setMaxWidth] = useState(0)
+  const [size, setSize] = useState(() => mobileNativeChatMediaSizeMemory.get(path) ?? null)
+  const [maxWidth, onLayout] = useColumnWidth()
   useEffect(() => {
     const keep = (track: { size: { width: number; height: number } } | null | undefined): void => {
       if (track?.size.width && track.size.height) {
+        mobileNativeChatMediaSizeMemory.set(path, track.size)
         setSize(track.size)
       }
     }
@@ -47,7 +85,7 @@ function ProofVideoPlayer({ uri, label }: { uri: string; label: string }): React
         subscription.remove()
       }
     }
-  }, [player])
+  }, [player, path])
   const frame = mobileNativeChatProofFrame(
     mobileNativeChatProofAspect(size?.width, size?.height),
     maxWidth,
@@ -57,7 +95,7 @@ function ProofVideoPlayer({ uri, label }: { uri: string; label: string }): React
     view.current?.enterFullscreen().catch(() => setFullScreen(false))
   }
   return (
-    <View onLayout={(event: LayoutChangeEvent) => setMaxWidth(event.nativeEvent.layout.width)}>
+    <View onLayout={onLayout}>
       <View style={[proofStyles.frame, styles.videoFrame, frame]}>
         <VideoView
           ref={view}
@@ -89,13 +127,24 @@ function ProofVideoPlayer({ uri, label }: { uri: string; label: string }): React
 /** A recording from the host's proof folder, downloaded into the phone's cache first. */
 export function ProofVideo({ item }: { item: NativeChatProofMedia }): React.JSX.Element {
   const file = useMobileNativeChatProofFile(item.path)
+  const [width, onLayout] = useColumnWidth()
   let body: React.JSX.Element
   if (file.status === 'loading') {
-    body = <ProofSkeleton width="100%" height={196} received={file.received} total={file.total} />
+    const frame = videoFrame(item.path, width)
+    body = (
+      <View onLayout={onLayout}>
+        <ProofSkeleton
+          width={frame.width || '100%'}
+          height={frame.height || PROOF_VIDEO_LOADING_HEIGHT}
+          received={file.received}
+          total={file.total}
+        />
+      </View>
+    )
   } else if (file.status === 'missing') {
     body = <ProofPlaceholder item={item} reason={file.reason} />
   } else {
-    body = <ProofVideoPlayer uri={file.value.uri} label={proofItemLabel(item)} />
+    body = <ProofVideoPlayer path={item.path} uri={file.value.uri} label={proofItemLabel(item)} />
   }
   return (
     <View>
@@ -104,6 +153,8 @@ export function ProofVideo({ item }: { item: NativeChatProofMedia }): React.JSX.
     </View>
   )
 }
+
+const PROOF_VIDEO_LOADING_HEIGHT = 196
 
 const styles = StyleSheet.create({
   videoFrame: { backgroundColor: colors.bgBase },

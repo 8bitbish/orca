@@ -7,6 +7,7 @@ import type { MobileNativeChatProofMediaRefusal } from './mobile-native-chat-pro
 import { ProofToggleLabel, proofExpandableProps } from './MobileNativeChatProofOverflow'
 
 export const PROOF_STRIP_HEIGHT = 176
+export const PROOF_STRIP_PLACEHOLDER_WIDTH = 224
 export const PROOF_MAX_MEDIA_HEIGHT = 400
 
 export function proofBasename(source: string): string {
@@ -86,13 +87,15 @@ export function ProofPlaceholder({
   )
 }
 
-/** One line; a caption the card cut to fit opens in full on a tap. */
+/** One line (or `lines`); a caption the card cut to fit opens in full on a tap. */
 export function ProofCaption({
   item,
-  prefix
+  prefix,
+  lines = 1
 }: {
   item: NativeChatProofMedia
   prefix?: string
+  lines?: number
 }): React.JSX.Element | null {
   const [expanded, setExpanded] = useState(false)
   const parts = [prefix, item.caption, item.where].filter(Boolean)
@@ -101,7 +104,7 @@ export function ProofCaption({
   }
   if (!item.full) {
     return (
-      <Text style={styles.caption} numberOfLines={1}>
+      <Text style={styles.caption} numberOfLines={lines}>
         {parts.join(' · ')}
       </Text>
     )
@@ -110,7 +113,7 @@ export function ProofCaption({
   return (
     <Text
       style={styles.caption}
-      numberOfLines={expanded ? undefined : 1}
+      numberOfLines={expanded ? undefined : lines}
       {...proofExpandableProps(expanded, () => setExpanded((open) => !open))}
     >
       {expanded ? full.filter(Boolean).join(' · ') : parts.join(' · ')}
@@ -218,7 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgPanel,
     paddingHorizontal: spacing.md
   },
-  placeholderStrip: { height: PROOF_STRIP_HEIGHT, width: 224 },
+  placeholderStrip: { height: PROOF_STRIP_HEIGHT, width: PROOF_STRIP_PLACEHOLDER_WIDTH },
   placeholderTitle: { color: colors.textPrimary, fontSize: typography.metaSize, fontWeight: '500' },
   placeholderFile: {
     color: colors.textSecondary,

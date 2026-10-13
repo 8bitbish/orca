@@ -1,5 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { FlatList, NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
+
+// Anchors the first visible row, so rows above the viewport settling to a new height (media,
+// diagrams, older history) no longer shove what you're reading. Following the tail stays here.
+const MAINTAIN_VISIBLE_CONTENT = { minIndexForVisible: 0 } as const
 
 /** Distance from the bottom, in points, still treated as "at the tail". */
 const AT_TAIL_SLOP = 80
@@ -27,6 +31,16 @@ export type MobileNativeChatTailFollow<TItem> = {
   /** Leave the tail deliberately, e.g. before prepending older history. */
   detachFromTail: () => void
   recordScrollMetrics: (event: NativeScrollEvent) => void
+  /** The scroll wiring above, spread onto the transcript list. */
+  listProps: {
+    onScrollBeginDrag: () => void
+    onScrollEndDrag: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+    onMomentumScrollBegin: () => void
+    onMomentumScrollEnd: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+    onContentSizeChange: (width: number, height: number) => void
+    onLayout: () => void
+    maintainVisibleContentPosition: typeof MAINTAIN_VISIBLE_CONTENT
+  }
 }
 
 /** Sole owner of transcript scroll position.
@@ -168,6 +182,26 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
 
   useEffect(() => clearUserScrollSettle, [clearUserScrollSettle])
 
+  const listProps = useMemo(
+    () => ({
+      onScrollBeginDrag: beginUserScroll,
+      onScrollEndDrag: endUserDrag,
+      onMomentumScrollBegin: beginMomentum,
+      onMomentumScrollEnd: endMomentum,
+      onContentSizeChange: pinToTailAfterContentResize,
+      onLayout: pinToTail,
+      maintainVisibleContentPosition: MAINTAIN_VISIBLE_CONTENT
+    }),
+    [
+      beginUserScroll,
+      endUserDrag,
+      beginMomentum,
+      endMomentum,
+      pinToTailAfterContentResize,
+      pinToTail
+    ]
+  )
+
   return {
     listRef,
     showJumpToTail: !following && !atTail,
@@ -179,6 +213,7 @@ export function useMobileNativeChatTailFollow<TItem>(args: {
     beginMomentum,
     endMomentum,
     detachFromTail,
-    recordScrollMetrics
+    recordScrollMetrics,
+    listProps
   }
 }

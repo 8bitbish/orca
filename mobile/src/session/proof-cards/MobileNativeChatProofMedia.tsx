@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import {
-  nativeChatProofComparePair,
+  nativeChatProofComparePairs,
   type NativeChatProofMedia
 } from '../../../../src/shared/native-chat-proof-card-payload'
 import { imageThumbnailFrame } from '../../../../src/shared/image-thumbnail-frame'
@@ -10,6 +10,7 @@ import { ProofCompare } from './MobileNativeChatProofCompare'
 import { ProofImageViewer } from './MobileNativeChatProofImageViewer'
 import {
   PROOF_STRIP_HEIGHT,
+  PROOF_STRIP_PLACEHOLDER_WIDTH,
   ProofCaption,
   ProofPlaceholder,
   ProofSkeleton,
@@ -25,19 +26,23 @@ function rolePrefix(item: NativeChatProofMedia): string | undefined {
   return item.role === 'before' ? 'Before' : item.role === 'after' ? 'After' : undefined
 }
 
-/** One screenshot in the strip, in a fixed-size frame; a tap shows it full screen. */
+/** One screenshot in the strip, in a fixed-size frame; a tap shows it full screen. The
+ *  caption wraps to the image's width so tiles stay image-wide; the viewer has it all. */
 function ProofImage({ item }: { item: NativeChatProofMedia }): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const thumbnail = useMobileNativeChatProofThumbnail(item.path)
   const label = proofItemLabel(item)
   let body: React.JSX.Element
+  let width: number = PROOF_STRIP_BOX.minWidth
   if (thumbnail.status === 'loading') {
-    body = <ProofSkeleton width={PROOF_STRIP_BOX.minWidth} height={PROOF_STRIP_HEIGHT} />
+    body = <ProofSkeleton width={width} height={PROOF_STRIP_HEIGHT} />
   } else if (thumbnail.status === 'missing') {
+    width = PROOF_STRIP_PLACEHOLDER_WIDTH
     body = <ProofPlaceholder item={item} reason={thumbnail.reason} inStrip />
   } else {
     const value = thumbnail.value
     const frame = imageThumbnailFrame(value.width, value.height, PROOF_STRIP_BOX)
+    width = frame.width
     body = (
       <>
         <Pressable
@@ -61,9 +66,9 @@ function ProofImage({ item }: { item: NativeChatProofMedia }): React.JSX.Element
     )
   }
   return (
-    <View style={styles.tile}>
+    <View testID="proof-strip-tile" style={{ width }}>
       {body}
-      <ProofCaption item={item} prefix={rolePrefix(item)} />
+      <ProofCaption item={item} prefix={rolePrefix(item)} lines={2} />
     </View>
   )
 }
@@ -90,8 +95,8 @@ function ProofStrip({
   )
 }
 
-/** A proof card's media: recordings first, then a before/after slider when the card has
- *  exactly one of each, then the other screenshots as a swipeable strip. */
+/** A proof card's media: recordings first, then a before/after slider for each pair, then
+ *  the other screenshots as a swipeable strip. */
 export function MobileNativeChatProofViewer({
   media
 }: {
@@ -100,23 +105,25 @@ export function MobileNativeChatProofViewer({
   if (media.length === 0) {
     return null
   }
-  const pair = nativeChatProofComparePair(media)
+  const pairs = nativeChatProofComparePairs(media)
+  const paired = new Set(pairs.flatMap((pair) => [pair.before, pair.after]))
   const videos = media.filter((item) => item.type === 'video')
-  const images = media.filter(
-    (item) => item.type === 'image' && item !== pair?.before && item !== pair?.after
-  )
+  const images = media.filter((item) => item.type === 'image' && !paired.has(item))
   return (
     <View style={styles.viewer}>
       {proofKeyed(videos, (item) => item.source).map(({ key, item }) => (
         <ProofVideo key={key} item={item} />
       ))}
-      {pair ? (
-        <ProofCompare
-          before={pair.before}
-          after={pair.after}
-          fallback={<ProofStrip items={[pair.before, pair.after]} />}
-        />
-      ) : null}
+      {proofKeyed(pairs, (pair) => `${pair.before.source}|${pair.after.source}`).map(
+        ({ key, item: pair }) => (
+          <ProofCompare
+            key={key}
+            before={pair.before}
+            after={pair.after}
+            fallback={<ProofStrip items={[pair.before, pair.after]} />}
+          />
+        )
+      )}
       <ProofStrip items={images} />
     </View>
   )
@@ -124,6 +131,5 @@ export function MobileNativeChatProofViewer({
 
 const styles = StyleSheet.create({
   viewer: { gap: 10 },
-  strip: { gap: spacing.sm, paddingBottom: 2 },
-  tile: { maxWidth: PROOF_STRIP_BOX.maxWidth }
+  strip: { gap: spacing.sm, paddingBottom: 2 }
 })

@@ -10,6 +10,7 @@ import {
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
 import { MobileDiagramHeader } from '../MobileDiagramHeader'
 import { buildMobileMarkupPreviewDocument } from './mobile-markup-preview-document'
+import { mobileNativeChatHeightMemory } from '../../session/mobile-native-chat-size-memory'
 
 export type MobileMarkupPreviewProps = { source: string; kind: NativeChatMarkupKind }
 
@@ -41,7 +42,11 @@ export const MobileMarkupPreview = memo(function MobileMarkupPreview({
   source,
   kind
 }: MobileMarkupPreviewProps) {
-  const [height, setHeight] = useState(INITIAL_HEIGHT_PX)
+  const memoryKey = `${kind}:${source}`
+  // Starts at its last height, so a remount while scrolling doesn't resize the row.
+  const [height, setHeight] = useState(
+    () => mobileNativeChatHeightMemory.get(memoryKey) ?? INITIAL_HEIGHT_PX
+  )
   const [showSource, setShowSource] = useState(false)
   const html = useMemo(() => buildMobileMarkupPreviewDocument(source, kind), [source, kind])
 
@@ -84,6 +89,7 @@ export const MobileMarkupPreview = memo(function MobileMarkupPreview({
             onMessage={(event) => {
               const next = previewHeight(event)
               if (next !== null) {
+                mobileNativeChatHeightMemory.set(memoryKey, next)
                 setHeight(next)
               }
             }}

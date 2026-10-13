@@ -17,6 +17,7 @@ import {
   type MobileNativeChatVisualHostMode
 } from './mobile-native-chat-visual-host-document'
 import { MOBILE_NATIVE_CHAT_VISUAL_THEME } from './mobile-native-chat-visual-theme'
+import { mobileNativeChatHeightMemory } from './mobile-native-chat-size-memory'
 
 export type MobileNativeChatVisualFrameProps = {
   html: string
@@ -57,7 +58,11 @@ export const MobileNativeChatVisualFrame = memo(function MobileNativeChatVisualF
   const webView = useRef<WebView>(null)
   const [token] = useState(randomHex)
   const [generation, setGeneration] = useState(0)
-  const [height, setHeight] = useState(MOBILE_NATIVE_CHAT_VISUAL_INITIAL_HEIGHT)
+  const memoryKey = `visual:${mode}:${html}`
+  // Starts at its last height, so a remount while scrolling doesn't resize the row.
+  const [height, setHeight] = useState(
+    () => mobileNativeChatHeightMemory.get(memoryKey) ?? MOBILE_NATIVE_CHAT_VISUAL_INITIAL_HEIGHT
+  )
   const restarts = useRef(0)
   const lastLinkAt = useRef(-Infinity)
 
@@ -108,6 +113,7 @@ export const MobileNativeChatVisualFrame = memo(function MobileNativeChatVisualF
     }
     const decision = state.governor.decide(state.latest, Date.now())
     if (decision.kind === 'apply') {
+      mobileNativeChatHeightMemory.set(memoryKey, decision.height)
       setHeight(decision.height)
       webView.current?.injectJavaScript(
         `window.${MOBILE_NATIVE_CHAT_VISUAL_APPLY_HEIGHT}(${decision.height}); true;`
@@ -115,7 +121,7 @@ export const MobileNativeChatVisualFrame = memo(function MobileNativeChatVisualF
     } else if (decision.kind === 'defer') {
       state.deferred = setTimeout(applyHeight, decision.retryInMs)
     }
-  }, [])
+  }, [memoryKey])
 
   const onMessage = useCallback(
     (event: WebViewMessageEvent) => {

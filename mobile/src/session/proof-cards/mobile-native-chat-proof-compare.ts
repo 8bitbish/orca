@@ -2,8 +2,6 @@
 import type { ImageThumbnailBox } from '../../../../src/shared/image-thumbnail-frame'
 
 export const MOBILE_NATIVE_CHAT_PROOF_COMPARE_START = 50
-/** A press's event: React Native's touch or react-native-web's DOM click. */
-type ProofPressEvent = { locationX?: unknown; offsetX?: unknown }
 
 /** How far one accessibility increment moves the divider, in percent. */
 export const MOBILE_NATIVE_CHAT_PROOF_COMPARE_STEP = 10
@@ -30,27 +28,6 @@ export function mobileNativeChatProofComparePosition(x: number, width: number): 
  *  are, while vertical ones (and a tap that barely moved) stay with the chat and the tap. */
 export function mobileNativeChatProofCompareClaimsDrag(dx: number, dy: number): boolean {
   return Math.abs(dx) >= MOBILE_NATIVE_CHAT_PROOF_COMPARE_DRAG_SLOP && Math.abs(dx) > Math.abs(dy)
-}
-
-/** Which side a tap `x` points from the frame's left edge landed on. */
-export function mobileNativeChatProofCompareTapSide(
-  x: number,
-  width: number,
-  position: number
-): 'before' | 'after' {
-  return mobileNativeChatProofComparePosition(x, width) < position ? 'before' : 'after'
-}
-
-/** Where a press landed, in points from the pressed view's left edge. Native presses carry
- *  `locationX`; react-native-web hands `onPress` the DOM click, which has `offsetX`. */
-export function mobileNativeChatProofPressX(nativeEvent: ProofPressEvent): number {
-  if ('locationX' in nativeEvent && typeof nativeEvent.locationX === 'number') {
-    return nativeEvent.locationX
-  }
-  if ('offsetX' in nativeEvent && typeof nativeEvent.offsetX === 'number') {
-    return nativeEvent.offsetX
-  }
-  return Number.NaN
 }
 
 /** The slider's frame bounds for a card `cardWidth` points wide. */

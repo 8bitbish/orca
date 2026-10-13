@@ -5,8 +5,6 @@ import {
   mobileNativeChatProofCompareBox,
   mobileNativeChatProofCompareClaimsDrag,
   mobileNativeChatProofComparePosition,
-  mobileNativeChatProofCompareTapSide,
-  mobileNativeChatProofPressX,
   mobileNativeChatProofFrame,
   stepMobileNativeChatProofComparePosition
 } from './mobile-native-chat-proof-compare'
@@ -55,18 +53,6 @@ describe('proof compare tap and frame', () => {
     expect(mobileNativeChatProofCompareClaimsDrag(3, 0)).toBe(false)
     expect(mobileNativeChatProofCompareClaimsDrag(-5, 1)).toBe(false)
     expect(mobileNativeChatProofCompareClaimsDrag(6, 2)).toBe(true)
-  })
-
-  it('opens the side of the divider a tap landed on', () => {
-    expect(mobileNativeChatProofCompareTapSide(100, 340, 50)).toBe('before')
-    expect(mobileNativeChatProofCompareTapSide(240, 340, 50)).toBe('after')
-    expect(mobileNativeChatProofCompareTapSide(100, 340, 20)).toBe('after')
-  })
-
-  it('reads where a press landed on the phone and in the web build', () => {
-    expect(mobileNativeChatProofPressX({ locationX: 42, pageX: 300 })).toBe(42)
-    expect(mobileNativeChatProofPressX({ offsetX: 17, clientX: 300 })).toBe(17)
-    expect(mobileNativeChatProofPressX({})).toBeNaN()
   })
 
   it('keeps the slider one height whatever the image, never wider than the card', () => {

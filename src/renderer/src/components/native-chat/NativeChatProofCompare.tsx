@@ -12,7 +12,7 @@ import { useNativeChatProofImage } from './use-native-chat-proof-media'
 /** The slider's fixed frame: one height for every pair, as wide as the card allows. */
 const COMPARE_BOX = { height: 320, minWidth: 240, maxWidth: 720 }
 
-type Side = 'before' | 'after'
+type ViewerMode = 'before' | 'compare' | 'after'
 
 function proofItemLabel(item: NativeChatProofMedia): string {
   return item.caption ?? basename(item.source)
@@ -35,7 +35,7 @@ export function NativeChatProofTallCue(): React.JSX.Element {
 }
 
 /** Before over after, split by a handle you drag (or move with the arrow keys). A click
- *  that does not drag opens the side it landed on full screen. */
+ *  that does not drag opens the pair full screen on the same slider. */
 export function NativeChatProofCompare({
   before,
   after,
@@ -51,12 +51,13 @@ export function NativeChatProofCompare({
   captions: React.ReactNode
 }): React.JSX.Element {
   const [position, setPosition] = useState(50)
-  const [openSide, setOpenSide] = useState<Side | null>(null)
+  const [openMode, setOpenMode] = useState<ViewerMode | null>(null)
+  const [viewerPosition, setViewerPosition] = useState(50)
   const press = useRef<{ pointerId: number; x: number; y: number; dragging: boolean } | null>(null)
   const beforeImage = useNativeChatProofImage(before.path, 'thumbnail')
   const afterImage = useNativeChatProofImage(after.path, 'thumbnail')
-  const beforeFull = useNativeChatProofImage(openSide ? before.path : null, 'full')
-  const afterFull = useNativeChatProofImage(openSide ? after.path : null, 'full')
+  const beforeFull = useNativeChatProofImage(openMode ? before.path : null, 'full')
+  const afterFull = useNativeChatProofImage(openMode ? after.path : null, 'full')
   if (beforeImage.status === 'missing' || afterImage.status === 'missing') {
     return <>{fallback}</>
   }
@@ -112,13 +113,22 @@ export function NativeChatProofCompare({
     ) {
       return
     }
-    setOpenSide(positionAt(event.currentTarget, event.clientX) < position ? 'before' : 'after')
+    openViewer()
+  }
+  const openViewer = (): void => {
+    setViewerPosition(position)
+    setOpenMode('compare')
   }
 
-  const shown = openSide === 'before' ? before : after
-  const shownThumb = openSide === 'before' ? beforeImage.value : afterImage.value
-  const shownFull = openSide === 'before' ? beforeFull : afterFull
-  const sideLabel = openSide === 'before' ? beforeLabel : afterLabel
+  const shown = openMode === 'before' ? before : after
+  const shownThumb = openMode === 'before' ? beforeImage.value : afterImage.value
+  const shownFull = openMode === 'before' ? beforeFull : afterFull
+  const beforeSrc = beforeFull.status === 'ready' ? beforeFull.value.src : beforeImage.value.src
+  const compareLabel = translate('components.native-chat.proof.compareMode', 'Compare')
+  const viewerLabel =
+    openMode === 'compare'
+      ? `${beforeLabel}: ${proofItemLabel(before)} · ${afterLabel}: ${proofItemLabel(after)}`
+      : `${openMode === 'before' ? beforeLabel : afterLabel}: ${proofItemLabel(shown)}`
   return (
     <figure data-proof-media="compare" className="m-0 min-w-0">
       <div
@@ -183,7 +193,7 @@ export function NativeChatProofCompare({
           data-proof-compare-open=""
           onPointerDown={(event) => event.stopPropagation()}
           onPointerUp={(event) => event.stopPropagation()}
-          onClick={() => setOpenSide('after')}
+          onClick={openViewer}
           aria-label={translate(
             'components.native-chat.proof.compareFullScreen',
             'View before and after full screen'
@@ -195,30 +205,40 @@ export function NativeChatProofCompare({
       </div>
       {captions}
       <NativeChatImagePreviewDialog
-        open={openSide !== null}
+        open={openMode !== null}
         onOpenChange={(open) => {
           if (!open) {
-            setOpenSide(null)
+            setOpenMode(null)
           }
         }}
-        label={`${sideLabel}: ${proofItemLabel(shown)}`}
+        label={viewerLabel}
         src={shownFull.status === 'ready' ? shownFull.value.src : shownThumb.src}
+        compare={
+          openMode === 'compare'
+            ? {
+                src: beforeSrc,
+                label: `${beforeLabel}: ${proofItemLabel(before)}`,
+                position: viewerPosition,
+                onPositionChange: setViewerPosition
+              }
+            : undefined
+        }
         accessory={
           <div
             role="group"
             aria-label={translate('components.native-chat.proof.compareSide', 'Show side')}
             className="flex items-center gap-0.5"
           >
-            {(['before', 'after'] as const).map((side) => (
+            {(['before', 'compare', 'after'] as const).map((mode) => (
               <Button
-                key={side}
-                variant={openSide === side ? 'secondary' : 'ghost'}
+                key={mode}
+                variant={openMode === mode ? 'secondary' : 'ghost'}
                 size="xs"
-                aria-pressed={openSide === side}
-                data-proof-compare-side={side}
-                onClick={() => setOpenSide(side)}
+                aria-pressed={openMode === mode}
+                data-proof-compare-side={mode}
+                onClick={() => setOpenMode(mode)}
               >
-                {side === 'before' ? beforeLabel : afterLabel}
+                {mode === 'before' ? beforeLabel : mode === 'after' ? afterLabel : compareLabel}
               </Button>
             ))}
           </div>
