@@ -26,7 +26,7 @@ export function NativeChatProofTallCue(): React.JSX.Element {
       data-proof-tall-cue=""
       className="pointer-events-none absolute inset-x-0 bottom-0 flex h-14 items-end justify-start bg-gradient-to-t from-background/95 via-background/60 to-transparent pb-2 pl-2"
     >
-      <span className="flex items-center gap-1 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium text-foreground">
+      <span className="flex items-center gap-1 rounded bg-background/85 px-1.5 py-0.5 text-2xs font-medium text-foreground">
         <Maximize2 className="size-3" />
         {translate('components.native-chat.proof.tallImage', 'Tall image, click to see it all')}
       </span>
@@ -169,10 +169,10 @@ export function NativeChatProofCompare({
             <ChevronsLeftRight className="size-4" />
           </span>
         </span>
-        <span className="pointer-events-none absolute left-2 top-2 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium text-foreground">
+        <span className="pointer-events-none absolute left-2 top-2 rounded bg-background/85 px-1.5 py-0.5 text-2xs font-medium text-foreground">
           {beforeLabel}
         </span>
-        <span className="pointer-events-none absolute right-2 top-2 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium text-foreground">
+        <span className="pointer-events-none absolute right-2 top-2 rounded bg-background/85 px-1.5 py-0.5 text-2xs font-medium text-foreground">
           {afterLabel}
         </span>
         <input

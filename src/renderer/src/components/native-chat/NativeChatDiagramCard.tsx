@@ -28,7 +28,7 @@ export function NativeChatDiagramCard({
       className="my-3 min-w-0 max-w-full overflow-hidden rounded-md border border-border/60 bg-card"
     >
       <div className="flex h-9 items-center justify-between gap-2 border-b border-border/60 bg-accent px-3">
-        <span className="flex min-w-0 items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+        <span className="flex min-w-0 items-center gap-1.5 font-mono text-2xs text-muted-foreground">
           <Workflow className="size-3.5 shrink-0" aria-hidden />
           <span className="truncate">{label}</span>
         </span>
@@ -50,7 +50,7 @@ export function NativeChatDiagramCard({
         </div>
       </div>
       {showSource ? (
-        <pre className="scrollbar-sleek m-0 max-h-80 max-w-full overflow-x-auto bg-accent p-3 font-mono text-[12px]">
+        <pre className="scrollbar-sleek m-0 max-h-80 max-w-full overflow-x-auto bg-accent p-3 font-mono text-chat-code">
           <code>{source}</code>
         </pre>
       ) : (

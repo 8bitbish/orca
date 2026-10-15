@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { runProcessSync } from './child-process/run-process'
+import { runProcessSync } from '@orca/process-host'
 import {
   buildNativeChatShellRunCommandLine,
   createNativeChatShellRunMarkerScanner,

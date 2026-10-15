@@ -28,9 +28,9 @@ export function NativeChatWidgetCard({
           onClick={() => setShowSource(!showSource)}
           aria-expanded={showSource}
           aria-controls={showSource ? sourceId : undefined}
-          className="group/widget flex min-w-0 items-center gap-1.5 rounded-md py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
+          className="group/widget flex min-w-0 items-center gap-1.5 rounded-md py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <span className="truncate text-sm leading-relaxed text-muted-foreground transition-colors group-hover/widget:text-foreground/80">
+          <span className="truncate text-sm leading-relaxed text-muted-foreground transition-colors group-hover/widget:text-foreground">
             {translate('components.native-chat.diagram.widgetLabel', 'Widget')}
           </span>
           <ChevronRight
@@ -49,7 +49,7 @@ export function NativeChatWidgetCard({
       {showSource ? (
         <pre
           id={sourceId}
-          className="scrollbar-sleek mb-2 mt-0 max-h-80 max-w-full overflow-x-auto rounded-md bg-accent p-3 font-mono text-[12px]"
+          className="scrollbar-sleek mb-2 mt-0 max-h-80 max-w-full overflow-x-auto rounded-md bg-accent p-3 font-mono text-chat-code"
         >
           <code>{source}</code>
         </pre>

@@ -133,7 +133,7 @@ export function NativeChatShellRunOutput({
       <div
         role="status"
         aria-live="polite"
-        className="flex min-h-8 items-center justify-between gap-2 px-3 py-1 text-[12px]"
+        className="flex min-h-8 items-center justify-between gap-2 px-3 py-1 text-xs"
       >
         <RunStatus run={run} hostLost={hostLost} />
         {onOpenTerminal ? (
@@ -162,7 +162,7 @@ export function NativeChatShellRunOutput({
           atBottomRef.current =
             pane.scrollHeight - pane.scrollTop - pane.clientHeight <= STICK_SLOP_PX
         }}
-        className="scrollbar-sleek h-48 overflow-y-auto whitespace-pre-wrap break-words border-t border-border/40 px-3 py-2 font-mono text-[12px] leading-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/60"
+        className="scrollbar-sleek h-48 overflow-y-auto whitespace-pre-wrap break-words border-t border-border/40 px-3 py-2 font-mono text-chat-code leading-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         {run.truncated ? (
           <div className="mb-1 text-muted-foreground">

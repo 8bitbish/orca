@@ -18,7 +18,7 @@ export function NativeChatCardStatusPill({
     <span
       data-project-status={status}
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] leading-4',
+        'inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-2xs leading-4',
         // Only "Needs you" carries colour, so it is the one that reads first.
         status === 'needs-you' &&
           'border-agent-question/40 bg-agent-question/15 font-semibold text-agent-question-text',

@@ -2,7 +2,7 @@
 // reuses it instead of opening another. A handle is only a hint: the engine asks the
 // host whether it is still that workspace's live terminal before typing into it.
 
-import type { RuntimeClientTarget } from '@/runtime/runtime-rpc-client'
+import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
 
 const STORAGE_KEY = 'orca:nativeChatShellRunTerminals:v1'
 const MAX_ENTRIES = 50

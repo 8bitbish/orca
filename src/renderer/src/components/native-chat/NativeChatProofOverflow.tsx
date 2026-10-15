@@ -69,7 +69,7 @@ export function NativeChatProofMoreNote({
     <span
       data-proof-more={section}
       title={label}
-      className="text-[11px] leading-4 text-muted-foreground"
+      className="text-2xs leading-4 text-muted-foreground"
     >
       <span aria-hidden>
         {translate('components.native-chat.proof.moreCount', '+{{count}} more', { count })}

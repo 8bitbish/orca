@@ -10,11 +10,8 @@ import type {
   TerminalMessageQueueSubmitResult
 } from '../../../shared/terminal-message-queue-contract'
 import { getRuntimeEnvironmentRevision } from './runtime-environment-revision'
-import {
-  callRuntimeRpc,
-  runtimeEnvironmentSupportsCapability,
-  type RuntimeClientTarget
-} from './runtime-rpc-client'
+import { callRuntimeRpc, runtimeEnvironmentSupportsCapability } from './runtime-rpc-client'
+import type { RuntimeClientTarget } from '../../../shared/runtime-client-target'
 import {
   ensureLocalRuntimeCapabilities,
   readLocalRuntimeCapabilitiesOrUnknown

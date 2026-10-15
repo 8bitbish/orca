@@ -117,7 +117,7 @@ export function NativeChatQueuedMessages(
           className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground"
         >
           <ListOrdered className="size-3" />
-          <span className="text-[11px] font-semibold tracking-[0.05em] uppercase">
+          <span className="text-2xs font-semibold tracking-[0.05em] uppercase">
             {translate('components.native-chat.queue.heading', 'Queued · {{value0}}', {
               value0: pendingCount
             })}

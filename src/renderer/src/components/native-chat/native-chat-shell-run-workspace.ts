@@ -7,7 +7,7 @@ import { getSshTargetIdForExecutionHost } from '../../../../shared/execution-hos
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { WINDOWS_GIT_BASH_SHELL } from '../../../../shared/windows-terminal-shell'
 import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
-import { runtimeTargetForExecutionHostId } from '@/runtime/runtime-client-target'
+import { ipcOrRuntimeTargetForHostId } from '@/runtime/runtime-client-target'
 import type { AppState } from '@/store'
 import {
   resolveNativeChatProjectTarget,
@@ -96,7 +96,7 @@ export function resolveNativeChatShellRunWorkspace(
     return { kind: 'unavailable', reason: 'host-unreachable', target }
   }
   // SSH workspaces run through the local runtime's SSH provider, on the SSH host.
-  const runtimeTarget = runtimeTargetForExecutionHostId(hostId) ?? { kind: 'local' as const }
+  const runtimeTarget = ipcOrRuntimeTargetForHostId(hostId) ?? { kind: 'local' as const }
   const localWindows =
     args.localPlatform === 'win32' && runtimeTarget.kind === 'local' && sshTargetId === null
   let shell: string | undefined

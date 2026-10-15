@@ -61,7 +61,7 @@ function KindBadge({ kind }: { kind: NativeChatProofKind }): React.JSX.Element {
   return (
     <span
       data-proof-kind={kind}
-      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium leading-4 text-muted-foreground"
+      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-2 py-0.5 text-2xs font-medium leading-4 text-muted-foreground"
     >
       <Icon className="size-3" aria-hidden />
       {kindLabel(kind)}
@@ -196,7 +196,7 @@ function ProofLinks({ links, hidden }: { links: readonly NativeChatProofLink[]; 
 function ProofSummary({ summary, full }: { summary: string; full?: string }) {
   const [expanded, setExpanded] = useState(false)
   return (
-    <p data-proof-summary="" className="m-0 text-sm leading-relaxed text-foreground/90">
+    <p data-proof-summary="" className="m-0 text-sm leading-relaxed text-foreground">
       {expanded && full ? full : summary}
       {full ? (
         <NativeChatProofExpandToggle

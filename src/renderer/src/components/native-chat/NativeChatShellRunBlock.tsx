@@ -32,7 +32,7 @@ import {
 } from './native-chat-shell-run-copy'
 
 const ACTION_CLASS =
-  'flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50'
+  'flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-2xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50'
 
 /**
  * A shell fence in an agent reply, with a Run button. Run types the block into its
@@ -121,7 +121,7 @@ export function NativeChatShellRunBlock({
         href={`${NATIVE_CHAT_WORKTREE_LINK_SCHEME}${encodeURIComponent(block.workspaceTarget)}`}
       />
     ) : (
-      <span className="truncate font-mono text-[11px] text-muted-foreground">
+      <span className="truncate font-mono text-2xs text-muted-foreground">
         {block.workspaceTarget}
       </span>
     )
@@ -137,7 +137,7 @@ export function NativeChatShellRunBlock({
         <span className="flex min-w-0 items-center gap-2">
           <span
             data-code-language={language ?? ''}
-            className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] text-muted-foreground"
+            className="flex shrink-0 items-center gap-1.5 font-mono text-2xs text-muted-foreground"
           >
             <Code2 className="size-3.5 shrink-0" />
             {label}
@@ -182,12 +182,12 @@ export function NativeChatShellRunBlock({
       {unavailable ? (
         <div
           data-run-unavailable=""
-          className="border-b border-border/60 px-3 py-1.5 text-[12px] text-muted-foreground"
+          className="border-b border-border/60 px-3 py-1.5 text-xs text-muted-foreground"
         >
           {unavailable}
         </div>
       ) : null}
-      <pre className="scrollbar-sleek m-0 max-h-80 max-w-full overflow-x-auto p-3 font-mono text-[12px]">
+      <pre className="scrollbar-sleek m-0 max-h-80 max-w-full overflow-x-auto p-3 font-mono text-chat-code">
         {body}
       </pre>
       {run.phase === 'idle' ? null : (

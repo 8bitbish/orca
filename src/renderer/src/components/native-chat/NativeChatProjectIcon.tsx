@@ -28,7 +28,7 @@ export function NativeChatProjectIcon({
           'shrink-0',
           box,
           repoIcon.type !== 'image' && 'bg-muted',
-          repoIcon.type === 'emoji' && (size === 'sm' ? 'text-[11px]' : 'text-[16px]')
+          repoIcon.type === 'emoji' && (size === 'sm' ? 'text-2xs' : 'text-base')
         )}
         iconClassName={
           repoIcon.type === 'image' ? 'size-full' : size === 'sm' ? 'size-2.5' : 'size-4'
@@ -55,7 +55,7 @@ export function NativeChatProjectIcon({
         className={cn(
           'inline-flex shrink-0 items-center justify-center leading-none',
           box,
-          size === 'sm' ? 'text-[11px]' : 'text-[16px]'
+          size === 'sm' ? 'text-2xs' : 'text-base'
         )}
       >
         {source.glyph}
@@ -74,7 +74,7 @@ export function NativeChatProjectIcon({
       className={cn(
         'inline-flex shrink-0 items-center justify-center font-semibold leading-none text-foreground',
         box,
-        size === 'sm' ? 'text-[9px]' : 'text-[12px]'
+        size === 'sm' ? 'text-3xs' : 'text-xs'
       )}
     >
       {monogram.letter}

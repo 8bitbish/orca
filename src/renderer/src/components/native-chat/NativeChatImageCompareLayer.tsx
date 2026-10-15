@@ -54,10 +54,10 @@ export function NativeChatImageCompareLayer({
           }}
         />
       </div>
-      <span className="pointer-events-none absolute left-2 top-2 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium text-foreground">
+      <span className="pointer-events-none absolute left-2 top-2 rounded bg-background/85 px-1.5 py-0.5 text-2xs font-medium text-foreground">
         {translate('components.native-chat.proof.before', 'Before')}
       </span>
-      <span className="pointer-events-none absolute right-2 top-2 rounded bg-background/85 px-1.5 py-0.5 text-[11px] font-medium text-foreground">
+      <span className="pointer-events-none absolute right-2 top-2 rounded bg-background/85 px-1.5 py-0.5 text-2xs font-medium text-foreground">
         {translate('components.native-chat.proof.after', 'After')}
       </span>
       <div

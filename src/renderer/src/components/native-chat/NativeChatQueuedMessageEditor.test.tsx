@@ -7,6 +7,7 @@ import { NativeChatQuestionCard } from './NativeChatQuestionCard'
 import type { QueuedMessageInlineEditor } from './use-structured-agent-session-queued-edit'
 
 vi.mock('@/i18n/i18n', () => ({
+  i18n: { language: 'en', on: () => {}, off: () => {} },
   translate: (_key: string, fallback: string, values?: Record<string, string>) =>
     fallback.replace(/\{\{(\w+)\}\}/g, (_match, name: string) => values?.[name] ?? '')
 }))

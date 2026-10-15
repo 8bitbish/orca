@@ -2,6 +2,7 @@ import { readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { MAX_REPO_ICON_UPLOAD_BYTES } from '../shared/repo-icon'
 import { detectRepoFileIcon, readLocalImageIcon } from './repo-icon-file-detection'
+import { resolveFilesystemRouteForHost } from './providers/execution-host-provider-dispatch'
 
 // App-icon locations a chat project card looks in first, before the repo icon
 // probe's conventional list. Local repos only: callers check the host.
@@ -99,7 +100,7 @@ export async function findProjectAppIcon(repoPath: string): Promise<string | nul
   if (direct) {
     return direct
   }
-  const conventional = await detectRepoFileIcon(repoPath, { kind: 'local', hostId: 'local' })
+  const conventional = await detectRepoFileIcon(repoPath, resolveFilesystemRouteForHost('local'))
   return conventional?.type === 'image' ? conventional.src : null
 }
 

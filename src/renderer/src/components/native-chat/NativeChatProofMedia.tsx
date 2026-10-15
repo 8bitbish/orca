@@ -65,10 +65,8 @@ function ProofPlaceholder({
     >
       <Icon className="size-4 shrink-0" aria-hidden />
       <span className="min-w-0">
-        <span className="block font-medium text-foreground/80">
-          {placeholderTitle(item, reason)}
-        </span>
-        <span className="block truncate font-mono text-[11px]">{basename(item.source)}</span>
+        <span className="block font-medium text-foreground">{placeholderTitle(item, reason)}</span>
+        <span className="block truncate font-mono text-2xs">{basename(item.source)}</span>
       </span>
     </div>
   )
@@ -94,7 +92,7 @@ function ProofCaption({
     <figcaption
       data-proof-caption=""
       data-wrap={wrap ? '' : undefined}
-      className="mt-1 min-w-0 truncate text-[11px] leading-4 text-muted-foreground data-[wrap]:line-clamp-2 data-[wrap]:whitespace-normal data-[wrap]:break-words"
+      className="mt-1 min-w-0 truncate text-2xs leading-4 text-muted-foreground data-[wrap]:line-clamp-2 data-[wrap]:whitespace-normal data-[wrap]:break-words"
       title={full.filter(Boolean).join(' · ')}
     >
       {parts.join(' · ')}

@@ -26,7 +26,7 @@ export function NativeChatChipButton({
         onActivate()
       }}
       className={cn(
-        'mx-0.5 inline-flex h-5 max-w-full items-center gap-1 rounded-full border border-border bg-muted/60 align-top text-[12px] leading-4 text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70',
+        'mx-0.5 inline-flex h-5 max-w-full items-center gap-1 rounded-full border border-border bg-muted/60 align-top text-xs leading-4 text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         lead === 'icon' ? 'pl-0.5 pr-1' : 'px-1.5'
       )}
     >

@@ -65,13 +65,13 @@ export function NativeChatShellRunConfirmDialog({
           {(risks ?? []).map((risk) => (
             <li key={risk.id} data-run-risk={risk.id} className="min-w-0 text-sm">
               <div className="font-medium">{nativeChatShellRunRiskLabel(risk.id)}</div>
-              <code className="block truncate font-mono text-[12px] text-muted-foreground">
+              <code className="block truncate font-mono text-chat-code text-muted-foreground">
                 {risk.evidence}
               </code>
             </li>
           ))}
         </ul>
-        <pre className="scrollbar-sleek m-0 max-h-48 overflow-auto rounded-md bg-accent p-3 font-mono text-[12px] leading-5 whitespace-pre-wrap break-words">
+        <pre className="scrollbar-sleek m-0 max-h-48 overflow-auto rounded-md bg-accent p-3 font-mono text-chat-code leading-5 whitespace-pre-wrap break-words">
           {script}
         </pre>
         <DialogFooter>

@@ -89,7 +89,7 @@ export function NativeChatSlackDraftCard({
       <div className="flex flex-col gap-2 px-3.5 py-3">
         <span
           data-slack-draft-label=""
-          className="inline-flex shrink-0 items-center self-start gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] font-medium leading-4 text-muted-foreground"
+          className="inline-flex shrink-0 items-center self-start gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-2xs font-medium leading-4 text-muted-foreground"
         >
           <PenLine aria-hidden className="size-3" />
           {translate('components.native-chat.slack.draftNotSent', 'Draft, not sent')}
