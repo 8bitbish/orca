@@ -63,7 +63,8 @@ function verifyPackagedDaemonEntryBoots(resourcesDir, options = {}) {
   console.log('[verify-packaged-daemon-entry] OK — packaged daemon-entry loads under plain Node')
 }
 
-const TERMINAL_HOST_BOOT_TIMEOUT_MS = 20_000
+// Personal: an x64 boot under Rosetta takes ~19s on Jake's Mac.
+const TERMINAL_HOST_BOOT_TIMEOUT_MS = 60_000
 // Arithmetic so the shell echoing the typed command cannot satisfy the check.
 const TERMINAL_HOST_BOOT_COMMAND = 'echo "OK $((6*7))" && exit'
 const TERMINAL_HOST_BOOT_OUTPUT = 'OK 42'
