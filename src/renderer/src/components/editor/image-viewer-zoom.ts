@@ -1,4 +1,4 @@
-import { imageZoomWheelFactor } from '../../../../shared/image-zoom-pan'
+import { imageZoomWheelFactor, imageZoomWheelPixels } from '../../../../shared/image-zoom-pan'
 
 export const MIN_IMAGE_VIEWER_ZOOM = 0.25
 export const MAX_IMAGE_VIEWER_ZOOM = 8
@@ -30,6 +30,10 @@ export function clampImageViewerZoom(next: number): number {
 
 export function shouldHandleImageZoomWheel(event: ImageZoomWheelEventLike): boolean {
   return event.ctrlKey
+}
+
+export function getWheelDeltaPixels(delta: number, deltaMode: number): number {
+  return imageZoomWheelPixels(delta, deltaMode)
 }
 
 export function getPinchZoomFactor(deltaY: number, deltaMode: number): number {

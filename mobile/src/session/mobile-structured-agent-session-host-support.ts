@@ -1,4 +1,5 @@
 import {
+  AGENT_SESSION_CONVERSATION_STOP_RUNTIME_CAPABILITY,
   AGENT_SESSION_PROMPT_CANCEL_RUNTIME_CAPABILITY,
   AGENT_SESSION_QUESTION_ANSWERS_RUNTIME_CAPABILITY,
   AGENT_SESSION_QUEUED_COMMANDS_RUNTIME_CAPABILITY,
@@ -6,6 +7,7 @@ import {
   AGENT_SESSION_STATUS_FEED_RUNTIME_CAPABILITY,
   AGENT_SESSION_REPEATED_STOP_RUNTIME_CAPABILITY
 } from '../../../src/shared/protocol-version'
+import { AGENT_SESSION_SEND_OPTIONS_RUNTIME_CAPABILITY } from '../../../src/shared/agent-session-create-capabilities'
 import {
   TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY,
   TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY
@@ -28,6 +30,10 @@ export type StructuredAgentSessionHostSupport = {
   terminalMessageQueue?: boolean
   /** The host ends one queue stream on request (terminal.message-queue-unsubscribe.v1). */
   terminalMessageQueueUnsubscribe?: boolean
+  /** A send may carry the model and effort its turn runs on. */
+  sendOptions: boolean
+  /** A Stop naming no turn stops what the chat has in flight; an older host needs the turn. */
+  conversationStop: boolean
 }
 
 export function structuredAgentSessionHostSupport(
@@ -40,6 +46,8 @@ export function structuredAgentSessionHostSupport(
     queuedCommands: capabilities.includes(AGENT_SESSION_QUEUED_COMMANDS_RUNTIME_CAPABILITY),
     statusFeed: capabilities.includes(AGENT_SESSION_STATUS_FEED_RUNTIME_CAPABILITY),
     quietRepeatedStop: capabilities.includes(AGENT_SESSION_REPEATED_STOP_RUNTIME_CAPABILITY),
+    sendOptions: capabilities.includes(AGENT_SESSION_SEND_OPTIONS_RUNTIME_CAPABILITY),
+    conversationStop: capabilities.includes(AGENT_SESSION_CONVERSATION_STOP_RUNTIME_CAPABILITY),
     terminalMessageQueue: capabilities.includes(TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY),
     terminalMessageQueueUnsubscribe: capabilities.includes(
       TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY

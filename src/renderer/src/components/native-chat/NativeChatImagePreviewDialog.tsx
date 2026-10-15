@@ -1,4 +1,5 @@
-import { Image as ImageIcon, Loader2, Minus, Plus, X } from 'lucide-react'
+import { Image as ImageIcon, Minus, Plus, X } from 'lucide-react'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
@@ -133,7 +134,7 @@ function ZoomableImage({
           <NativeChatImageCompareLayer compare={compare} view={view} image={image} />
         ) : null}
       </div>
-      <p className="shrink-0 truncate pt-2 text-[11px] text-muted-foreground">{hint}</p>
+      <p className="shrink-0 truncate pt-2 text-2xs text-muted-foreground">{hint}</p>
     </div>
   )
 }
@@ -209,7 +210,7 @@ export function NativeChatImagePreviewDialog({
             <div className="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
               {pendingLabel ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
+                  <LoadingSpinner className="size-4" />
                   {pendingLabel}
                 </>
               ) : (

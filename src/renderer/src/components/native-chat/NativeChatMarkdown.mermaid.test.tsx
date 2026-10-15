@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import '@testing-library/jest-dom/vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mermaid = vi.hoisted(() => ({ initialize: vi.fn(), render: vi.fn() }))
@@ -55,11 +55,26 @@ function reply(source: string, streaming: boolean): React.JSX.Element {
   )
 }
 
+const heldRenders: PromiseWithResolvers<{ svg: string }>[] = []
+/** Holds the next Mermaid render until the test settles it. */
+function holdNextRender(): PromiseWithResolvers<{ svg: string }> {
+  const held = Promise.withResolvers<{ svg: string }>()
+  heldRenders.push(held)
+  mermaid.render.mockReturnValueOnce(held.promise)
+  return held
+}
+
 beforeEach(() => {
   mermaid.render.mockReset()
   mermaid.render.mockResolvedValue({ svg: '<svg><text>Sync with main once</text></svg>' })
 })
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  // Renders share one queue: a render a failed test left held would stall the next test's.
+  for (const held of heldRenders.splice(0)) {
+    held.resolve({ svg: '<svg />' })
+  }
+})
 
 // The chat's code-block renderer owns mermaid fences: a finished one draws in the themed
 // diagram card (with a Code toggle), never Mermaid's stock render.
@@ -74,7 +89,6 @@ describe('native chat Mermaid fences', () => {
 
     rerender(reply(complete, true))
     expect(container.querySelector('pre')?.textContent).toContain(complete)
-    expect(mermaid.render).not.toHaveBeenCalled()
 
     rerender(reply(complete, false))
     await waitFor(() =>
@@ -91,5 +105,33 @@ describe('native chat Mermaid fences', () => {
     await screen.findByText(/Diagram error: Invalid mermaid syntax/)
     expect(container.querySelector('.mermaid-block pre')?.textContent).toBe(partial.trimEnd())
     expect(container.querySelector('.mermaid-block svg')).toBeNull()
+  })
+
+  it('renders the updated diagram when a previously rendered fence grows again', async () => {
+    const view = render(reply(complete, false))
+    await waitFor(() =>
+      expect(view.container.querySelector('.mermaid-block svg')).toBeInTheDocument()
+    )
+    const next = `${complete}\n B["Next step"]`
+    view.rerender(reply(next, true))
+    expect(view.container.querySelector('pre')).toHaveTextContent('Next step')
+    const pending = holdNextRender()
+    view.rerender(reply(next, false))
+    await waitFor(() => expect(mermaid.render).toHaveBeenCalledTimes(2))
+    await act(async () => pending.resolve({ svg: '<svg><text>Next step</text></svg>' }))
+    expect(view.container.querySelector('.mermaid-block svg')).toHaveTextContent('Next step')
+  })
+
+  it('does not run Mermaid on a reply that is still streaming', async () => {
+    const finished = 'flowchart TD\n S["Finished elsewhere"]'
+    render(
+      <>
+        {reply(partial, true)}
+        {reply(finished, false)}
+      </>
+    )
+    // Renders run in order, so the finished diagram rendering means the streaming one's turn passed.
+    await waitFor(() => expect(mermaid.render).toHaveBeenCalledWith(expect.any(String), finished))
+    expect(mermaid.render).toHaveBeenCalledTimes(1)
   })
 })

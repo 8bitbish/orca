@@ -7,11 +7,13 @@ import {
   pendingSendsAsMessages,
   prunePendingSends,
   readPendingSendCache,
+  releaseEmptyTranscriptClaims,
   writePendingSendCache,
   type NativeChatPendingSend
 } from './native-chat-pending'
 import type { NativeChatDeliveryNotice } from './NativeChatMessageRow'
 import { nativeChatPendingMessageId } from './native-chat-synthetic-message-ids'
+import type { ReadState } from './native-chat-live-session-contract'
 
 /** How long a send whose write acknowledgment was lost waits for its row; the phone's hold matches. */
 export const NATIVE_CHAT_UNCONFIRMED_SEND_HOLD_MS = 20_000
@@ -22,13 +24,27 @@ const NO_NOTICES: ReadonlyMap<string, NativeChatDeliveryNotice> = new Map()
 export function useNativeChatPendingDelivery(args: {
   paneKey: string
   agent: AgentType
-  messages: NativeChatMessage[]
+  /** `readPhase` 'ready' with a `sessionId` means an empty `messages` was a real read. */
+  session: {
+    messages: NativeChatMessage[]
+    readPhase?: ReadState['phase']
+    sessionId?: string | null
+  }
   /** A send into a working agent queues behind the in-flight reply instead of being answered by it. */
   liveWorking?: boolean
 }) {
-  const { paneKey, agent, messages, liveWorking = false } = args
+  const { paneKey, agent, liveWorking = false } = args
+  const { messages } = args.session
+  const sessionId = args.session.sessionId ?? null
+  // Why sessionId too: with none, 'ready' is a placeholder that read nothing.
+  const readEmptySessionId =
+    args.session.readPhase === 'ready' && messages.length === 0 ? sessionId : null
   const scope = useMemo(() => ({ paneKey, agent }), [paneKey, agent])
-  const [pending, setPending] = useState(() => readPendingSendCache(scope))
+  const [cachedPending, setPending] = useState(() => readPendingSendCache(scope))
+  const pending = useMemo(
+    () => releaseEmptyTranscriptClaims(cachedPending, sessionId),
+    [cachedPending, sessionId]
+  )
   useEffect(() => setPending(readPendingSendCache(scope)), [scope])
   const save = useCallback(
     (update: (entries: NativeChatPendingSend[]) => NativeChatPendingSend[]) => {
@@ -42,8 +58,8 @@ export function useNativeChatPendingDelivery(args: {
     [scope]
   )
   useEffect(() => {
-    save((entries) => prunePendingSends(entries, messages))
-  }, [messages, save])
+    save((entries) => prunePendingSends(releaseEmptyTranscriptClaims(entries, sessionId), messages))
+  }, [messages, save, sessionId])
   const append = useCallback(
     (text: string, imagePaths: string[] | undefined, queuedWhileWorking: boolean) => {
       const sentAt = Date.now()
@@ -54,13 +70,14 @@ export function useNativeChatPendingDelivery(args: {
         sentAt,
         afterMessageId: boundary?.id ?? null,
         afterMessageTimestamp: boundary?.timestamp ?? null,
+        ...(readEmptySessionId ? { afterEmptyTranscriptSessionId: readEmptySessionId } : {}),
         ...(imagePaths ? { imagePaths } : {}),
         ...(queuedWhileWorking ? { queuedWhileWorking: true } : {})
       }
       setPending(appendPendingSendCache(scope, entry))
       return entry.id
     },
-    [messages, scope]
+    [messages, readEmptySessionId, scope]
   )
   const record = useCallback(
     (text: string, imagePaths?: string[]) => append(text, imagePaths, liveWorking),
@@ -129,7 +146,9 @@ export function useNativeChatPendingDelivery(args: {
             return entries
           }
           const unmatched = new Set(
-            pendingSendsAsMessages(due, messages).map((message) => message.id)
+            pendingSendsAsMessages(releaseEmptyTranscriptClaims(due, sessionId), messages).map(
+              (message) => message.id
+            )
           )
           if (unmatched.size === 0) {
             return entries
@@ -145,7 +164,7 @@ export function useNativeChatPendingDelivery(args: {
       Math.max(0, nextHoldDeadline - Date.now())
     )
     return () => clearTimeout(timer)
-  }, [nextHoldDeadline, messages, save])
+  }, [nextHoldDeadline, messages, save, sessionId])
 
   const notices = useMemo(() => {
     if (!pending.some((entry) => entry.delivery)) {

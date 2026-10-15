@@ -23,7 +23,6 @@ export function registerRepoHandlers(
 ): void {
   // Remove previously registered handlers so we can re-register on macOS app re-activation (new window).
   ipcMain.removeHandler('repos:list')
-  ipcMain.removeHandler('repos:listForExecutionHost')
   ipcMain.removeHandler('repos:add')
   ipcMain.removeHandler('repos:removeForHost')
   ipcMain.removeHandler('repos:reorder')
@@ -54,7 +53,6 @@ export function registerRepoHandlers(
   ipcMain.removeHandler('repos:pickDirectory')
   ipcMain.removeHandler('repos:clone')
   ipcMain.removeHandler('repos:cloneAbort')
-  ipcMain.removeHandler('repos:cloneRemote')
   ipcMain.removeHandler('repos:isGitAvailable')
   ipcMain.removeHandler('repos:getDefaultCreateProjectParent')
   ipcMain.removeHandler('repos:getGitUsername')
@@ -62,9 +60,7 @@ export function registerRepoHandlers(
   ipcMain.removeHandler('repos:getBaseRefDefault')
   ipcMain.removeHandler('repos:searchBaseRefs')
   ipcMain.removeHandler('repos:searchBaseRefDetails')
-  ipcMain.removeHandler('repos:addRemote')
   ipcMain.removeHandler('repos:create')
-  ipcMain.removeHandler('repos:createRemote')
   ipcMain.removeHandler('sparsePresets:list')
   ipcMain.removeHandler('sparsePresets:save')
   ipcMain.removeHandler('sparsePresets:remove')

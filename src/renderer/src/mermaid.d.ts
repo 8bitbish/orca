@@ -4,6 +4,7 @@ declare module 'mermaid' {
   type MermaidInitializeOptions = {
     startOnLoad?: boolean
     theme?: MermaidTheme
+    darkMode?: boolean
     /** Palette overrides; honored in full only by the `base` theme. */
     themeVariables?: Record<string, string | boolean>
     htmlLabels?: boolean
@@ -18,6 +19,7 @@ declare module 'mermaid' {
 
   type MermaidApi = {
     initialize: (options: MermaidInitializeOptions) => void
+    mermaidAPI: { getConfig: () => MermaidInitializeOptions }
     render: (id: string, text: string) => Promise<MermaidRenderResult>
   }
 

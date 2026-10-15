@@ -4,19 +4,63 @@ import {
 } from '../../shared/terminal-composer-draft'
 import type { HeadlessEmulator } from '../daemon/headless-emulator'
 import type { RuntimeTerminalProjection } from './orca-runtime-core'
-import { visibleNonBlankTerminalLines } from './terminal-tail-read'
+import type { HeadlessTerminalRow } from '../daemon/headless-terminal-rows'
+import type { RuntimeTerminalRowMetadata } from '../../shared/runtime-terminal-contracts'
+
+type ProjectedTerminalRows = RuntimeTerminalProjection & { tailRows: RuntimeTerminalRowMetadata[] }
+
+type TerminalProjectionEmulator = Pick<
+  HeadlessEmulator,
+  'getBufferTailRows' | 'getVisibleRows' | 'getVisibleBufferRange' | 'getCursorLineContext'
+>
+
+function projectTerminalRows(
+  rows: HeadlessTerminalRow[],
+  limit = rows.length
+): {
+  lines: string[]
+  tailRows: RuntimeTerminalRowMetadata[]
+} {
+  const projected: HeadlessTerminalRow[] = []
+  let previous = -2
+  rows.forEach((row, index) => {
+    if (!row.text.trim()) {
+      return
+    }
+    projected.push({
+      text: row.text.trimEnd(),
+      metadata: {
+        ...row.metadata,
+        trailingSpaces: row.metadata.trailingSpaces + row.text.length - row.text.trimEnd().length,
+        wrapped: index === previous + 1 && row.metadata.wrapped
+      }
+    })
+    previous = index
+  })
+  const kept = projected.slice(-limit)
+  return {
+    lines: kept.map((row) => row.text),
+    tailRows: kept.map((row, index) => ({
+      ...row.metadata,
+      wrapped: index > 0 && row.metadata.wrapped
+    }))
+  }
+}
 
 /** The prompt box the projection masks out of the screen: typed or holding a dim suggestion.
  *  A stock placeholder stays in place, as it always has. */
-function maskedComposerPrompt(emulator: HeadlessEmulator): TerminalComposerPrompt | null {
+function maskedComposerPrompt(emulator: TerminalProjectionEmulator): TerminalComposerPrompt | null {
   const prompt = detectTerminalComposerPrompt(emulator.getCursorLineContext())
   return prompt && !prompt.stockPlaceholder ? prompt : null
 }
 
-function maskComposerRows(visible: string[], prompt: TerminalComposerPrompt): void {
-  visible[prompt.promptRow] = prompt.promptGlyph
+function maskComposerRows(visible: HeadlessTerminalRow[], prompt: TerminalComposerPrompt): void {
+  visible[prompt.promptRow] = {
+    text: prompt.promptGlyph,
+    metadata: { wrapped: false, trailingSpaces: 0 }
+  }
   for (let row = prompt.promptRow + 1; row <= prompt.endRow; row += 1) {
-    visible[row] = ''
+    visible[row] = { text: '', metadata: { wrapped: false, trailingSpaces: 0 } }
   }
 }
 
@@ -32,32 +76,34 @@ function composerFields(
 }
 
 export function projectTerminalTailLines(
-  emulator: HeadlessEmulator,
+  emulator: TerminalProjectionEmulator,
   limit: number
-): RuntimeTerminalProjection {
-  const tail = emulator.getBufferTailLines(limit)
-  const visible = emulator.getVisibleLines()
+): ProjectedTerminalRows {
+  const tail = emulator.getBufferTailRows(limit)
+  const visible = emulator.getVisibleRows()
   const visibleRange = emulator.getVisibleBufferRange()
   const prompt = maskedComposerPrompt(emulator)
   if (prompt && visibleRange.endExclusive === visibleRange.totalLength) {
     maskComposerRows(visible, prompt)
     const scrollbackTail = tail.slice(0, Math.max(0, tail.length - visible.length))
-    tail.splice(0, tail.length, ...scrollbackTail, ...visibleNonBlankTerminalLines(visible))
+    tail.splice(0, tail.length, ...scrollbackTail, ...visible)
   }
   return {
-    lines: visibleNonBlankTerminalLines(tail).slice(-limit),
+    ...projectTerminalRows(tail, limit),
     ...composerFields(prompt)
   }
 }
 
-export function projectTerminalVisibleLines(emulator: HeadlessEmulator): RuntimeTerminalProjection {
-  const visible = emulator.getVisibleLines()
+export function projectTerminalVisibleLines(
+  emulator: TerminalProjectionEmulator
+): ProjectedTerminalRows {
+  const visible = emulator.getVisibleRows()
   const prompt = maskedComposerPrompt(emulator)
   if (prompt) {
     maskComposerRows(visible, prompt)
   }
   return {
-    lines: visibleNonBlankTerminalLines(visible),
+    ...projectTerminalRows(visible),
     ...composerFields(prompt)
   }
 }

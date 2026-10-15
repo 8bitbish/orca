@@ -11,9 +11,8 @@ import {
   decodeWorkerOutputCursor,
   encodeWorkerOutputCursor
 } from '../../../../orchestration/worker-output-cursor'
-import { redactWorkerTerminalLines } from '../../../../orchestration/worker-transcript-payload'
+import { redactWorkerTerminalView } from '../../../../orchestration/worker-terminal-redaction'
 import { readWorkerTranscript } from '../../../../orchestration/worker-transcript-read'
-import { getSshFilesystemProvider } from '../../../../../providers/ssh-filesystem-dispatch'
 import { isWslHookRelayConnectionId } from '../../../../../../shared/wsl-hook-relay-contract'
 
 export async function readExactWorkerOutput(args: {
@@ -48,11 +47,8 @@ export async function readExactWorkerOutput(args: {
   if (isWslSession && !session.wslDistro) {
     return fallbackOrThrow(args, 'remote_capability_unavailable')
   }
-  const remoteFilesystemProvider =
-    session.connectionId && !isWslSession
-      ? getSshFilesystemProvider(session.connectionId)
-      : undefined
-  if (session.connectionId && !isWslSession && !remoteFilesystemProvider) {
+  // Why: this process serves no SSH filesystem, so an SSH worker's transcript is unreachable.
+  if (session.connectionId && !isWslSession) {
     return fallbackOrThrow(args, 'remote_capability_unavailable')
   }
   if (cursor?.source === 'transcript' && !cursor.boundaryCheckpoint) {
@@ -66,8 +62,7 @@ export async function readExactWorkerOutput(args: {
     offset: cursor?.source === 'transcript' ? cursor.position : undefined,
     expectedBoundaryCheckpoint:
       cursor?.source === 'transcript' ? (cursor.boundaryCheckpoint ?? undefined) : undefined,
-    limit: args.limit,
-    filesystemProvider: remoteFilesystemProvider
+    limit: args.limit
   })
   if (!transcript.ok) {
     if (transcript.reason === 'source_changed') {
@@ -164,14 +159,7 @@ async function readTerminalOutput(
     limit: args.limit
   })
   // Everything the read carries is redacted together, the composer fields included.
-  const redactedTerminal = redactWorkerTerminalLines([
-    ...terminal.tail,
-    terminal.draft ?? '',
-    terminal.suggestion ?? ''
-  ])
-  const redactedTail = redactedTerminal.lines.slice(0, terminal.tail.length)
-  const redactedDraft = terminal.draft ? redactedTerminal.lines.at(-2) : undefined
-  const redactedSuggestion = terminal.suggestion ? redactedTerminal.lines.at(-1) : undefined
+  const redactedTerminal = redactWorkerTerminalView(terminal)
   const position =
     terminal.nextCursor !== null && /^\d+$/.test(terminal.nextCursor)
       ? Number.parseInt(terminal.nextCursor, 10)
@@ -186,9 +174,9 @@ async function readTerminalOutput(
     sourceIdentity,
     terminal: {
       ...terminal,
-      tail: redactedTail,
-      draft: redactedDraft,
-      suggestion: redactedSuggestion
+      tail: redactedTerminal.tail,
+      draft: redactedTerminal.draft,
+      suggestion: redactedTerminal.suggestion
     },
     cursor: nextCursor,
     status: {

@@ -121,4 +121,6 @@ export type MobileNativeChatController = {
     text: string,
     images: readonly PendingNativeChatImage[]
   ) => Promise<'queued' | 'direct' | 'rejected'>
+  /** Whether the composer offers images: a structured chat by its options report. */
+  nativeChatAcceptsImages: boolean
 }
