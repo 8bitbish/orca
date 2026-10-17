@@ -26,7 +26,7 @@ import type {
   NativeChatComposerProps
 } from './native-chat-composer-types'
 import { useNativeChatPtyComposerSend } from './use-native-chat-pty-composer-send'
-import { useNativeChatHeldQueueComposerSend } from './use-native-chat-held-queue-composer-send'
+import { useNativeChatStructuredComposerSend } from './use-native-chat-structured-composer-send'
 import { useNativeChatComposerWorkingSend } from './use-native-chat-composer-queue-affordances'
 import { useImeEnterGestureOwnership } from '@/lib/ime-composition-keyboard-event'
 import { useNativeChatComposerAppMenuSelection } from './use-native-chat-composer-app-menu-selection'
@@ -173,7 +173,12 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
     const { imageAttachments, attachResolvedPaths, clearImageAttachments, removeImageAttachment } =
       attachments
     const imageBlock = nativeChatImageSendBlock(imageAttachments)
-    const sendHeld = disabled || structuredTransport?.sendOut === true || imageBlock.holdsSend
+    const sendBlockedReason = imageBlock.reason ?? structuredTransport?.sendBlockedReason ?? null
+    const sendHeld =
+      disabled ||
+      structuredTransport?.sendOut === true ||
+      imageBlock.holdsSend ||
+      structuredTransport?.sendBlockedReason !== undefined
     const sendButtonDisabled = isWorking
       ? !hasPty || !onStop
       : sendHeld || (draft.trim() === '' && imageAttachments.length === 0)
@@ -216,7 +221,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
     const contextUsageSummary = useNativeChatContextUsageSummary(structuredTransport)
     const sessionOptionsSnapshot = structuredTransport?.optionSnapshot ?? ptySessionOptionsSnapshot
 
-    const structuredSendArgs = {
+    const sendStructured = useNativeChatStructuredComposerSend({
       agent,
       draftScopeKey,
       imageAttachments,
@@ -225,9 +230,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       clearSkillOrigin,
       setDraft,
       setCaret
-    }
-    const { send: sendStructured, fieldProps: queue } =
-      useNativeChatHeldQueueComposerSend(structuredSendArgs)
+    })
 
     // What both terminal send paths share: where a command goes and what the composer resets.
     const ptyCommandRouting = {
@@ -260,8 +263,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       queue: structuredTransport ? null : hostQueue
     })
     const workingSend = useNativeChatComposerWorkingSend({
-      draft,
-      imageAttachments,
+      draftEmpty: draft.trim() === '' && imageAttachments.length === 0,
       isWorking,
       sendHeld,
       structured: Boolean(structuredTransport),
@@ -293,7 +295,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       dropPendingImageAttachment: attachments.dropPendingImageAttachment,
       setNotice,
       sendPty,
-      structuredSendArgs,
+      sendStructured,
       structuredTransport
     })
     const { send, goalMode } = useNativeChatComposerSubmit({
@@ -375,7 +377,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
         imageAttachments={imageAttachments}
         attachmentEnvironmentId={structuredTransport?.runtimeEnvironmentId ?? undefined}
         sendButtonDisabled={sendButtonDisabled}
-        sendBlockedReason={imageBlock.reason}
+        sendBlockedReason={sendBlockedReason}
         isWorking={isWorking}
         workingSend={workingSend}
         isStopping={isStopping}
@@ -414,7 +416,6 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
         onDictationHoldEnd={dictation.stopHoldDictation}
         onSend={send}
         onStop={interrupt}
-        {...queue}
         sessionOptionsSurface={sessionOptionsSurface}
         sessionOptionsSnapshot={sessionOptionsSnapshot}
         contextUsage={contextUsageSummary}

@@ -22,13 +22,15 @@ function assistantText(message: NativeChatMessage | undefined): string {
     .trim()
 }
 
-/** Assistant prose already landed for the newest turn: scan back from the tail
- *  and stop at the newest user turn, so a previous turn's reply is never mistaken
- *  for this one's. Empty when this turn has produced nothing yet. */
-function landedAssistantText(messages: readonly NativeChatMessage[]): string {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index]
-    if (message?.role === 'user') {
+/** The newest assistant words after row `after`: read back past the tool calls and thoughts that
+ *  landed after them, but never past the user's message, which starts a different reply. */
+export function latestNativeChatReplyText(
+  messages: readonly NativeChatMessage[],
+  after = -1
+): string {
+  for (let index = messages.length - 1; index > after; index -= 1) {
+    const message = messages[index]!
+    if (message.role === 'user') {
       return ''
     }
     const text = assistantText(message)
@@ -42,9 +44,9 @@ function landedAssistantText(messages: readonly NativeChatMessage[]): string {
 /**
  * Decide the streaming text to show, or null to show nothing. Returns the
  * preview only while it leads the transcript — i.e. it's longer than (and not
- * already contained in) the reply already landed for this turn. Once the real
- * turn lands with the same (or more) text, the preview is suppressed so the
- * bubble doesn't duplicate or flicker as the transcript catches up.
+ * already contained in) the last assistant turn. Once the real turn lands with
+ * the same (or more) text, the preview is suppressed so the bubble doesn't
+ * duplicate or flicker as the transcript catches up.
  *
  * `working` gates it: a stale preview from a finished turn never shows.
  *
@@ -64,9 +66,9 @@ export function deriveNativeChatStreamingText(args: {
   working: boolean
   previewIsToolOutput?: boolean
   /** True while an echo sent to an *idle* agent is still open: the reply now
-   *  streaming answers that un-transcribed prompt, so `landed` is an earlier turn.
+   *  streaming answers that un-transcribed prompt, so the landed rows are an earlier turn.
    *  A queued echo does not count — there the streaming reply belongs to a prompt
-   *  already in the transcript, so `landed` can be that same turn. */
+   *  already in the transcript, so the landed rows can be that same turn. */
   hasOpenIdleSend?: boolean
 }): string | null {
   const { messages, previewText, working, previewIsToolOutput, hasOpenIdleSend = false } = args
@@ -77,18 +79,18 @@ export function deriveNativeChatStreamingText(args: {
   if (!text) {
     return null
   }
-  // `landed` is an earlier turn, so neither check below can speak for this one —
+  // The landed rows are an earlier turn, so no check below can speak for this one —
   // a short reply repeating earlier text would suppress a valid preview.
   if (hasOpenIdleSend) {
     return text
   }
-  const landed = landedAssistantText(messages)
-  // Already in the transcript, so the preview would duplicate its own turn.
-  if (landed.includes(text)) {
+  const lastText = assistantText(messages.at(-1))
+  if (lastText.includes(text) || text.length <= lastText.length) {
     return null
   }
-  // Within one turn, only a preview that leads the landed text has more to show.
-  if (text.length <= landed.length) {
+  // A tool call or thought after the sentence leaves the last row wordless. Hide only that same
+  // sentence: a new, shorter reply after the tool is not the earlier, longer commentary.
+  if (!lastText && latestNativeChatReplyText(messages).includes(text)) {
     return null
   }
   return text

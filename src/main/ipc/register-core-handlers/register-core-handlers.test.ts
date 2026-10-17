@@ -59,6 +59,7 @@ const {
   registerCodexConfigSyncHandlersMock,
   registerOnboardingHandlersMock,
   registerDashboardPopoutHandlersMock,
+  registerWorkspaceSpaceWindowHandlersMock,
   isDashboardPopoutRendererMock,
   registerTerminalPreviewHandlersMock,
   registerSpeechHandlersMock,
@@ -131,6 +132,7 @@ const {
   registerCodexConfigSyncHandlersMock: vi.fn(),
   registerOnboardingHandlersMock: vi.fn(),
   registerDashboardPopoutHandlersMock: vi.fn(),
+  registerWorkspaceSpaceWindowHandlersMock: vi.fn(),
   isDashboardPopoutRendererMock: vi.fn(),
   registerTerminalPreviewHandlersMock: vi.fn(),
   registerSpeechHandlersMock: vi.fn(),
@@ -171,6 +173,10 @@ vi.mock('../onboarding', () => ({
 
 vi.mock('../dashboard-popout', () => ({
   registerDashboardPopoutHandlers: registerDashboardPopoutHandlersMock
+}))
+
+vi.mock('../workspace-space-window', () => ({
+  registerWorkspaceSpaceWindowHandlers: registerWorkspaceSpaceWindowHandlersMock
 }))
 
 vi.mock('../../window/dashboard-popout-window', () => ({
@@ -317,6 +323,10 @@ vi.mock('../runtime-environments', () => ({
 
 vi.mock('../wsl-host-handlers', () => ({
   registerWslHostHandlers: vi.fn()
+}))
+
+vi.mock('../wsl-move-handlers', () => ({
+  registerWslMoveHandlers: vi.fn()
 }))
 
 vi.mock('../ephemeral-vm', () => ({
@@ -501,6 +511,7 @@ describe('registerCoreHandlers', () => {
     registerHostedReviewHandlersMock.mockReset()
     registerExportHandlersMock.mockReset()
     registerDashboardPopoutHandlersMock.mockReset()
+    registerWorkspaceSpaceWindowHandlersMock.mockReset()
     registerTerminalPreviewHandlersMock.mockReset()
     registerSpeechHandlersMock.mockReset()
     registerSkillsHandlersMock.mockReset()
@@ -613,6 +624,7 @@ describe('registerCoreHandlers', () => {
     expect(registerDeveloperPermissionHandlersMock).toHaveBeenCalled()
     expect(registerComputerUsePermissionHandlersMock).toHaveBeenCalled()
     expect(registerDashboardPopoutHandlersMock).toHaveBeenCalledWith(store, undefined)
+    expect(registerWorkspaceSpaceWindowHandlersMock).toHaveBeenCalledWith(store)
     expect(registerTerminalPreviewHandlersMock).toHaveBeenCalledWith(runtime)
     expect(registerSettingsHandlersMock).toHaveBeenCalledWith(store, agentAwakeService)
     expect(registerSkillsHandlersMock).toHaveBeenCalledWith(store, runtime)

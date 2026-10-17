@@ -13,6 +13,7 @@ import {
   TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY,
   TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY
 } from '../../../src/shared/terminal-message-queue-capability'
+import { AGENT_SESSION_PERMISSION_MODES_RUNTIME_CAPABILITY } from '../../../src/shared/agent-session-permission-modes-capability'
 import { structuredAgentSessionHostSupport } from './mobile-structured-agent-session-host-support'
 
 describe('structuredAgentSessionHostSupport', () => {
@@ -27,7 +28,8 @@ describe('structuredAgentSessionHostSupport', () => {
       sendOptions: false,
       conversationStop: false,
       terminalMessageQueue: false,
-      terminalMessageQueueUnsubscribe: false
+      terminalMessageQueueUnsubscribe: false,
+      permissionModes: false
     }
     expect(structuredAgentSessionHostSupport([])).toEqual(none)
     expect(
@@ -54,6 +56,9 @@ describe('structuredAgentSessionHostSupport', () => {
     expect(
       structuredAgentSessionHostSupport([AGENT_SESSION_CONVERSATION_STOP_RUNTIME_CAPABILITY])
     ).toEqual({ ...none, conversationStop: true })
+    expect(
+      structuredAgentSessionHostSupport([AGENT_SESSION_PERMISSION_MODES_RUNTIME_CAPABILITY])
+    ).toEqual({ ...none, permissionModes: true })
   })
 
   it('reads the terminal message queue capability', () => {

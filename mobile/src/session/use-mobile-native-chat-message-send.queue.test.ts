@@ -37,7 +37,8 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
     normalizedText: '',
     baselineOccurrences: 0,
     baselineTailMessageId: null,
-    baselineResolved: true
+    baselineResolved: true,
+    sentAt: 0
   }
   // The send goes through the mocked writers, so the client is never called.
   const client: RpcClient = {

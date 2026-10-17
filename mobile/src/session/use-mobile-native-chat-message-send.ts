@@ -16,6 +16,7 @@ import {
   releaseMobileNativeChatTerminalWrite
 } from './mobile-native-chat-terminal-write-lock'
 import type { MobileNativeChatSendOrigin } from './use-mobile-native-chat-drafts'
+import type { MobileNativeChatAcceptSend } from './mobile-native-chat-pending-echo'
 import { UNCONFIRMED_SEND_MESSAGE } from './use-mobile-native-chat-unconfirmed-sends'
 import type { MobileNativeChatLaunchDraftSeed } from './use-mobile-native-chat-launch-draft-seed'
 import {
@@ -35,7 +36,10 @@ export type MobileNativeChatMessageSend = {
   sendWithOutcome: (
     text: string,
     images?: string[],
-    deadline?: number
+    deadline?: number,
+    // Only a structured send carries them; a terminal chat's images were pasted before this.
+    _attachments?: readonly unknown[],
+    sentAt?: number
   ) => Promise<MobileNativeChatSendOutcome>
   /** Answer to an agent question — never touches the composer draft. */
   answerQuestion: (text: string) => Promise<boolean>
@@ -62,20 +66,13 @@ export function useMobileNativeChatMessageSend(args: {
   /** Whether the agent was already replying, read at send time so the optimistic
    *  echo can be tiered against the streaming bubble. */
   agentWorkingRef: MutableRefObject<boolean>
-  captureSendOrigin: (text: string) => MobileNativeChatSendOrigin | null
+  captureSendOrigin: (text: string, sentAt?: number) => MobileNativeChatSendOrigin | null
   /** Launch-context text Orca parked on the agent's TUI input line, or null. Read
    *  at send time so the pre-clear can be sized to every line it occupies. */
   readSeededLaunchDraftSeed: () => MobileNativeChatLaunchDraftSeed | null
   clearDraftForSend: (origin: MobileNativeChatSendOrigin, text: string) => void
   restoreRejectedDraft: (origin: MobileNativeChatSendOrigin, text: string) => void
-  acceptSend: (
-    origin: MobileNativeChatSendOrigin,
-    text: string,
-    images?: string[],
-    /** True when the agent was already replying, so the echo renders after the
-     *  streaming bubble instead of above it. */
-    queuedWhileWorking?: boolean
-  ) => void
+  acceptSend: MobileNativeChatAcceptSend
   holdUnconfirmedSend: (
     origin: MobileNativeChatSendOrigin,
     text: string,
@@ -110,7 +107,8 @@ export function useMobileNativeChatMessageSend(args: {
       syncComposer: boolean,
       recordControlSend: boolean,
       sharedDeadline?: number,
-      requireWriteSettlement?: true
+      requireWriteSettlement?: true,
+      sentAt?: number
     ): Promise<MobileNativeChatSendOutcome> => {
       // The host writes trailing whitespace verbatim onto the agent's input line,
       // where it can glue the next rapid send onto this one (#14262). Only the
@@ -118,7 +116,7 @@ export function useMobileNativeChatMessageSend(args: {
       // rejected send has to put back exactly that (#14819).
       const text = draftText.trimEnd()
       const handle = handleRef.current
-      const origin = captureSendOrigin(text)
+      const origin = captureSendOrigin(text, sentAt)
       // Snapshot here, not at acceptSend: the send itself flips the agent to
       // working, so reading it after the RPC settles would tag every idle send as
       // queued and push the reply above the prompt that caused it.
@@ -280,9 +278,9 @@ export function useMobileNativeChatMessageSend(args: {
     ]
   )
 
-  const sendWithOutcome = useCallback(
-    (text: string, images?: string[], deadline?: number) =>
-      sendMessage(text, images, true, true, deadline),
+  const sendWithOutcome = useCallback<MobileNativeChatMessageSend['sendWithOutcome']>(
+    (text, images, deadline, _attachments, sentAt) =>
+      sendMessage(text, images, true, true, deadline, undefined, sentAt),
     [sendMessage]
   )
 

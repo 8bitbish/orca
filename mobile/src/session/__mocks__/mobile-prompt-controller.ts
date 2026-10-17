@@ -67,7 +67,9 @@ vi.mock('lucide-react-native', () =>
   )
 )
 vi.mock('../MobileNativeChatMessage', () => ({ MobileNativeChatMessage: 'ChatMessage' }))
+vi.mock('../MobileNativeChatRowOverlaysHost', () => ({ MobileNativeChatRowOverlaysHost: 'View' }))
 vi.mock('../MobileNativeChatVisual', () => ({ useMobileNativeChatVisualRenderer: () => null }))
+vi.mock('../../platform/use-reduced-motion', () => ({ useReducedMotionEnabled: () => null }))
 vi.mock('../MobileNativeChatLiveLine', () => ({ MobileNativeChatLiveLine: 'LiveStatus' }))
 vi.mock('../MobileNativeChatAsk', () => ({ MobileNativeChatAsk: 'ChatAsk' }))
 vi.mock('../MobileAgentWorkingIndicator', () => ({
@@ -106,9 +108,9 @@ const structured = {
 vi.mock('../use-mobile-session-view-mode', () => ({
   useMobileSessionViewMode: () => ({
     isTabChatView: () => visible.value,
-    toggleTabChatView: () => {
-      visible.value = !visible.value
-    }
+    setTabView: (_tabId: string, view: string) =>
+      Object.assign(visible, { value: view === 'chat' }),
+    toggleTabChatView: () => Object.assign(visible, { value: !visible.value })
   })
 }))
 vi.mock('../use-mobile-native-chat-session-lane', () => ({
@@ -216,16 +218,8 @@ function Harness(props: HarnessProps) {
   captureRenderedController(current)
   return createElement(MobileNativeChatOverlay, {
     controller: current,
-    ...personalOverlayProps(connState),
+    ...personalOverlayProps(connState, controller.handleNativeChatSend),
     onOpenFile: vi.fn(),
-    images: {
-      sendNativeChat: controller.handleNativeChatSend,
-      attachments: [],
-      isAttaching: false,
-      attachImage: async () => {},
-      removeAttachment: () => {},
-      restoreImages: () => {}
-    },
     onMicPress: vi.fn(),
     onMicPressOut: vi.fn(),
     onMicPressIn: vi.fn(),
@@ -235,6 +229,7 @@ function Harness(props: HarnessProps) {
     sendErrorMessage: null,
     onClearSendError: vi.fn(),
     sendSurfaceId: 'surface',
+    sessionId: null,
     getSendCompletionGeneration: () => 0,
     keyboardInset: 0
   })

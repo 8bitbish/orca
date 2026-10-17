@@ -89,9 +89,13 @@ export function NativeChatUserMessageRow({
   // left-aligned under its sender rather than as their bubble.
   const from = message.from
   const fenceScope = useNativeChatRowFenceScope(message, markdown)
+  const sending = deliveryNotice?.sending === true
   return (
     <div
       ref={rowRef}
+      // Read by the context menu: only rows showing the hover copy or rewind offer them there.
+      data-native-chat-message-id={markdown ? message.id : undefined}
+      data-native-chat-rewind-item={rewind && !sending ? message.id : undefined}
       className={cn('group relative flex flex-col gap-0.5', from ? 'items-start' : 'items-end')}
     >
       {from ? (
@@ -151,7 +155,7 @@ export function NativeChatUserMessageRow({
       <UserMessageMeta
         markdown={markdown}
         timestamp={message.timestamp}
-        sending={deliveryNotice?.sending === true}
+        sending={sending}
         {...(rewind ? { rewind: { itemId: message.id, surface: rewind } } : {})}
       />
       {deliveryNotice?.text !== undefined ? (

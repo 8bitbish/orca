@@ -19,7 +19,6 @@ import {
   updateNativeChatComposerDraft
 } from './native-chat-composer-draft-store'
 import { nativeChatComposerDraftLeftAfterSend } from './native-chat-composer-draft-comparison'
-import type { NativeChatComposerDraft } from './native-chat-composer-draft-storage'
 
 export type UseNativeChatStructuredComposerSendArgs = {
   agent: AgentType
@@ -33,7 +32,7 @@ export type UseNativeChatStructuredComposerSendArgs = {
 }
 
 /** A command the host runs itself (and `/goal` where the host sets goals), never a message. */
-export function isNativeChatStructuredHostCommand(
+function isNativeChatStructuredHostCommand(
   text: string,
   agent: AgentType,
   transport: NativeChatStructuredComposerTransport
@@ -44,13 +43,10 @@ export function isNativeChatStructuredHostCommand(
   )
 }
 
-/** A structured send. `sentFrom`: the draft the message was taken from, for a send that goes out
- *  later than it was asked for; only what it held then leaves the composer. `keepDraft`: a card's
- *  reply, sent as typed text, leaves the draft alone. */
+/** A structured send. `keepDraft`: a card's reply, sent as typed text, leaves the draft alone. */
 export type NativeChatStructuredComposerSend = (
   text: string,
   attachments?: readonly NativeChatComposerImageAttachment[],
-  sentFrom?: NativeChatComposerDraft,
   options?: { keepDraft?: boolean }
 ) => Promise<void>
 
@@ -67,12 +63,20 @@ export function useNativeChatStructuredComposerSend({
   setCaret
 }: UseNativeChatStructuredComposerSendArgs): NativeChatStructuredComposerSend {
   return useCallback<NativeChatStructuredComposerSend>(
-    async (text, attachments = imageAttachments, sentFrom, options): Promise<void> => {
+    async (text, attachments = imageAttachments, options): Promise<void> => {
       // A picked command is held like Send: it would carry attachments still uploading, pathless.
       if (!structuredTransport || attachments.some((attachment) => attachment.pending)) {
         return
       }
       const hostCommand = isNativeChatStructuredHostCommand(text, agent, structuredTransport)
+      // A held host takes no turn, and its notice says why; an option command only changes what
+      // the next turn runs with.
+      if (
+        structuredTransport.sendBlockedReason !== undefined &&
+        (!hostCommand || structuredAgentSessionCommandChangesConversation(text))
+      ) {
+        return
+      }
       // A command picked while images await re-attaching would send them without a file.
       const attachAgain = nativeChatAttachImagesAgainReason(attachments)
       if (attachAgain) {
@@ -92,7 +96,7 @@ export function useNativeChatStructuredComposerSend({
       if (hostCommand && structuredAgentSessionCommandChangesConversation(text)) {
         structuredTransport.onSubmitted?.()
       }
-      const submitted = sentFrom ?? readNativeChatComposerDraft(draftScopeKey)
+      const submitted = readNativeChatComposerDraft(draftScopeKey)
       await dispatchNativeChatStructuredComposerText(structuredTransport, text, attachments)
         .then(({ accepted, error, refusedWhile, revealsTranscript }) => {
           structuredTransport.onError(error, refusedWhile ? { refusedWhile } : undefined)

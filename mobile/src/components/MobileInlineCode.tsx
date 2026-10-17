@@ -1,7 +1,6 @@
 import { useContext } from 'react'
-import { Pressable, StyleSheet, Text } from 'react-native'
+import { Pressable, StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native'
 import { colors, typography } from '../theme/mobile-theme'
-import { styles as markdownStyles } from './mobile-markdown-styles'
 import {
   inlineViewBaselineShift,
   MarkdownProseSizeContext,
@@ -19,9 +18,12 @@ const MAX_BOXED_LENGTH = 40
  */
 export function MobileInlineCode({
   code,
+  style,
   onPress
 }: {
   code: string
+  /** The span's style where it stays text. */
+  style: StyleProp<TextStyle>
   /** Set for a file path, which opens the file. */
   onPress?: () => void
 }): React.JSX.Element {
@@ -29,10 +31,7 @@ export function MobileInlineCode({
   const proseSize = useContext(MarkdownProseSizeContext)
   if (selectable || code.length > MAX_BOXED_LENGTH || code.includes('\n')) {
     return (
-      <MarkdownText
-        style={[markdownStyles.inlineCode, onPress ? markdownStyles.inlineCodeLink : null]}
-        onPress={onPress}
-      >
+      <MarkdownText style={style} onPress={onPress}>
         {code}
       </MarkdownText>
     )

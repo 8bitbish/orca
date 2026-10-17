@@ -17,6 +17,7 @@ export type MobileNativeChatPendingMessage = {
    *  Absent (idle send) means the streaming reply is the answer TO this echo and
    *  must render below it. */
   queuedWhileWorking?: boolean
+  sentAt?: number
 }
 
 export type MobileNativeChatSendOrigin = {
@@ -27,6 +28,7 @@ export type MobileNativeChatSendOrigin = {
   baselineOccurrences: number
   baselineTailMessageId: string | null
   baselineResolved: boolean
+  sentAt: number
 }
 
 /** `queuedWhileWorking`: the agent was already replying, so the echo renders after
@@ -85,6 +87,7 @@ export function appendMobileNativeChatPending(
             : origin.baselineOccurrences + earlierOutstanding + 1,
         baselineTailMessageId: origin.baselineTailMessageId,
         baselineResolved: origin.baselineResolved,
+        sentAt: origin.sentAt,
         ...(images?.length ? { images } : {}),
         ...(queuedWhileWorking ? { queuedWhileWorking: true } : {})
       }

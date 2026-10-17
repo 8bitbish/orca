@@ -16,7 +16,7 @@ import { useStructuredNativeChatSubmitReveal } from './use-structured-native-cha
 import { useStructuredPromptResponseHold } from './use-structured-prompt-response-hold'
 import { NativeChatStructuredQuestionCard } from './NativeChatStructuredQuestionCard'
 import { selectNativeChatViewState, structuredChatHistoryPhase } from './native-chat-view-state'
-import { useNativeChatComposerRevealFocus } from './use-native-chat-composer-reveal-focus'
+import { useNativeChatRootInputRouting } from './use-native-chat-root-input-routing'
 import { useNativeChatFontSize } from './use-native-chat-font-size'
 import { useNativeChatFind } from './use-native-chat-find'
 import { NativeChatFindBar } from './NativeChatFindBar'
@@ -32,36 +32,30 @@ import type { NativeChatStructuredViewProps } from './native-chat-view-types'
 import { NativeChatStructuredSessionStatus } from './NativeChatStructuredSessionStatus'
 import { useNativeChatLaunchDraftSignal } from './use-native-chat-launch-draft-adoption'
 import { useNativeChatInterruptedContinuation } from './NativeChatInterruptedContinue'
-import { NativeChatOrcaStopContext } from './native-chat-orca-stop-context'
 import { structuredSessionNotices } from './native-chat-structured-session-notices'
 import { NativeChatPromptSlotNotices } from './NativeChatComposerNotices'
 import { useNativeChatComposerError } from './use-native-chat-composer-notice'
 import { useNativeChatProvisionalLaunch } from './use-native-chat-provisional-launch'
 import { useStructuredAgentSessionHostExecution } from './StructuredAgentSessionStatusBridge'
 import { useNativeChatRewindHost } from './use-native-chat-rewind-host'
-import { NativeChatRewindContext } from './native-chat-rewind-context'
 import { NativeChatQueuedMessageList } from './NativeChatQueuedMessageList'
 import { nativeChatStructuredStopControls } from './native-chat-structured-stop-controls'
 import { chatApprovalFromJournal } from './native-chat-interactive-prompt'
 import { useAppStore } from '../../store'
 import { structuredAgentLabel } from '@/lib/structured-agent-session-launch-label'
 import { useNativeChatStructuredComposerTransport } from './use-native-chat-structured-composer-transport'
-import { NativeChatThreadGoalBanner } from './NativeChatThreadGoalBanner'
+import { NativeChatStructuredGoalStrip } from './NativeChatStructuredGoalStrip'
 import { structuredAgentSessionReadFailureNotice } from './structured-agent-session-read-failure-notice'
-import { useNativeChatProjectReplyChannel } from './native-chat-project-reply-context'
-import { NativeChatReplyScope } from './NativeChatReplyScope'
+import { NativeChatStructuredTranscriptScope } from './NativeChatStructuredTranscriptScope'
 import { useStructuredAgentSessionDeliveryNotices } from './use-structured-agent-session-delivery-notices'
 import { dispatchWasWithdrawn } from '../../../../shared/structured-agent-session-dispatch-rejection'
 import { useNativeChatHostOutage } from './use-native-chat-host-outage'
 import { useNativeChatHostOutageNotice } from './use-native-chat-host-outage-notice'
+import { useNativeChatHostPermissionGate } from './use-native-chat-host-permission-gate'
 import { useNativeChatAvailabilityNotice } from './use-native-chat-availability-notice'
 import { useStructuredAgentSessionStartFailureFacts } from './use-structured-agent-session-start-failure-facts'
 import { pendingPromptsAllUnanswerableHere } from '../../../../shared/agent-session-approval-subject'
-import {
-  isClaudeSignInFailureKind,
-  NativeChatClaudeSignInContext,
-  useNativeChatClaudeSignIn
-} from './native-chat-claude-sign-in'
+import { isClaudeSignInFailureKind, useNativeChatClaudeSignIn } from './native-chat-claude-sign-in'
 
 export function NativeChatStructuredSession(
   props: Omit<NativeChatStructuredViewProps, 'mode'>
@@ -90,7 +84,8 @@ export function NativeChatStructuredSession(
     hostStopping: hostExecution.stopping,
     hostOptionStamp: hostExecution.optionStamp,
     providerStarting: hostExecution.phase === 'starting',
-    providerRunning: hostExecution.phase !== null,
+    // A start's own verdict (a signed-out agent) exists only once that start is proven.
+    providerRunning: hostExecution.phase === 'ready',
     rewind: rewindHost,
     transportEnabled: provisionalLaunch.transportEnabled,
     ...(provisionalLaunch.launch ? { launch: provisionalLaunch.launch } : {})
@@ -111,17 +106,6 @@ export function NativeChatStructuredSession(
   const [optionPickerRequest, setOptionPickerRequest] =
     useState<NativeChatOptionPickerRequest | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
-  const paneCommands = useStructuredNativeChatPaneCommands({
-    tabId: props.tabId,
-    groupId: props.groupId,
-    isVisible: props.isVisible,
-    rootRef,
-    composerRef,
-    questionAnswerInputRef,
-    terminalPaneActions: props.contextMenuActions,
-    sessionId: props.sessionId,
-    target: props.target
-  })
   const historyPhase = structuredChatHistoryPhase(provisionalLaunch, controller.status)
   const hostOutage = useNativeChatHostOutage(props.target)
   const hostNotice = useNativeChatHostOutageNotice(hostOutage)
@@ -132,16 +116,18 @@ export function NativeChatStructuredSession(
     props.agent,
     hostOutage === null
   )
-  const submits = useStructuredNativeChatSubmitReveal(controller, provisionalLaunch.retry)
+  const agentLabel = structuredAgentLabel(props.agent)
+  const hostPermission = useNativeChatHostPermissionGate(props.target, props.agent, agentLabel)
+  const hostHeld = hostPermission.sendBlockedReason !== null
+  const submits = useStructuredNativeChatSubmitReveal(controller, provisionalLaunch.retry, hostHeld)
   const { revealLatest } = submits
   const promptResponse = useStructuredPromptResponseHold(submits.respond)
-  const agentLabel = structuredAgentLabel(props.agent)
   const continuation = useNativeChatInterruptedContinuation({
     target: props.target,
     sessionId: props.sessionId,
     journalItems: controller.journalItems,
     submissions: controller.submissions,
-    isWorking: controller.isWorking,
+    isWorking: controller.isWorking || hostHeld,
     reportComposerError
   })
   const needsFailureFacts =
@@ -188,6 +174,21 @@ export function NativeChatStructuredSession(
     rootRef,
     { sessionId: props.sessionId, isVisible: props.isVisible }
   )
+  const paneCommands = useStructuredNativeChatPaneCommands({
+    tabId: props.tabId,
+    groupId: props.groupId,
+    isVisible: props.isVisible,
+    rootRef,
+    composerRef,
+    questionAnswerInputRef,
+    terminalPaneActions: props.contextMenuActions,
+    sessionId: props.sessionId,
+    target: props.target,
+    messageListRef: submits.messageListRef,
+    fileLinkContext,
+    rewind: controller.rewind.surface,
+    onFind: find.open
+  })
   const prompt = controller.prompts[0] ?? null
   // Prompts this build cannot answer leave the composer open: a send starts a turn, whose card
   // cancel then works.
@@ -202,19 +203,15 @@ export function NativeChatStructuredSession(
       })
     }
   }
-  useNativeChatComposerRevealFocus({
+  const rootInput = useNativeChatRootInputRouting({
+    tabId: props.tabId,
     rootRef,
     composerRef,
+    questionAnswerInputRef,
     isVisible: props.isVisible,
     isFocusedGroup: props.isFocusedGroup,
     composerReady: composerShown
   })
-  // Card actions answer through the composer, which a pending prompt card replaces.
-  const projectReplies = useNativeChatProjectReplyChannel(
-    composerRef,
-    prompt === null,
-    controller.messages
-  )
   const questionBody = prompt?.body.kind === 'question' ? prompt.body : null
   const questions = questionBody ? agentSessionPromptQuestions(questionBody) : []
   const structuredTransport = useNativeChatStructuredComposerTransport({
@@ -227,7 +224,7 @@ export function NativeChatStructuredSession(
     setOptionPickerRequest,
     onError: reportComposerError,
     onSubmitted: revealLatest,
-    queuedMessages: submits.queuedMessages
+    sendBlockedReason: hostPermission.sendBlockedReason
   })
 
   // Said once: on the pane when the failure took it, else in the composer's notices.
@@ -255,7 +252,8 @@ export function NativeChatStructuredSession(
     sessionError,
     composerError: composerError ?? continuation.continueError,
     claudeSignIn,
-    availability
+    availability,
+    hostPermission: hostPermission.notice
   })
   if (hostNotice) {
     notices.push(hostNotice)
@@ -266,10 +264,14 @@ export function NativeChatStructuredSession(
       data-native-chat-root="true"
       data-native-chat-working={controller.isWorking ? 'true' : 'false'}
       tabIndex={-1}
-      onPointerDownCapture={paneCommands.onPointerDownCapture}
+      onPointerDownCapture={(event) => {
+        paneCommands.onPointerDownCapture(event)
+        rootInput.onPointerDownCapture(event)
+      }}
       onKeyDownCapture={(event) => {
         find.onKeyDownCapture(event)
         paneCommands.onKeyDownCapture(event)
+        rootInput.onKeyDownCapture(event)
       }}
       onContextMenuCapture={paneCommands.onContextMenuCapture}
       className={cn(
@@ -292,41 +294,41 @@ export function NativeChatStructuredSession(
         ) : viewState.kind === 'empty' ? (
           <NativeChatEmptyState kind="empty" agent={props.agent} />
         ) : (
-          <NativeChatReplyScope
-            projectReplies={projectReplies}
+          <NativeChatStructuredTranscriptScope
+            composerRef={composerRef}
+            canSend={prompt === null}
+            messages={controller.messages}
             worktreeId={fileLinkContext?.worktreeId}
             sessionId={props.sessionId}
+            rewind={controller.rewind.surface}
+            orcaStop={continuation.view}
+            claudeSignIn={claudeSignIn}
           >
-            <NativeChatRewindContext.Provider value={controller.rewind.surface}>
-              <NativeChatOrcaStopContext.Provider value={continuation.view}>
-                <NativeChatClaudeSignInContext.Provider value={claudeSignIn}>
-                  <NativeChatMessageList
-                    // A rewind replaces the conversation; nothing the old transcript held carries over.
-                    key={controller.epoch ?? undefined}
-                    ref={submits.messageListRef}
-                    session={session}
-                    journalItems={controller.journalItems}
-                    journalSubmissions={controller.submissions}
-                    journalLatestTurn={controller.latestTurn}
-                    subagentRoster={controller.subagentRoster}
-                    railOutline={controller.railOutline}
-                    isVisible={props.isVisible}
-                    isWorking={controller.isWorking}
-                    expandSignal={false}
-                    workingStartedAt={controller.workingStartedAt}
-                    settledTurns={controller.settledTurns}
-                    awaitingInput={prompt === null ? null : 'shown'}
-                    turnActivity={controller.turnActivity}
-                    stopping={stopControls.stopping}
-                    onLinkClick={onLinkClick}
-                    allowFileUriLinks={onLinkClick !== undefined}
-                    runtimeContext={imageRuntimeContext}
-                    deliveryNotices={deliveryNotices}
-                  />
-                </NativeChatClaudeSignInContext.Provider>
-              </NativeChatOrcaStopContext.Provider>
-            </NativeChatRewindContext.Provider>
-          </NativeChatReplyScope>
+            <NativeChatMessageList
+              // A rewind replaces the conversation; nothing the old transcript held carries over.
+              key={controller.epoch ?? undefined}
+              ref={submits.messageListRef}
+              session={session}
+              journalItems={controller.journalItems}
+              journalSubmissions={controller.submissions}
+              journalLatestTurn={controller.latestTurn}
+              journalHostWork={controller.hostWork}
+              subagentRoster={controller.subagentRoster}
+              railOutline={controller.railOutline}
+              isVisible={props.isVisible}
+              isWorking={controller.isWorking}
+              expandSignal={false}
+              workingStartedAt={controller.workingStartedAt}
+              settledTurns={controller.settledTurns}
+              awaitingInput={prompt === null ? null : 'shown'}
+              turnActivity={controller.turnActivity}
+              stopping={stopControls.stopping}
+              onLinkClick={onLinkClick}
+              allowFileUriLinks={onLinkClick !== undefined}
+              runtimeContext={imageRuntimeContext}
+              deliveryNotices={deliveryNotices}
+            />
+          </NativeChatStructuredTranscriptScope>
         )}
       </div>
       {readFailedFinally ? null : (
@@ -337,7 +339,7 @@ export function NativeChatStructuredSession(
             chatWorktreeId={ownerWorktreeId ?? null}
             agentName={agentLabel}
             statedFailures={startFailures}
-            steerHeld={stopControls.stopping}
+            steerHeld={stopControls.stopping || hostHeld}
             focusComposer={focusComposer}
           />
           <NativeChatStructuredSessionStatus
@@ -347,20 +349,17 @@ export function NativeChatStructuredSession(
             backgroundTasks={controller.backgroundTasks}
             stopBackgroundTask={controller.stopBackgroundTask}
           />
-          {!prompt && controller.threadGoal?.goal ? (
-            <NativeChatThreadGoalBanner
-              key={props.sessionId}
-              goal={controller.threadGoal.goal}
-              pending={controller.threadGoal.pending}
+          {prompt ? null : (
+            <NativeChatStructuredGoalStrip
+              sessionId={props.sessionId}
+              threadGoal={controller.threadGoal}
+              transport={structuredTransport}
+              isWorking={controller.isWorking}
               isVisible={props.isVisible}
-              runningTurn={
-                controller.turnId === null
-                  ? null
-                  : { startedAt: controller.workingStartedAt ?? null }
-              }
-              onChange={(change) => void controller.threadGoal?.change(change)}
+              turnId={controller.turnId}
+              workingStartedAt={controller.workingStartedAt}
             />
-          ) : null}
+          )}
           {/* Prompt cards take the composer's slot, below the background-task dock. */}
           {composerShown ? null : <NativeChatPromptSlotNotices notices={notices} />}
           {prompt && approval ? (

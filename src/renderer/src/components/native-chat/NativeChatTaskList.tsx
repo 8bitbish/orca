@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { Circle, CircleCheck, CircleDot, ChevronRight, ListChecks } from 'lucide-react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
@@ -10,8 +9,6 @@ import {
   type NativeChatTaskChange,
   type NativeChatTaskList as TaskList
 } from '../../../../shared/native-chat-task-list'
-import type { NativeChatMessage } from '../../../../shared/native-chat-types'
-import { nativeChatTaskListState } from './native-chat-task-list-state'
 
 function statusLabel(task: NativeChatTask): string {
   if (task.status === 'completed') {
@@ -184,27 +181,6 @@ export function NativeChatTaskList({
           {list.explanation}
         </p>
       ) : null}
-    </div>
-  )
-}
-
-/** The transcript's current task list, pinned above the composer while it has tasks. */
-export function NativeChatComposerTaskList({
-  messages,
-  sessionId
-}: {
-  messages: NativeChatMessage[]
-  sessionId: string | null | undefined
-}): React.JSX.Element | null {
-  const { list } = useMemo(() => nativeChatTaskListState(messages), [messages])
-  if (!list || list.tasks.length === 0) {
-    return null
-  }
-  return (
-    <div className="shrink-0 px-3 pb-2 sm:px-4">
-      <div className="mx-auto w-full max-w-(--chat-content-max-width)">
-        <NativeChatTaskList key={sessionId} list={list} presentation="composer" />
-      </div>
     </div>
   )
 }

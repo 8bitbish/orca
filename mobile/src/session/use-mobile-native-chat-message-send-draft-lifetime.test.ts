@@ -86,6 +86,7 @@ describe('mobile native-chat send across screen lifetimes', () => {
         deviceTokenRef: { current: 'r1-device' },
         agentRef: { current: 'claude' },
         commandSendRef: { current: () => {} },
+        agentWorkingRef: { current: false },
         captureSendOrigin: drafts.captureSendOrigin,
         readSeededLaunchDraftSeed: drafts.readSeededLaunchDraftSeed,
         clearDraftForSend: drafts.clearDraftForSend,
@@ -180,6 +181,24 @@ describe('mobile native-chat send across screen lifetimes', () => {
 
   it('preserves different new text after Back/unmount and same-scope remount', async () => {
     await scenario('remount-different-text', true, 'new draft')
+  })
+
+  it('times the echo at the press it is given, not when the host took the send', async () => {
+    const delivery = deferred<'accepted'>()
+    transport.heal.mockResolvedValue(true)
+    transport.clearInput.mockResolvedValue(true)
+    transport.send.mockImplementation(() => delivery.promise)
+    await mount('press-time')
+    const pressedAt = Date.now() - 10_000
+    let sending: Promise<unknown> | undefined
+    await act(async () => {
+      sending = current().sender.sendWithOutcome('ping', undefined, undefined, undefined, pressedAt)
+    })
+    await act(async () => {
+      delivery.resolve('accepted')
+      await sending
+    })
+    expect(current().drafts.pending.map((item) => item.sentAt)).toEqual([pressedAt])
   })
 
   it('clears an unchanged remounted draft when the original send finishes healing', async () => {

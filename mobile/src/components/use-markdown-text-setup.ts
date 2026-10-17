@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Text as NativeText } from 'react-native'
 import { INLINE_TEXT_SELECTION } from './inline-text-selection'
 import { MobileSelectableText } from './MobileSelectableText'
-import type { MarkdownTextSetup } from './mobile-markdown-text'
+import type { MarkdownTextSetup } from './mobile-markdown-text-setup'
 
 export function useMarkdownTextSetup(
   rangeSelectable: boolean,
