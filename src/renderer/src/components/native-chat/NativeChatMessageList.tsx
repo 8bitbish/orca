@@ -406,6 +406,7 @@ export function NativeChatMessageList({
                   <NativeChatWaitingTranscriptItems slots={waitingSlots} context={rowContext} />
                 </div>
               </div>
+              <NativeChatJumpToLatest visible={showJump} onJump={jumpToLatest} />
             </div>
             <NativeChatMessageRail
               rail={rail}
@@ -414,7 +415,6 @@ export function NativeChatMessageList({
               onReaderScroll={readerInput.railWheel}
               pendingId={railHistoryJump.pendingId}
             />
-            <NativeChatJumpToLatest visible={showJump} onJump={jumpToLatest} />
             <NativeChatNewRowsAnnouncement marked={newRowsMarker !== undefined} />
           </div>
           <NativeChatDockedTaskList key={session.sessionId} messages={messages} />

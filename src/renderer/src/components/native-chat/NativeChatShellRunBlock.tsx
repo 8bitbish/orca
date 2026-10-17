@@ -130,6 +130,8 @@ export function NativeChatShellRunBlock({
   return (
     <div
       data-native-chat-shell-run=""
+      // Upstream's right-click menu offers Copy code for any block marked like its own.
+      data-native-chat-code-block=""
       data-run-phase={run.phase}
       className="group/code relative my-3 min-w-0 max-w-full overflow-hidden rounded-md bg-accent"
     >
@@ -187,7 +189,10 @@ export function NativeChatShellRunBlock({
           {unavailable}
         </div>
       ) : null}
-      <pre className="scrollbar-sleek m-0 max-h-80 max-w-full overflow-x-auto p-3 font-mono text-chat-code">
+      <pre
+        data-native-chat-code-content
+        className="scrollbar-sleek m-0 max-h-80 max-w-full overflow-x-auto p-3 font-mono text-chat-code"
+      >
         {body}
       </pre>
       {run.phase === 'idle' ? null : (
