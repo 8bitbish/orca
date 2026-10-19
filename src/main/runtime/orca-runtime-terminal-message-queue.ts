@@ -1,4 +1,6 @@
 import { OrcaRuntimeWithMigrationCatalog } from './orca-runtime-migration-catalog'
+import { OrcaRuntimeWithSidebarTemporal } from './sidebar-inputs/orca-runtime-sidebar-temporal'
+import { ORCA_SIDEBAR_INPUTS_IS_MAIN } from '../../shared/sidebar-inputs-switch'
 import {
   TerminalMessageQueueHost,
   type ResolvedTerminalMessageQueueTarget,
@@ -10,13 +12,19 @@ import {
   QUEUE_INTERRUPT_KEY
 } from '../terminal-message-queue/terminal-message-queue-delivery'
 import { sendAgentTurn } from './orchestration/send-agent-turn'
+import { messageQueueStatusSourceFromHookServer } from '../terminal-message-queue/terminal-message-queue-status-source'
 import { watchTranscriptForInterrupts } from '../terminal-message-queue/terminal-message-queue-transcript-watch'
 import type { TerminalQueuedMessage } from '../../shared/terminal-message-queue-contract'
 import type { PtyIncarnationId } from '../../shared/pty-incarnation'
 import type { TerminalExitCause } from '../../shared/terminal-exit-cause'
 
+// Switch point: a window-fed build keeps no sidebar facts layer.
+const OrcaRuntimeSidebarBase: typeof OrcaRuntimeWithMigrationCatalog = ORCA_SIDEBAR_INPUTS_IS_MAIN
+  ? OrcaRuntimeWithSidebarTemporal
+  : OrcaRuntimeWithMigrationCatalog
+
 /** Hosts the per-terminal message queue next to the PTYs it writes to. */
-export abstract class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeWithMigrationCatalog {
+export abstract class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeSidebarBase {
   readonly terminalMessageQueue = new TerminalMessageQueueHost(
     {
       resolveTarget: (ref) => this.resolveTerminalMessageQueueTarget(ref),
@@ -41,6 +49,13 @@ export abstract class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeWit
   /** Startup wires the host's agent-status store in; until then every lead reads `unknown`. */
   attachTerminalMessageQueueStatusSource(source: TerminalMessageQueueStatusSource): void {
     this.terminalMessageQueue.attachStatusSource(source)
+  }
+
+  /** The execution host's hook server is the queue's status store. */
+  attachTerminalMessageQueueHookServer(
+    server: Parameters<typeof messageQueueStatusSourceFromHookServer>[0]
+  ): void {
+    this.attachTerminalMessageQueueStatusSource(messageQueueStatusSourceFromHookServer(server))
   }
 
   override onPtyExit(

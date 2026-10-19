@@ -19,6 +19,21 @@ type UseNativeChatComposerHandleArgs = Parameters<typeof useNativeChatTypedInser
     structuredTransport: NativeChatStructuredComposerTransport | undefined
   }
 
+/** What a paste in flight belongs to; a different pane, PTY or session drops it. */
+export function nativeChatComposerTargetKey(
+  paneKey: string | null | undefined,
+  targetPtyId: string | null | undefined,
+  transport: NativeChatStructuredComposerTransport | undefined
+): string {
+  return JSON.stringify([
+    paneKey,
+    targetPtyId,
+    transport?.sessionId,
+    transport?.worktreeId,
+    transport?.runtimeEnvironmentId
+  ])
+}
+
 /** Typed and pasted insertion for the composer, exposed on the handle the chat
  *  root uses to route keystrokes and pastes into it, plus the reply send a project
  *  card uses and the queued-message restore. Returns the paste handler. */

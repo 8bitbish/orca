@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { Text as NativeText } from 'react-native'
 import { INLINE_TEXT_SELECTION } from './inline-text-selection'
-import { MobileSelectableText } from './MobileSelectableText'
 import type { MarkdownTextSetup } from './mobile-markdown-text-setup'
 
 export function useMarkdownTextSetup(
@@ -12,7 +11,7 @@ export function useMarkdownTextSetup(
   const androidTranscript = rangeSelectable && !INLINE_TEXT_SELECTION
   return useMemo(
     () => ({
-      TextComponent: rangeSelectable && !androidTranscript ? MobileSelectableText : NativeText,
+      TextComponent: NativeText,
       androidTranscript,
       ...(onLongPress ? { onLongPress } : {})
     }),

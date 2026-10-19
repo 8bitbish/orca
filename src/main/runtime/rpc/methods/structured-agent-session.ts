@@ -13,6 +13,7 @@ import {
   projectStructuredEventForClient,
   projectStructuredHistoryForClient
 } from './structured-agent-session-client-projection'
+import { projectQueuedImageCardPublication } from './structured-agent-session-queued-image-capability'
 import { defineMethod, defineStreamingMethod } from '../core'
 import {
   ensureStructuredHostInstalled as ensureHostInstalled,
@@ -185,6 +186,8 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
         readsCurrentRequests: clientReadsCurrentRequests(ctx),
         id: subscriptionId,
         sessionId: params.sessionId,
+        projectQueuePublication: (publication) =>
+          projectQueuedImageCardPublication(publication, ctx),
         emit: (event) =>
           emit(projectStructuredEventForClient(event, ctx, host.sessionAgent(params.sessionId))),
         ...(params.cursor ? { cursor: params.cursor } : {}),

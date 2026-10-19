@@ -120,3 +120,22 @@ export function useNativeChatPickerCommandDispatch(args: {
     ]
   )
 }
+
+/** A structured chat sends a picked command as a message; a terminal chat dispatches it. */
+export function useNativeChatComposerPickerDispatch(
+  ptyArgs: Parameters<typeof useNativeChatPickerCommandDispatch>[0],
+  sendStructured: (text: string) => unknown,
+  structured: boolean
+): (command: Extract<NativeChatPickerItem, { kind: 'command' }>) => void {
+  const dispatchPty = useNativeChatPickerCommandDispatch(ptyArgs)
+  return useCallback(
+    (command) => {
+      if (structured) {
+        void sendStructured(`/${command.name}`)
+        return
+      }
+      dispatchPty(command)
+    },
+    [dispatchPty, sendStructured, structured]
+  )
+}

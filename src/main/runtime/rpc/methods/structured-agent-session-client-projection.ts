@@ -9,6 +9,7 @@ import {
   projectBackgroundTaskEvent,
   projectBackgroundTaskHistory
 } from './structured-agent-session-background-task-capability'
+import { projectQueuedImageCardHistory } from './structured-agent-session-queued-image-capability'
 import {
   projectThoughtMarkerEvent,
   projectThoughtMarkerHistory
@@ -26,7 +27,7 @@ export function projectStructuredHistoryForClient(
   sessionAgent: string | null
 ): AgentSessionHistoryResult {
   const withTurns = projectTurnItemHistory(
-    projectBackgroundTaskHistory(result, ctx),
+    projectQueuedImageCardHistory(projectBackgroundTaskHistory(result, ctx), ctx),
     ctx,
     sessionAgent
   )
