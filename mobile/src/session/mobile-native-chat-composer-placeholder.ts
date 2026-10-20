@@ -8,7 +8,8 @@ import { mobileNativeChatComposerPlaceholder as hostComposerPlaceholder } from '
 export function mobileNativeChatComposerPlaceholder(
   lockReason: MobileNativeChatInputLockReason | null,
   turnIndicator: Pick<NativeChatLiveTurnIndicator, 'afterStop'> | null | undefined,
-  queue: Pick<MobileNativeChatQueueSurface, 'willQueue'> | undefined
+  queue: Pick<MobileNativeChatQueueSurface, 'willQueue'> | undefined,
+  agent?: string | null
 ): string {
   const afterStop = turnIndicator?.afterStop
   if (
@@ -19,5 +20,5 @@ export function mobileNativeChatComposerPlaceholder(
   ) {
     return 'Queue a message for when it finishes'
   }
-  return hostComposerPlaceholder(lockReason, afterStop)
+  return hostComposerPlaceholder(lockReason, afterStop, agent)
 }

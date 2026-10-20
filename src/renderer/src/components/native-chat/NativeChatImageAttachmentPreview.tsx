@@ -3,12 +3,12 @@ import { FileText, Image as ImageIcon, ImageOff, X } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
 import { useLocalImageSrc } from '@/components/editor/useLocalImageSrc'
-import { copyableNativeChatImageSrc } from './native-chat-image-copy'
+import { PanZoomImageDialog } from '@/components/editor/PanZoomImageDialog'
+import { copyableNativeChatImageSrc, keepPreviewOpenForChatMenu } from './native-chat-image-copy'
 import {
   isNativeChatImageAttachmentPath,
   isNativeChatPastedImagePath
 } from './native-chat-image-paste'
-import { NativeChatImagePreviewDialog } from './NativeChatImagePreviewDialog'
 import type { NativeChatComposerImageAttachment } from './NativeChatComposerField'
 import { isAgentSessionAttachmentStorePath } from '../../../../shared/agent-session-attachments'
 import { chatImageAccess } from '@/lib/local-file-access'
@@ -260,13 +260,32 @@ function NativeChatImageThumbnail({
         <ImageNumberBadge number={number} />
         <RemoveAttachmentButton onRemove={() => onRemove(attachment.id)} />
       </div>
-      <NativeChatImagePreviewDialog
+      <PanZoomImageDialog
         open={isOpen}
         onOpenChange={setIsOpen}
-        label={label}
         src={fullSizeSrc}
-        pendingLabel={isPending ? pendingLabel : undefined}
-        copySrc={copySrc}
+        title={label}
+        showTitle
+        onInteractOutside={keepPreviewOpenForChatMenu}
+        data-native-chat-copy-image-src={copySrc}
+        fallback={
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {isPending ? (
+              <>
+                <LoadingSpinner className="size-4" />
+                {pendingLabel}
+              </>
+            ) : (
+              <>
+                <ImageIcon className="size-4" />
+                {translate(
+                  'components.native-chat.composer.imagePreviewUnavailable',
+                  'Preview unavailable'
+                )}
+              </>
+            )}
+          </div>
+        }
       />
     </>
   )

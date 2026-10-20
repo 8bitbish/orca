@@ -1,4 +1,4 @@
-import { OrcaRuntimeWithMigrationCatalog } from './orca-runtime-migration-catalog'
+import { OrcaRuntimeWithAgentTransitions } from './orca-runtime-agent-transitions'
 import { OrcaRuntimeWithSidebarTemporal } from './sidebar-inputs/orca-runtime-sidebar-temporal'
 import { ORCA_SIDEBAR_INPUTS_IS_MAIN } from '../../shared/sidebar-inputs-switch'
 import {
@@ -19,9 +19,9 @@ import type { PtyIncarnationId } from '../../shared/pty-incarnation'
 import type { TerminalExitCause } from '../../shared/terminal-exit-cause'
 
 // Switch point: a window-fed build keeps no sidebar facts layer.
-const OrcaRuntimeSidebarBase: typeof OrcaRuntimeWithMigrationCatalog = ORCA_SIDEBAR_INPUTS_IS_MAIN
+const OrcaRuntimeSidebarBase: typeof OrcaRuntimeWithAgentTransitions = ORCA_SIDEBAR_INPUTS_IS_MAIN
   ? OrcaRuntimeWithSidebarTemporal
-  : OrcaRuntimeWithMigrationCatalog
+  : OrcaRuntimeWithAgentTransitions
 
 /** Hosts the per-terminal message queue next to the PTYs it writes to. */
 export abstract class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeSidebarBase {

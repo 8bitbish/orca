@@ -25,6 +25,7 @@ import { deriveNativeChatRowContent } from '../../../src/shared/native-chat-row-
 import { MobileNativeChatReasoningRow } from './MobileNativeChatReasoningRow'
 import { MobileNativeChatThoughtMarkerLine } from './MobileNativeChatThoughtMarkerLine'
 import { isNativeChatThoughtMarker } from '../../../src/shared/native-chat-thought-marker'
+import { mobileNativeChatRowId } from './MobileNativeChatScrollHold'
 import { nativeChatWorkRunEntries } from '../../../src/shared/native-chat-work-run'
 import { nativeChatReasoningDisclosureKey } from '../../../src/shared/native-chat-reasoning-row'
 import { MobileNativeChatTurnStatus } from './MobileNativeChatTurnStatus'
@@ -50,6 +51,8 @@ import { Prose } from './MobileNativeChatProse'
 
 function MobileNativeChatMessageImpl({
   message,
+  rowKey,
+  runOwner,
   mayStillGrow = false,
   toolsExpanded = false,
   previousTodoWrite,
@@ -80,6 +83,9 @@ function MobileNativeChatMessageImpl({
   onToggleUserMessage
 }: {
   message: NativeChatMessage
+  /** The row's place on the page, kept while older messages join it; tags the row. */
+  rowKey?: string
+  runOwner?: string
   /** The newest assistant row of a live turn with no prompt open: its last text may still grow. */
   mayStillGrow?: boolean
   toolsExpanded?: boolean
@@ -216,7 +222,7 @@ function MobileNativeChatMessageImpl({
     return (
       <>
         {turnStatusAbove ? statusRow : null}
-        <View style={styles.row}>
+        <View style={styles.row} testID={mobileNativeChatRowId(rowKey ?? message.id)}>
           <MobileNativeChatResolutionReceipt
             body={receipt}
             awaiting={awaiting}
@@ -246,7 +252,7 @@ function MobileNativeChatMessageImpl({
           </View>
         ) : null}
         {draws ? (
-          <View style={styles.row}>
+          <View style={styles.row} testID={mobileNativeChatRowId(rowKey ?? message.id)}>
             <MobileNativeChatReasoningRow
               message={message}
               markdown={markdown}
@@ -293,7 +299,10 @@ function MobileNativeChatMessageImpl({
     <>
       {/* A turn with no user bubble carries its bar above its first row. */}
       {turnStatusAbove ? statusRow : null}
-      <View style={[styles.row, isUser && styles.rowUser]}>
+      <View
+        style={[styles.row, isUser && styles.rowUser]}
+        testID={mobileNativeChatRowId(rowKey ?? message.id)}
+      >
         <Content
           onLongPress={onLongPress}
           style={[
@@ -349,7 +358,7 @@ function MobileNativeChatMessageImpl({
               // default every run and line reads, and a reader's own choice is kept per default.
               defaultExpanded={toolsExpanded}
               expandChildren={toolsExpanded}
-              disclosureId={message.id}
+              disclosureId={runOwner ?? rowKey ?? message.id}
               asides={asides}
               activeTurnIsWorking={structuredActivityUi ? activeTurnIsWorking : undefined}
               trailing={trailingRun}

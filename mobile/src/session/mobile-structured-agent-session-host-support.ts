@@ -14,6 +14,7 @@ import {
   TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY
 } from '../../../src/shared/terminal-message-queue-capability'
 import { AGENT_SESSION_PERMISSION_MODES_RUNTIME_CAPABILITY } from '../../../src/shared/agent-session-permission-modes-capability'
+import { AGENT_SESSION_PHONE_ATTACHMENTS_RUNTIME_CAPABILITY } from '../../../src/shared/runtime-capability-constants'
 
 /** Agent-session features the connected host advertised; null until the status probe answers. */
 export type StructuredAgentSessionHostSupport = {
@@ -40,6 +41,8 @@ export type StructuredAgentSessionHostSupport = {
   conversationStop: boolean
   /** The host applies each chat's permission mode; 1.4.225–1.4.226 do without advertising it. */
   permissionModes: boolean
+  /** The phone may upload files into the host's chat attachment store. */
+  phoneAttachments: boolean
 }
 
 export function structuredAgentSessionHostSupport(
@@ -59,6 +62,7 @@ export function structuredAgentSessionHostSupport(
     terminalMessageQueueUnsubscribe: capabilities.includes(
       TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY
     ),
-    permissionModes: capabilities.includes(AGENT_SESSION_PERMISSION_MODES_RUNTIME_CAPABILITY)
+    permissionModes: capabilities.includes(AGENT_SESSION_PERMISSION_MODES_RUNTIME_CAPABILITY),
+    phoneAttachments: capabilities.includes(AGENT_SESSION_PHONE_ATTACHMENTS_RUNTIME_CAPABILITY)
   }
 }

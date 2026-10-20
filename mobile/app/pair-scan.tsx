@@ -224,7 +224,13 @@ export default function PairScanScreen() {
     const canAskAgain = permission.canAskAgain !== false
     return (
       <View ref={setPairScanRootRef} style={[styles.container, containerPadding]}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <ChevronLeft size={22} color={colors.textSecondary} />
         </Pressable>
         <View style={styles.centered}>
@@ -267,7 +273,13 @@ export default function PairScanScreen() {
 
   return (
     <View ref={setPairScanRootRef} style={[styles.container, containerPadding]}>
-      <Pressable style={styles.backButton} onPress={() => router.back()}>
+      <Pressable
+        style={styles.backButton}
+        onPress={() => router.back()}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+      >
         <ChevronLeft size={22} color={colors.textSecondary} />
       </Pressable>
 

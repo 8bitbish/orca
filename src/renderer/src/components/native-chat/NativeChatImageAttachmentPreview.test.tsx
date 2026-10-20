@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { NativeChatImageAttachmentPreview } from './NativeChatImageAttachmentPreview'
 import type { NativeChatComposerImageAttachment } from './NativeChatComposerField'
 
@@ -180,11 +180,10 @@ describe('NativeChatImageAttachmentPreview', () => {
     mocks.useLocalImageSrc.mockReturnValue('blob:on-disk-1')
     renderPreview({ id: 'a1', path: '/tmp/example.png', previewUrl: 'data:thumbnail' })
     fireEvent.click(screen.getByRole('button', { name: 'Image #1: View image: example.png' }))
-    // The zoom viewer hides its image until it loads, so it is read by its hook, not its role.
     expect(
-      screen
-        .getByRole('dialog')
-        .querySelector('[data-image-viewer-image]')
+      within(screen.getByRole('dialog'))
+        .getByTestId('pan-zoom-image-canvas')
+        .closest('[data-native-chat-copy-image-src]')
         ?.getAttribute('data-native-chat-copy-image-src')
     ).toBe('blob:on-disk-1')
     const menu = document.body.appendChild(document.createElement('div'))
