@@ -156,6 +156,7 @@ export function proofScrollTranscript(start: number): NativeChatMessage[] {
       push('assistant', `${PROSE[(index + 2) % PROSE.length]}\n\n${fence('project-card', card)}`)
     } else {
       push('assistant', `Drafted a reply for you:\n\n${fence('slack-draft', slackDraft())}`)
+      push('assistant', `How the list decides:\n\n${MERMAID}`)
     }
     push('assistant', PROSE[(index + 3) % PROSE.length] ?? '')
   })
@@ -168,4 +169,29 @@ export function proofScrollTranscript(start: number): NativeChatMessage[] {
   const last = readProof(PROOF_BUNDLES[0] ?? '')
   push('assistant', last ? `And the latest proof:\n\n${fence('proof-card', last)}` : 'Done.')
   return messages
+}
+
+const MERMAID = fence(
+  'mermaid',
+  'flowchart TD\n  A[Open chat] --> B{At the end?}\n  B -->|yes| C[Follow new rows]\n  B -->|no| D[Hold the reading place]\n  C --> E[Stream]\n  D --> E'
+)
+
+/** The nth row of a reply streaming in at the bottom: prose, with a diagram or proof card every few. */
+export function proofScrollStreamRow(index: number): NativeChatMessage {
+  const prose = PROSE[index % PROSE.length] ?? ''
+  const proof =
+    index % 7 === 3 ? readProof(PROOF_BUNDLES[index % PROOF_BUNDLES.length] ?? '') : null
+  const text =
+    index % 5 === 2
+      ? `${prose}\n\n${MERMAID}`
+      : proof
+        ? `${prose}\n\n${fence('proof-card', proof)}`
+        : prose
+  return {
+    id: `proof-scroll-stream-${index + 1}`,
+    role: 'assistant',
+    blocks: [{ type: 'text', text }],
+    timestamp: Date.now(),
+    source: 'transcript'
+  }
 }

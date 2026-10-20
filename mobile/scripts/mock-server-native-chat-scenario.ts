@@ -9,6 +9,7 @@ import type {
   RuntimeMobileSessionTerminalClientTab
 } from '../../src/shared/runtime-types'
 import { proofScrollTranscript } from './mock-server-proof-scroll-transcript'
+import { startProofScrollStream } from './mock-server-proof-scroll-stream'
 import type { RpcRequest, RpcResponse } from './mock-server-rpc-handlers'
 
 // Why: native chat needs a live agent tab, an empty-but-subscribed transcript,
@@ -268,11 +269,16 @@ export function handleMockNativeChatRequest(
       return true
     }
 
-    case 'nativeChat.subscribe':
+    case 'nativeChat.subscribe': {
       respond(
         success(request.id, { type: 'snapshot', messages: mockTranscript(), hasMore: false }, true)
       )
+      const stop = startProofScrollStream((messages) =>
+        respond(success(request.id, { type: 'appended', messages }, true))
+      )
+      ws.once('close', stop)
       return true
+    }
 
     case 'nativeChat.readSession':
       respond(success(request.id, { messages: mockTranscript(), hasMore: false }))

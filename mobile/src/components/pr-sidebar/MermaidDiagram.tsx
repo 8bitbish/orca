@@ -1,9 +1,24 @@
-import { memo, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { memo, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
 import { MobileDiagramHeader } from '../MobileDiagramHeader'
 import { MERMAID_DIAGRAM_CONFIG } from './mermaid-diagram-config'
 import { loadPageMermaid } from './mermaid-page-engine'
+
+/** Rendered SVG by source, newest last. The chat list unmounts rows scrolled away and keeps their
+ *  measured height as space; a remounted diagram that waited on mermaid drew short first, and the
+ *  pinned end jumped by the difference and back. */
+const renderedSvg = new Map<string, { id: string; svg: string }>()
+const RENDERED_SVG_KEPT = 64
+
+function rememberSvg(source: string, id: string, svg: string): void {
+  renderedSvg.delete(source)
+  renderedSvg.set(source, { id, svg })
+  const oldest = renderedSvg.keys().next()
+  if (renderedSvg.size > RENDERED_SVG_KEPT && !oldest.done) {
+    renderedSvg.delete(oldest.value)
+  }
+}
 
 export type MermaidDiagramProps = {
   source: string
@@ -39,10 +54,21 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
   const failed = failedSource === source
   const [showSource, setShowSource] = useState(false)
 
+  // Before layout, so a remounted diagram is measured at its drawn size, and mermaid isn't run again.
+  useLayoutEffect(() => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: react-native-web renders View as a div and forwards the ref to it; this module only ever runs in that build.
+    const host = hostRef.current as unknown as HTMLElement | null
+    const kept = renderedSvg.get(source)
+    if (host && kept) {
+      // Already sanitized when mermaid rendered it; only its stylesheet's `#<id>` is retargeted.
+      host.innerHTML = kept.svg.replaceAll(kept.id, id)
+    }
+  }, [id, source])
+
   useEffect(() => {
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: react-native-web renders View as a div and forwards the ref to it; this module only ever runs in that build.
     const host = hostRef.current as unknown as HTMLElement | null
-    if (!host) {
+    if (!host || renderedSvg.has(source)) {
       return
     }
     let disposed = false
@@ -57,6 +83,7 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
         // Already sanitized: `securityLevel: 'strict'` is what makes this string safe to parse,
         // and mermaid is the only thing that can sanitize its own serialization.
         host.innerHTML = svg
+        rememberSvg(source, id, svg)
       } catch {
         if (!disposed) {
           setFailedSource(source)

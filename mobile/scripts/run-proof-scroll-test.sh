@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 # Records a scroll test of the Android chat over a long transcript full of proof, project and
-# Slack cards, served by the mock host (MOCK_CHAT_SCENARIO=proof-scroll). Repeatable per APK.
+# Slack cards and diagrams, served by the mock host (MOCK_CHAT_SCENARIO=proof-scroll), with a reply
+# streaming in at the bottom. Exits 1 on a scroll jump (proof-scroll-jumps.mjs, from the page's own
+# scroll geometry, which proof-scroll-probe.js reports through the mock host): the view moving back
+# toward the top while the reader moves it down or leaves it, moving while idle, not staying at the
+# end while a reply streams, or a row drawn again at another height. Repeatable per APK.
 #
 #   mobile/scripts/run-proof-scroll-test.sh <apk> <output.mp4>
 #
+# The chat is the desktop's page bundle (what the app's web shell draws): BUNDLE (default
+# out/mobile-web, from `pnpm build:mobile-web`), served with the probe added. A mock host already
+# running keeps the bundle it started with; stop it (port $PORT) after rebuilding the bundle.
 # Env: SERIAL (emulator-5556), AVD (Medium_Phone_API_36.0), PORT (6790; 6768 is the desktop's),
 #      GPU (host; headless otherwise defaults to software rendering at a few frames per second).
 # Boots the AVD headless and starts the mock host when they are not already running, and leaves
@@ -22,6 +29,12 @@ ADB="$SDK/platform-tools/adb"
 MOBILE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 STATE_DIR=${STATE_DIR:-${TMPDIR:-/tmp}/orca-proof-scroll}
 mkdir -p "$STATE_DIR" "$(dirname "$OUT")"
+BUNDLE=${BUNDLE:-$MOBILE_DIR/../out/mobile-web}
+[[ -f "$BUNDLE/manifest.json" ]] || { echo "no mobile web bundle at $BUNDLE (pnpm build:mobile-web)"; exit 1; }
+BUNDLE=$(cd "$BUNDLE" && pwd)
+STREAM_FILE="$STATE_DIR/stream-token"
+PROBE_LOG="$STATE_DIR/probe.log"
+(cd "$MOBILE_DIR" && npx tsx scripts/proof-scroll-probe-bundle.ts "$BUNDLE" "$STATE_DIR/probe-bundle") >/dev/null
 OUT=$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")
 
 adb_s() { "$ADB" -s "$SERIAL" "$@"; }
@@ -77,7 +90,8 @@ log "$SERIAL booted"
 if ! lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   log "starting mock host on port $PORT"
   (cd "$MOBILE_DIR" && PORT=$PORT MOCK_CHAT_SCENARIO=proof-scroll \
-    MOCK_SERVER_KEY_FILE="$STATE_DIR/mock-key.json" \
+    MOCK_SERVER_KEY_FILE="$STATE_DIR/mock-key.json" MOCK_CHAT_STREAM_FILE="$STREAM_FILE" \
+    MOCK_MOBILE_WEB_BUNDLE_DIR="$STATE_DIR/probe-bundle" MOCK_PROBE_LOG="$PROBE_LOG" \
     nohup npx tsx scripts/mock-server.ts >"$STATE_DIR/mock.log" 2>&1 &)
   for _ in $(seq 1 30); do
     grep -q 'public key (base64)' "$STATE_DIR/mock.log" 2>/dev/null && break
@@ -92,7 +106,8 @@ CODE=$(node -e 'process.stdout.write(Buffer.from(JSON.stringify({v:2,endpoint:pr
 
 # --- install and pair -----------------------------------------------------------------------
 log "installing $APK"
-adb_s install -r "$APK" >/dev/null
+# A full emulator /data refuses an in-place update; the app is cleared below anyway.
+adb_s install -r "$APK" >/dev/null 2>&1 || { adb_s uninstall "$PKG" >/dev/null; adb_s install "$APK" >/dev/null; }
 adb_s shell pm clear "$PKG" >/dev/null
 adb_s shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 # A link sent before the app has mounted is dropped, so wait for its first screen and retry.
@@ -107,17 +122,37 @@ tap_when_shown 'Use Chat UI' 20 || log "no chat-UI onboarding step"
 tap_when_shown 'Not now' 20 || log "no notifications onboarding step"
 point=$(
   for _ in $(seq 1 30); do find_node 'manta-1*' && break; sleep 1; done
-) || { log "workspace list never showed manta-1"; exit 1; }
+)
+[[ -n "$point" ]] || { log "workspace list never showed manta-1"; exit 1; }
 
 # --- record ---------------------------------------------------------------------------------
 TIMELINE="$OUT.timeline.txt"
+PHASES="$OUT.phases.json"
 : >"$TIMELINE"
+: >"$PROBE_LOG"
 adb_s shell rm -f /sdcard/proof-scroll.mp4
-adb_s shell screenrecord --time-limit 60 --bit-rate 8000000 /sdcard/proof-scroll.mp4 &
+START=$(python3 -c 'import time; print(time.time())')
+adb_s shell screenrecord --time-limit 120 --bit-rate 8000000 /sdcard/proof-scroll.mp4 &
 REC=$!
 sleep 1
-START=$(python3 -c 'import time; print(time.time())')
-mark() { python3 -c "import time; print(f'{time.time()-$START:6.1f}s  $1')" | tee -a "$TIMELINE"; }
+now() { python3 -c "import time; print(f'{time.time()-$START:.1f}')"; }
+epoch_ms() { python3 -c 'import time; print(int(time.time() * 1000))'; }
+mark() { printf '%6ss  %s\n' "$(now)" "$1" | tee -a "$TIMELINE"; }
+# Each checked phase runs from its mark to the next one.
+phase_list=() phase_open=''
+close_phase() {
+  [[ -n "$phase_open" ]] && phase_list+=("$phase_open,\"to\":$(epoch_ms)}")
+  phase_open=''
+}
+phase() { # <name> <checks, comma-separated>
+  close_phase
+  mark "$1"
+  local checks
+  checks=$(printf '"%s",' ${2//,/ })
+  phase_open="{\"name\":\"$1\",\"checks\":[${checks%,}],\"from\":$(epoch_ms)"
+}
+swipe_down_page() { adb_s shell input swipe 540 1600 540 600 "${1:-500}"; } # finger up: toward the end
+swipe_up_page() { adb_s shell input swipe 540 600 540 1600 "${1:-500}"; }   # finger down: toward the top
 
 mark "open chat (tap manta-1)"
 adb_s shell input tap $point
@@ -128,31 +163,47 @@ before=$(grep -c 'nativeChat.proofMedia' "$MOCK_LOG" 2>/dev/null || true)
 last=$before quiet=0
 for _ in $(seq 1 40); do
   sleep 1
-  now=$(grep -c 'nativeChat.proofMedia' "$MOCK_LOG" 2>/dev/null || true)
-  if ((now > before && now == last)); then quiet=$((quiet + 1)); else quiet=0; fi
-  last=$now
+  now_count=$(grep -c 'nativeChat.proofMedia' "$MOCK_LOG" 2>/dev/null || true)
+  if ((now_count > before && now_count == last)); then quiet=$((quiet + 1)); else quiet=0; fi
+  last=$now_count
   ((quiet >= 3)) && break
 done
 mark "chat rendered ($((last - before)) proof media requests)"
-mark "slow swipes up through the cards (8)"
-for _ in $(seq 1 8); do adb_s shell input swipe 540 600 540 1600 500; sleep 0.7; done
-mark "swipes back down (8)"
-for _ in $(seq 1 8); do adb_s shell input swipe 540 1600 540 600 500; sleep 0.7; done
-mark "fling to bottom"
-adb_s shell input swipe 540 1700 540 400 120
-adb_s shell input swipe 540 1700 540 400 120
-sleep 1
-mark "small swipes at the bottom (6)"
-for i in $(seq 1 6); do
-  if ((i % 2)); then adb_s shell input swipe 540 1300 540 1500 250; else adb_s shell input swipe 540 1500 540 1300 250; fi
-  sleep 0.5
-done
-mark "idle at bottom"
+phase "slow swipes up through the cards (8)" none
+for _ in $(seq 1 8); do swipe_up_page; sleep 0.7; done
+phase "swipes back down (8)" back
+for _ in $(seq 1 8); do swipe_down_page; sleep 0.7; done
+phase "fling to the end" back
+swipe_down_page 120
+swipe_down_page 120
+sleep 2
+phase "idle at the end" still,end
 sleep 3
-mark "end of input; recording continues idle until the 60 s limit"
-wait $REC || true
+phase "reply streams in, reader at the end" back,end
+echo "stream-$(date +%s)" >"$STREAM_FILE"
+sleep 6
+phase "reader looks up while it streams" none
+swipe_up_page 400
+sleep 1.5
+phase "reader flings back to the end while it streams" back
+swipe_down_page 120
+swipe_down_page 120
 sleep 1
+phase "stays at the end while it streams" back,end
+sleep 10
+phase "a swipe toward the end after it streamed" back,end
+swipe_down_page 300
+sleep 1.5
+close_phase
+mark "end of input"
+adb_s shell pkill -INT screenrecord >/dev/null 2>&1 || true
+wait $REC || true
+sleep 2
 adb_s pull /sdcard/proof-scroll.mp4 "$OUT" >/dev/null
+printf '[%s]\n' "$(IFS=,; echo "${phase_list[*]}")" >"$PHASES"
 log "video: $OUT"
-
 log "timeline: $TIMELINE"
+sleep 1 # the probe's last batch
+cp "$PROBE_LOG" "$OUT.probe.log"
+log "probe: $OUT.probe.log"
+node "$MOBILE_DIR/scripts/proof-scroll-jumps.mjs" "$OUT.probe.log" "$PHASES"

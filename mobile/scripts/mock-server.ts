@@ -38,7 +38,7 @@ wss.on('connection', (ws) => {
 
     if (!e2ee) {
       // Handshake phase — expect e2ee_hello
-      let hello: { type?: string; publicKeyB64?: string }
+      let hello: { type?: string; publicKeyB64?: string; v?: number }
       try {
         hello = JSON.parse(msg)
       } catch {
@@ -47,6 +47,12 @@ wss.on('connection', (ws) => {
         return
       }
 
+      // The mock speaks only legacy E2EE: 4001 before any ready is how a pre-v2 host refuses a v2
+      // hello, and the client then redials legacy.
+      if (hello.type === 'e2ee_hello' && hello.v === 2) {
+        ws.close(4001, 'unauthorized')
+        return
+      }
       if (hello.type !== 'e2ee_hello' || !hello.publicKeyB64) {
         ws.send(JSON.stringify({ type: 'e2ee_error', message: 'Expected e2ee_hello' }))
         ws.close()
