@@ -169,7 +169,7 @@ describe('message rail interaction', () => {
     [1, 128],
     [2, 4000]
   ])("forwards wheel delta mode %i in the zoomed transcript's own px", (deltaMode, expected) => {
-    const element = document.createElement('div')
+    const element = railScroller()
     element.style.zoom = '1.25'
     document.body.append(element)
     Object.defineProperty(element, 'clientHeight', { value: 400 })

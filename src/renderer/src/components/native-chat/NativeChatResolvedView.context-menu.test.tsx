@@ -110,15 +110,6 @@ afterEach(() => {
   vi.resetAllMocks()
 })
 
-// The zoom viewer hides its image until it loads, so it is found by its hook, not its role.
-function viewerImage(preview: HTMLElement): HTMLElement {
-  const image = preview.querySelector<HTMLElement>('[data-image-viewer-image]')
-  if (!image) {
-    throw new Error('Image viewer has no image')
-  }
-  return image
-}
-
 describe('NativeChatResolvedView image menu ownership', () => {
   it('refuses image capture from a portaled preview while its retained owner is hidden', async () => {
     mocks.fetch.mockResolvedValue({ ok: true, blob: async () => new Blob(['original image']) })
@@ -128,7 +119,7 @@ describe('NativeChatResolvedView image menu ownership', () => {
     expect(screen.getByTestId('retained-owner').contains(preview)).toBe(false)
 
     view.rerender(<RetainedBridgeChat visible={false} />)
-    fireEvent.contextMenu(viewerImage(preview))
+    fireEvent.contextMenu(within(preview).getByRole('img'))
 
     expect(mocks.fetch).not.toHaveBeenCalled()
     view.rerender(<RetainedBridgeChat />)
@@ -141,7 +132,7 @@ describe('NativeChatResolvedView image menu ownership', () => {
     render(<RetainedBridgeChat />)
     fireEvent.click(screen.getByRole('button', { name: 'Image #1: View image: original.png' }))
     const preview = screen.getByRole('dialog', { name: 'original.png' })
-    fireEvent.contextMenu(viewerImage(preview))
+    fireEvent.contextMenu(within(preview).getByRole('img'))
     await screen.findByRole('menuitem', { name: 'Copy image' })
     const close = within(preview).getByRole('button', { name: 'Close' })
 
