@@ -15,8 +15,6 @@ import { sendAgentTurn } from './orchestration/send-agent-turn'
 import { messageQueueStatusSourceFromHookServer } from '../terminal-message-queue/terminal-message-queue-status-source'
 import { watchTranscriptForInterrupts } from '../terminal-message-queue/terminal-message-queue-transcript-watch'
 import type { TerminalQueuedMessage } from '../../shared/terminal-message-queue-contract'
-import type { PtyIncarnationId } from '../../shared/pty-incarnation'
-import type { TerminalExitCause } from '../../shared/terminal-exit-cause'
 
 // Switch point: a window-fed build keeps no sidebar facts layer.
 const OrcaRuntimeSidebarBase: typeof OrcaRuntimeWithAgentTransitions = ORCA_SIDEBAR_INPUTS_IS_MAIN
@@ -59,15 +57,9 @@ export abstract class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeSid
   }
 
   override onPtyExit(
-    ptyId: string,
-    exitCode: number,
-    exitIncarnationId?: PtyIncarnationId,
-    options: {
-      hostExitConfirmed?: boolean
-      cause?: TerminalExitCause
-      providerExitObserved?: boolean
-    } = {}
-  ): void | Promise<void> {
+    ...args: Parameters<InstanceType<typeof OrcaRuntimeSidebarBase>['onPtyExit']>
+  ): ReturnType<InstanceType<typeof OrcaRuntimeSidebarBase>['onPtyExit']> {
+    const [ptyId, exitCode, exitIncarnationId, options] = args
     const pty = this.ptysById.get(ptyId)
     const staleIncarnation =
       exitIncarnationId !== undefined &&
@@ -77,10 +69,10 @@ export abstract class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeSid
     if (!staleIncarnation) {
       // Why: an SSH exit the host did not confirm is a lost view of the PTY, not its death.
       const unconfirmedSsh =
-        this.isSshOwnedPtyId(ptyId) && exitCode < 0 && options.hostExitConfirmed !== true
+        this.isSshOwnedPtyId(ptyId) && exitCode < 0 && options?.hostExitConfirmed !== true
       this.terminalMessageQueue.onPtyExit(ptyId, unconfirmedSsh ? 'unverifiable' : 'exited')
     }
-    return super.onPtyExit(ptyId, exitCode, exitIncarnationId, options)
+    return super.onPtyExit(...args)
   }
 
   private resolveTerminalMessageQueueTarget(

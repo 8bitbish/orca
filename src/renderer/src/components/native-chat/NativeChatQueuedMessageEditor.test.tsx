@@ -372,7 +372,9 @@ describe('queued card image edit', () => {
       appendText: vi.fn(),
       handlePasteEvent: vi.fn(),
       pasteFromClipboard: vi.fn(),
-      contains: () => false
+      contains: () => false,
+      sendReply: () => false,
+      restoreDraft: () => {}
     }
     try {
       render(

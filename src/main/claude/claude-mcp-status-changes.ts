@@ -2,10 +2,6 @@
 // draws no row; a server whose settled status changed since the last init earns one muted line.
 
 import type { AgentJournalStatusItem } from '../../shared/agent-session-journal-types'
-import {
-  boundInlineText,
-  DEFAULT_JOURNAL_PAYLOAD_LIMITS
-} from '../native-chat/agent-session-journal/journal-payload-bounds'
 import { claudeRecord, claudeText } from './claude-structured-item-translation'
 
 export const CLAUDE_INIT_FRAME_KIND = 'message:system:init'
@@ -52,7 +48,7 @@ export function createClaudeMcpStatusChanges(): (
     return changes.length > 0
       ? {
           kind: 'status',
-          text: boundInlineText(`MCP: ${changes.join(' · ')}`, DEFAULT_JOURNAL_PAYLOAD_LIMITS).text
+          text: `MCP: ${changes.join(' · ')}`
         }
       : null
   }
