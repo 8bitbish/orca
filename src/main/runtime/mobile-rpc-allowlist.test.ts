@@ -233,6 +233,7 @@ describe('mobile RPC allowlist', () => {
       'agentSession.unsubscribe',
       'agentSession.subscribeStatus',
       'agentSession.readVisual',
+      'agentSession.item',
       'agentSession.hold',
       'agentSession.release'
     ])

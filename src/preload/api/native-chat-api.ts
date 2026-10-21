@@ -96,4 +96,6 @@ export type NativeChatApi = {
   proofImage: (request: NativeChatProofImageRequest) => Promise<NativeChatProofImageReply>
   /** A proof card recording's bytes from ~/.orca-personal/proof/ on this machine. */
   proofVideo: (request: NativeChatProofVideoRequest) => Promise<NativeChatProofVideoReply>
+  /** A local structured chat's last failed naming output; null when none or not local. */
+  getConversationNameFailureOutput: (sessionId: string) => Promise<string | null>
 }

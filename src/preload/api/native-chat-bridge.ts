@@ -52,5 +52,7 @@ export const nativeChatApi = {
   proofImage: (request: NativeChatProofImageRequest) =>
     ipcRenderer.invoke('nativeChat:proofImage', request),
   proofVideo: (request: NativeChatProofVideoRequest) =>
-    ipcRenderer.invoke('nativeChat:proofVideo', request)
+    ipcRenderer.invoke('nativeChat:proofVideo', request),
+  getConversationNameFailureOutput: (sessionId: string): Promise<string | null> =>
+    ipcRenderer.invoke('nativeChat:conversationNameFailureOutput', sessionId)
 } satisfies PreloadApi['nativeChat']

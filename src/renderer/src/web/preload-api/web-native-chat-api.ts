@@ -38,6 +38,8 @@ export function createWebNativeChatApi(): NativeChatApi {
     // Proof media lives on the desktop that captured it; a browser client shows placeholders.
     proofImage: async () => ({ ok: false, reason: 'unavailable' }),
     proofVideo: async () => ({ ok: false, reason: 'unavailable' }),
+    // The full output stays on the host that ran the agent; the web client shows the message.
+    getConversationNameFailureOutput: async () => null,
     readSession: async (agent, sessionId, limit, transcriptPath) =>
       parseRuntimeNativeChatReadSessionResult(
         await callRuntimeResult<unknown>('nativeChat.readSession', {

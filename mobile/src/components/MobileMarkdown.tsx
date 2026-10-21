@@ -35,6 +35,7 @@ type Props = {
   selectable?: boolean
   /** Native-chat assistant prose only: renders `::orca-visual{...}` directive lines. Without it,
    *  a directive line is ordinary text. Must be referentially stable (this component is memoized). */
+  renderImage?: (href: string, alt: string) => ReactNode
   renderVisual?: (directive: NativeChatVisualDirective, index: number) => ReactNode
   /** The text is still being appended to: markup its end leaves open is closed, as on desktop,
    *  and a diagram stays code until the text stops. */
@@ -51,6 +52,7 @@ function MobileMarkdownContent({
   onOpenFile,
   markupPreviews = false,
   renderVisual,
+  renderImage,
   growing = false,
   tone: toneName = 'default'
 }: Props) {
@@ -81,6 +83,7 @@ function MobileMarkdownContent({
     rowLongPress: setup.androidTranscript ? setup.onLongPress : undefined,
     directives,
     renderVisual,
+    renderImage,
     mermaidOccurrences: new Map(),
     markupPreviews,
     markupOccurrences: new Map(),
