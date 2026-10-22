@@ -58,7 +58,6 @@ function MobileNativeChatMessageImpl({
   rowKey,
   runOwner,
   mayStillGrow = false,
-  toolsExpanded = false,
   previousTodoWrite,
   previousUpdatePlan,
   fontScale = 1,
@@ -92,7 +91,6 @@ function MobileNativeChatMessageImpl({
   runOwner?: string
   /** The newest assistant row of a live turn with no prompt open: its last text may still grow. */
   mayStillGrow?: boolean
-  toolsExpanded?: boolean
   /** The last plan each task-list tool wrote before this row, so an update reads as its changes. */
   previousTodoWrite?: NativeChatToolCallBlock
   previousUpdatePlan?: NativeChatToolCallBlock
@@ -117,8 +115,7 @@ function MobileNativeChatMessageImpl({
   workRun?: readonly NativeChatMessage[]
   /** A later member of a work run, which its first row draws. */
   joinsWorkRun?: boolean
-  /** Folded behind its settled turn's "Worked for" row. The Tools toggle still shows it, or that
-   *  toggle would do nothing on every settled turn. */
+  /** Folded behind its settled turn's "Worked for" row. */
   foldedAway?: boolean
   /** The reasoning disclosures the reader opened, for thoughts drawn inside the work run. */
   openReasoning?: ReadonlySet<string>
@@ -219,7 +216,7 @@ function MobileNativeChatMessageImpl({
     />
   ) : null
   // A receipt outlives the fold, as on desktop: it is the record of what the reader answered.
-  if (joinsWorkRun || (foldedAway && !toolsExpanded && !receipt)) {
+  if (joinsWorkRun || (foldedAway && !receipt)) {
     return <>{statusRow}</>
   }
   if (receipt) {
@@ -362,10 +359,6 @@ function MobileNativeChatMessageImpl({
           {showToolRun ? (
             <ToolRun
               blocks={tools}
-              // Opening the turn reveals its runs folded, as on desktop; the Tools toggle is the
-              // default every run and line reads, and a reader's own choice is kept per default.
-              defaultExpanded={toolsExpanded}
-              expandChildren={toolsExpanded}
               disclosureId={runOwner ?? rowKey ?? message.id}
               asides={asides}
               activeTurnIsWorking={structuredActivityUi ? activeTurnIsWorking : undefined}

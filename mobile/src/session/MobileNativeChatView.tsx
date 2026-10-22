@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { nativeChatTaskListPredecessors } from '../../../src/shared/native-chat-task-list-history'
 import {
   MobileNativeChatDisclosureContext,
@@ -42,7 +42,6 @@ import {
   MobileNativeChatComposer,
   type MobileNativeChatStructuredComposer
 } from './MobileNativeChatComposer'
-import { mobileNativeChatToolCallCount } from './mobile-native-chat-composer-layout'
 import { MobileNativeChatPromptCard } from './MobileNativeChatPromptCard'
 import { NO_COMPOSER_TRAY, type ComposerTrayProps } from './use-mobile-native-chat-composer-tray'
 import type { MobileChatPermission } from './mobile-native-chat-permission'
@@ -236,7 +235,6 @@ export function MobileNativeChatView({
   keyboardInset = 0
 }: Props): React.JSX.Element {
   const insets = useSafeAreaInsets()
-  const [toolsExpanded, setToolsExpanded] = useState(false)
   // Lift the composer clear of the keyboard, plus the bottom safe-area so it
   // never sits under the home indicator / nav bar (mirrors the terminal dock).
   const bottomPad = keyboardInset > 0 ? keyboardInset + insets.bottom : insets.bottom
@@ -315,7 +313,6 @@ export function MobileNativeChatView({
   const renderItem = useMobileNativeChatRowRenderer({
     rowKeyOf: rowKeys.keyOf,
     runOwners: rowKeys.runOwners,
-    toolsExpanded,
     taskListPredecessors,
     fontScale,
     onOpenFile,
@@ -335,14 +332,10 @@ export function MobileNativeChatView({
       onOpenFile={onOpenFile}
     />
   ) : null
-  const toolCallCount = useMemo(() => mobileNativeChatToolCallCount(folded), [folded])
-  const toggleTools = useCallback(() => setToolsExpanded((v) => !v), [])
-  const listContentStyle =
-    toolCallCount > 0 ? styles.listContentUnderFloatingControls : styles.listContent
 
   const header = mobileNativeChatListHeader(hasMore, olderPages, loadEarlier)
   // How rows draw: a change re-lays every row, which the place-hold and the window both follow.
-  const layoutKey = `${fontScale}:${toolsExpanded}`
+  const layoutKey = `${fontScale}`
   const pageHeader = (measuring: boolean) =>
     mobileNativeChatListHeader(hasMore, olderPages, loadEarlier, measuring)
   const footer = mobileNativeChatListFooter(liveStatus, turns.waitingRows, renderItem)
@@ -381,7 +374,7 @@ export function MobileNativeChatView({
                   rows={turns.listMessages}
                   roots={disclosures.roots}
                   rowState={turns.resolveRow}
-                  contentContainerStyle={listContentStyle}
+                  contentContainerStyle={styles.listContent}
                   header={pageHeader}
                   nativeHeader={header}
                   hasHeader={hasMore === true}
@@ -390,9 +383,6 @@ export function MobileNativeChatView({
             </MobileNativeChatScrollHold>
           </MobileNativeChatDisclosureContext.Provider>
           <MobileNativeChatFloatingControls
-            toolCallCount={toolCallCount}
-            toolsExpanded={toolsExpanded}
-            onToggleTools={toggleTools}
             showJumpToTail={tail.showJumpToTail}
             onJumpToTail={jumpToTail}
           />
