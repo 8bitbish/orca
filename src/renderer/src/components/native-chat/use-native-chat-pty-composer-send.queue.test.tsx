@@ -30,6 +30,7 @@ function harness(draft: string, queue: NativeChatComposerQueue | null) {
     useNativeChatPtyComposerSend({
       agent: 'claude',
       draft,
+      draftScopeKey: 'scope-1',
       imageAttachments: [],
       disabled: false,
       isDispatchingSessionOption: false,
