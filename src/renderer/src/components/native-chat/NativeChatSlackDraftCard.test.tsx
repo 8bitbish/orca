@@ -142,11 +142,71 @@ describe('NativeChatSlackDraftCard', () => {
     }
   })
 
+  it('quotes the message it answers above the draft, with its sender and a link to it', () => {
+    renderSlackFence(
+      'slack-draft',
+      draft({
+        replyTo: {
+          from: { name: 'Alex', userId: 'UFAKE0004' },
+          text: 'Overlay or *push*?',
+          ts: '1700000000.000200'
+        }
+      }),
+      null
+    )
+    const quote = document.querySelector('[data-slack-draft-reply-to]')
+    expect(quote).toHaveTextContent('Replying to')
+    expect(quote).toHaveTextContent('Overlay or push?')
+    // The quote sits above the draft text.
+    const draftText = screen.getByText('overlay')
+    expect(
+      quote!.compareDocumentPosition(draftText) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Alex/ })).toHaveAttribute(
+      'data-native-chat-slack-chip',
+      'user'
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^Original/ }))
+    expect(api.openSlack).toHaveBeenCalledWith(
+      'slack-message:TFAKE0001/CFAKE0003/1700000000.000200/1700000000.000100?d=acme'
+    )
+  })
+
+  it.each([
+    ['whatsapp', 'WhatsApp'],
+    ['messenger', 'Messenger']
+  ])('draws a %s draft with its label, chat and quote, and no Slack chips', (platform, label) => {
+    renderSlackFence(
+      'slack-draft',
+      JSON.stringify({
+        platform,
+        chat: { name: 'Mum', id: '447700900123@s.whatsapp.net' },
+        replyTo: { from: { name: 'Mum' }, text: 'Are you coming *Sunday*? <@UFAKE0002>' },
+        text: 'Yes, see you at 1!',
+        actions: [{ label: 'Send', reply: 'Send the draft to Mum', style: 'primary' }]
+      }),
+      { send: vi.fn(), canSend: true, messages: [] }
+    )
+    expect(document.querySelector(`[data-chat-draft-platform="${platform}"]`)).toHaveTextContent(
+      label
+    )
+    expect(screen.getByText('Draft, not sent')).toBeInTheDocument()
+    expect(document.querySelector('[data-chat-draft-chat]')).toHaveTextContent('Mum')
+    expect(document.querySelector('[data-slack-draft-reply-to]')).toHaveTextContent(
+      'Are you coming Sunday?'
+    )
+    expect(screen.getByText('Sunday').tagName).toBe('STRONG')
+    expect(document.querySelector('[data-native-chat-slack-chip]')).toBeNull()
+    expect(api.slackNames).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: /^Send/ })).toBeEnabled()
+  })
+
   it.each([
     ['bad JSON', '{"teamId":'],
     ['neither a person nor a channel', draft({ to: undefined, channel: undefined })],
     ['an unknown key', draft({ send: true })],
-    ['an over-long text', draft({ text: 'x'.repeat(4001) })]
+    ['an over-long text', draft({ text: 'x'.repeat(4001) })],
+    ['a WhatsApp draft with Slack ids', draft({ platform: 'whatsapp', chat: { name: 'Mum' } })]
   ])('shows the raw block for %s', (_label, source) => {
     renderSlackFence('slack-draft', source, null)
     expect(document.querySelector('[data-native-chat-slack-card]')).toBeNull()

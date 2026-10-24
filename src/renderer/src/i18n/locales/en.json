@@ -19492,7 +19492,11 @@
         "fyi": "FYI",
         "openInSlack": "Open in Slack",
         "less": "less ▴",
-        "more": "more ▾"
+        "more": "more ▾",
+        "replyingTo": "Replying to",
+        "originalMessage": "Original",
+        "whatsapp": "WhatsApp",
+        "messenger": "Messenger"
       },
       "contextMenu": {
         "copyOrcaSessionId": "Copy Orca Session ID",

@@ -1,7 +1,7 @@
 import { useContext, useMemo, type ReactNode } from 'react'
 import { Text, View } from 'react-native'
 import { nativeChatProjectCardKey } from '../../../../src/shared/native-chat-project-card-choice'
-import { parseNativeChatSlackDraftCard } from '../../../../src/shared/native-chat-slack-card-payload'
+import { parseNativeChatSlackDraftCard } from '../../../../src/shared/native-chat-slack-draft-card-payload'
 import {
   EMPTY_NATIVE_CHAT_SLACK_NAMES,
   nativeChatSlackCardKnownNames
@@ -37,13 +37,14 @@ export function MobileNativeChatSlackDraftCard({
   const card = useMemo(() => parseNativeChatSlackDraftCard(source), [source])
   const known = useMemo(
     () =>
-      card
+      card?.platform === 'slack'
         ? nativeChatSlackCardKnownNames({ people: [card.to], conversations: [card.channel] })
         : EMPTY_NATIVE_CHAT_SLACK_NAMES,
     [card]
   )
-  const names = useMobileNativeChatSlackNames(card?.text ?? '', known)
-  if (!card || !chat) {
+  const names = useMobileNativeChatSlackNames(card?.platform === 'slack' ? card.text : '', known)
+  // WhatsApp/Messenger drafts and reply quotes are desktop-only for now (Jake uses Companion).
+  if (!card || card.platform !== 'slack' || !chat) {
     return <>{fallback}</>
   }
   const cardKey = messageId === undefined ? null : nativeChatProjectCardKey(messageId, source)

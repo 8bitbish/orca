@@ -7,10 +7,8 @@
 
 import { createContext } from 'react'
 import { NATIVE_CHAT_PROJECT_CARD_FENCE } from '../../../../shared/native-chat-project-card-payload'
-import {
-  NATIVE_CHAT_SLACK_DRAFT_FENCE,
-  NATIVE_CHAT_SLACK_MESSAGE_FENCE
-} from '../../../../shared/native-chat-slack-card-payload'
+import { NATIVE_CHAT_SLACK_MESSAGE_FENCE } from '../../../../shared/native-chat-slack-card-payload'
+import { NATIVE_CHAT_SLACK_DRAFT_FENCE } from '../../../../shared/native-chat-slack-draft-card-payload'
 import { NATIVE_CHAT_PROOF_CARD_FENCE } from '../../../../shared/native-chat-proof-card-payload'
 import { nativeChatShellRunBlock } from '../../../../shared/native-chat-shell-run-block'
 

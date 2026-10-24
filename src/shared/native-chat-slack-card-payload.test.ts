@@ -3,7 +3,6 @@ import {
   nativeChatSlackConversationTarget,
   nativeChatSlackMessageCardTarget,
   nativeChatSlackPersonTarget,
-  parseNativeChatSlackDraftCard,
   parseNativeChatSlackMessageCard
 } from './native-chat-slack-card-payload'
 import { parseNativeChatSlackImageResult } from './native-chat-slack-image-contract'
@@ -27,19 +26,6 @@ const MESSAGE = {
   actions: [
     { label: 'Overlay', reply: 'Draft a reply to Sam going with overlay', style: 'primary' },
     { label: 'Reply…', input: true }
-  ]
-}
-
-const DRAFT = {
-  teamId: 'TFAKE0001',
-  to: { name: 'Sam', userId: 'UFAKE0002' },
-  channel: { name: 'design-review', id: 'CFAKE0003' },
-  threadTs: '1700000000.000100',
-  text: 'Going with overlay, thanks!',
-  actions: [
-    { label: 'Send', reply: 'Send the draft to Sam', style: 'primary' },
-    { label: 'Edit…', input: true },
-    { label: 'Cancel', reply: 'Cancel the draft to Sam' }
   ]
 }
 
@@ -206,57 +192,6 @@ describe('parseNativeChatSlackMessageCard', () => {
     ]
   ])('rejects %s, so the raw block shows', (_name, source) => {
     expect(parseNativeChatSlackMessageCard(source)).toBeNull()
-  })
-})
-
-describe('parseNativeChatSlackDraftCard', () => {
-  it('reads the documented shape', () => {
-    expect(parseNativeChatSlackDraftCard(JSON.stringify(DRAFT))).toEqual({
-      teamId: 'TFAKE0001',
-      to: { name: 'Sam', userId: 'UFAKE0002' },
-      channel: { name: 'design-review', id: 'CFAKE0003', kind: 'channel' },
-      threadTs: '1700000000.000100',
-      text: 'Going with overlay, thanks!',
-      actions: [
-        {
-          id: 'action-0',
-          kind: 'reply',
-          label: 'Send',
-          reply: 'Send the draft to Sam',
-          style: 'primary'
-        },
-        { id: 'action-1', kind: 'input', label: 'Edit…', style: 'secondary' },
-        {
-          id: 'action-2',
-          kind: 'reply',
-          label: 'Cancel',
-          reply: 'Cancel the draft to Sam',
-          style: 'secondary'
-        }
-      ]
-    })
-  })
-
-  it('takes a person or a channel alone', () => {
-    const { channel: _channel, ...toOnly } = DRAFT
-    expect(parseNativeChatSlackDraftCard(JSON.stringify(toOnly))?.to?.name).toBe('Sam')
-    const { to: _to, ...channelOnly } = DRAFT
-    expect(parseNativeChatSlackDraftCard(JSON.stringify(channelOnly))?.channel?.id).toBe(
-      'CFAKE0003'
-    )
-  })
-
-  it.each([
-    ['bad JSON', '{'],
-    ['no recipient', JSON.stringify({ teamId: 'TFAKE0001', text: 'hi' })],
-    ['no team', withField(DRAFT, 'teamId', undefined)],
-    ['no text', withField(DRAFT, 'text', undefined)],
-    ['an overlong text', withField(DRAFT, 'text', 'x'.repeat(4001))],
-    ['an unknown key', withField(DRAFT, 'sendNow', true)],
-    ['a bad thread ts', withField(DRAFT, 'threadTs', '17')],
-    ['a recipient with a bad id', withField(DRAFT, 'to', { name: 'Sam', userId: 'sam' })]
-  ])('rejects %s', (_name, source) => {
-    expect(parseNativeChatSlackDraftCard(source)).toBeNull()
   })
 })
 

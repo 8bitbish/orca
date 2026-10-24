@@ -75,6 +75,15 @@ export function buildNativeChatSlackLinks(target: NativeChatSlackTarget): Native
 const PERMALINK_PATH = /^\/archives\/([CDG][A-Z0-9]{2,20})\/p(\d{15,16})$/
 const PERMALINK_QUERY_KEYS = new Set(['thread_ts', 'cid'])
 
+/** The conversation id in a permalink's path, before the permalink is validated. */
+export function nativeChatSlackPermalinkChannelId(value: string): string | null {
+  try {
+    return PERMALINK_PATH.exec(new URL(value).pathname)?.[1] ?? null
+  } catch {
+    return null
+  }
+}
+
 /** A card's permalink when it is https on a *.slack.com workspace and names this
  *  exact message; null otherwise. */
 export function parseNativeChatSlackPermalink(

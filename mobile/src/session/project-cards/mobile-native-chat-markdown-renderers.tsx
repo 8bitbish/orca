@@ -1,10 +1,8 @@
 import { NATIVE_CHAT_PROJECT_CARD_FENCE } from '../../../../src/shared/native-chat-project-card-payload'
 import { parseNativeChatWorktreeHref } from '../../../../src/shared/native-chat-project-target'
 import { NATIVE_CHAT_PROOF_CARD_FENCE } from '../../../../src/shared/native-chat-proof-card-payload'
-import {
-  NATIVE_CHAT_SLACK_DRAFT_FENCE,
-  NATIVE_CHAT_SLACK_MESSAGE_FENCE
-} from '../../../../src/shared/native-chat-slack-card-payload'
+import { NATIVE_CHAT_SLACK_MESSAGE_FENCE } from '../../../../src/shared/native-chat-slack-card-payload'
+import { NATIVE_CHAT_SLACK_DRAFT_FENCE } from '../../../../src/shared/native-chat-slack-draft-card-payload'
 import { isNativeChatSlackHref } from '../../../../src/shared/native-chat-slack-href'
 import type { MobileMarkdownRenderers } from '../../components/mobile-markdown-renderers'
 import { MobileNativeChatProofCard } from '../proof-cards/MobileNativeChatProofCard'
