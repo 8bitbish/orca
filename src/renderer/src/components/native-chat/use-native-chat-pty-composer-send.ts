@@ -1,3 +1,7 @@
+import {
+  admitNativeChatPastedText,
+  resolveNativeChatPastedText
+} from './native-chat-composer-pasted-text-references'
 import { useCallback, type Dispatch, type SetStateAction } from 'react'
 import type { AgentType } from '../../../../shared/agent-status-types'
 import type { NativeChatLaunchDraft } from '@/lib/native-chat-launch-prompt'
@@ -29,6 +33,7 @@ import {
 type PtyComposerSendArgs = {
   agent: AgentType
   draft: string
+  draftScopeKey: string
   imageAttachments: readonly { path: string }[]
   disabled: boolean
   isDispatchingSessionOption: boolean
@@ -60,7 +65,7 @@ export function useNativeChatPtyComposerSend(
   // A `reply` (a project card's action) is sent as typed text and leaves the draft alone.
   return useCallback(
     (reply?: string): boolean => {
-      const text = reply ?? args.draft
+      let text = reply ?? args.draft
       const imagePaths =
         reply === undefined ? args.imageAttachments.map((attachment) => attachment.path) : []
       if ((text.trim() === '' && imagePaths.length === 0) || args.disabled) {
@@ -82,6 +87,12 @@ export function useNativeChatPtyComposerSend(
         answerNativeChatCommandInComposer(args)
       ) {
         return true
+      }
+      if (reply === undefined) {
+        if (!admitNativeChatPastedText(args.draftScopeKey, text, args.setNotice)) {
+          return false
+        }
+        text = resolveNativeChatPastedText(args.draftScopeKey, text)
       }
       const queue = args.queue
       if (classification === 'chat' && queue?.willQueue) {

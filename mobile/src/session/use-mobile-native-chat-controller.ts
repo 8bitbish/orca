@@ -21,8 +21,6 @@ import { mobileNativeChatScopeKey } from './mobile-native-chat-scope-key'
 
 export type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
 
-const NATIVE_CHAT_STREAM_THROTTLE_MS = 50
-
 /** Owns mobile native-chat state and teardown outside the already dense session
  *  route. The route remains responsible only for choosing and rendering the view. */
 export function useMobileNativeChatController(args: {
@@ -69,6 +67,7 @@ export function useMobileNativeChatController(args: {
     activeChatStructured,
     activeTabAgentWorking,
     isTabChatView,
+    sessionViewReady,
     setTabView,
     nativeChatStatus,
     showNativeChat,
@@ -145,14 +144,15 @@ export function useMobileNativeChatController(args: {
     activeChatStructured
       ? undefined
       : mobileNativeChatStreamPreview(nativeChatStatus, nativeChatAgentWorking),
-    NATIVE_CHAT_STREAM_THROTTLE_MS
+    50
   )
   const promptScopeKey = mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId)
   // Only a terminal-backed chat has a bridge prompt lane and a host queue.
-  const { bridgeAsk, terminalQueue } = useMobileNativeChatTerminalLane({
+  const { bridgeAsk, terminalQueue, structuredAnswer } = useMobileNativeChatTerminalLane({
     client,
     hostSupport: agentSessionHostSupport,
     resolution: activeChatStructured ? null : activeChatResolution,
+    structured: activeChatStructured ? structuredNativeChat : null,
     terminal: args.activeHandle ?? null,
     scopeKey: promptScopeKey,
     status: nativeChatStatus,
@@ -173,7 +173,7 @@ export function useMobileNativeChatController(args: {
     : nativeChatInputLeaseReady && connState === 'connected'
 
   const {
-    answerAsk: handleNativeChatAnswerAsk,
+    answerAsk: bridgeAnswerAsk,
     cancelAsk: handleNativeChatCancelAsk,
     respondPermission: legacyHandleNativeChatRespondPermission,
     stop: handleNativeChatStop
@@ -242,6 +242,7 @@ export function useMobileNativeChatController(args: {
       modelSwitchCommand: activeSessionTab?.agentStatus?.modelSwitchCommand,
       structured: {
         optionPickerRequest: structuredNativeChat.optionPickerRequest,
+        optionSurface: structuredNativeChat.optionSurface,
         conversationCommands: structuredNativeChat.conversationCommands,
         snapshot: structuredNativeChat.optionSnapshot,
         pendingId: structuredNativeChat.pendingOptionId,
@@ -256,7 +257,7 @@ export function useMobileNativeChatController(args: {
     appendComposerTextRef.current = appendComposerText
   }, [appendComposerText, recordNativeChatSessionOptionCommand])
   // Card actions retire the route's held failure banner too, not just sends.
-  const answerAsk = useNativeChatAcceptedAction(handleNativeChatAnswerAsk, onSendResolved)
+  const answerAsk = useNativeChatAcceptedAction(structuredAnswer ?? bridgeAnswerAsk, onSendResolved)
   const cancelAsk = useNativeChatAcceptedAction(handleNativeChatCancelAsk, onSendResolved)
   const promptCards = useMobileNativeChatPromptCards({
     terminal: {
@@ -274,6 +275,7 @@ export function useMobileNativeChatController(args: {
   })
 
   return {
+    sessionViewReady,
     isTabChatView,
     setTabView,
     toggleTabChatView,
@@ -313,8 +315,7 @@ export function useMobileNativeChatController(args: {
     nativeChatStreamLive,
     nativeChatStreamScopeKey: streamScopeKey,
     ...promptCards,
-    nativeChatAsk:
-      !activeChatStructured && (bridgeAsk.showAsk || bridgeAsk.collapsedAsk) ? bridgeAsk.ask : null,
+    nativeChatAsk: bridgeAsk.showAsk || bridgeAsk.collapsedAsk ? bridgeAsk.ask : null,
     nativeChatAskKey: bridgeAsk.askKey,
     dismissNativeChatAsk: bridgeAsk.dismissAsk,
     collapseNativeChatAsk: bridgeAsk.collapseAsk,
@@ -334,9 +335,7 @@ export function useMobileNativeChatController(args: {
       : handleNativeChatSendWithOutcome,
     readSeededLaunchDraft,
     nativeChatSessionOptions,
-    nativeChatQueue: terminalQueue.stack,
-    nativeChatWillQueue: terminalQueue.queue.willQueue,
-    queueNativeChatImageSend: terminalQueue.queueImageSend,
+    ...terminalQueue.controllerFields,
     // A terminal-backed chat pastes images into the agent's own input instead.
     nativeChatAcceptsImages: !activeChatStructured || structuredNativeChat.acceptsImages
   }

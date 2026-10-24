@@ -28,7 +28,7 @@ import {
 } from './MobileNativeChatReasoningRow'
 import { MobileNativeChatThoughtMarkerLine } from './MobileNativeChatThoughtMarkerLine'
 import { isNativeChatThoughtMarker } from '../../../src/shared/native-chat-thought-marker'
-import { mobileNativeChatRowId } from './MobileNativeChatScrollHold'
+import { mobileNativeChatRowId } from './mobile-native-chat-reading-place'
 import { nativeChatWorkRunEntries } from '../../../src/shared/native-chat-work-run'
 import { nativeChatReasoningDisclosureKey } from '../../../src/shared/native-chat-reasoning-row'
 import { MobileNativeChatTurnStatus } from './MobileNativeChatTurnStatus'

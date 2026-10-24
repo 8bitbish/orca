@@ -23,6 +23,7 @@ import {
   useMobileNativeChatReplyReveals
 } from './mobile-native-chat-reply-reveals'
 import { MobileNativeChatRowOverlaysHost } from './MobileNativeChatRowOverlaysHost'
+import { nativeChatAskRequiresTerminal } from '../../../src/shared/native-chat-agent-support'
 
 type Props = {
   controller: MobileNativeChatController
@@ -30,6 +31,7 @@ type Props = {
   client: RpcClient | null
   hostId: string
   connState: ConnectionState
+  activeSessionTabId?: string | null
   /** Opens a tapped file reference (worktree-relative or absolute, optional
    *  :line(:col) suffix) through the shared tap-to-open flow. */
   onOpenFile: (pathText: string) => void
@@ -66,6 +68,7 @@ export function MobileNativeChatOverlay({
   client,
   hostId,
   connState,
+  activeSessionTabId,
   onOpenFile,
   images,
   structuredComposer = null,
@@ -192,6 +195,14 @@ export function MobileNativeChatOverlay({
                   promptKey={controller.nativeChatPromptKey}
                   onDismissAsk={controller.dismissNativeChatAsk}
                   onAnswerAsk={controller.handleNativeChatAnswerAsk}
+                  askRequiresTerminal={
+                    !controller.nativeChatStructured && nativeChatAskRequiresTerminal(agent)
+                  }
+                  onAnswerInTerminal={
+                    activeSessionTabId
+                      ? () => controller.setTabView(activeSessionTabId, 'terminal')
+                      : undefined
+                  }
                   onCancelAsk={controller.handleNativeChatCancelAsk}
                   onCancelPrompt={controller.handleNativeChatCancelPrompt}
                   onCollapseAsk={controller.collapseNativeChatAsk}

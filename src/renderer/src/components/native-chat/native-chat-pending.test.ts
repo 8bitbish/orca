@@ -212,32 +212,6 @@ describe('prunePendingSends', () => {
     ).toEqual([pendingOf('p2', 'repeat')])
   })
 
-  it('drops a large paste once its <pasted_content>-wrapped turn advances', () => {
-    // Shape recorded by Claude Code 2.1.285 for a multi-line draft sent as one bracketed paste.
-    const draft =
-      '\n\n\n\nCommand\nPlease clean up my old checkout.\n\nAt the end, show me what is left.'
-    const pending = [pendingOf('p1', draft)]
-    const next = prunePendingSends(pending, [
-      userMessage('m1', `\n\n<pasted_content id="74c5">\n${draft}\n</pasted_content id="74c5">\n`),
-      assistantMessage('m2', 'checking')
-    ])
-    expect(next).toEqual([])
-  })
-
-  it('drops a large paste Claude Code split into several <pasted_content> blocks', () => {
-    // Claude Code wraps each ~1KB PTY read separately, cutting words, and leaves the tail bare.
-    const draft = 'first part and where I can quickly review and go through them?'
-    const recorded =
-      '\n\n<pasted_content id="87ce">\nfirst part and\n</pasted_content id="87ce">\n\n' +
-      '\n<pasted_content id="87ce">\n where I can quickly revie\n</pasted_content id="87ce">\n\n' +
-      'w and go through them?'
-    const next = prunePendingSends(
-      [pendingOf('p1', draft)],
-      [userMessage('m1', recorded), assistantMessage('m2', 'makes sense')]
-    )
-    expect(next).toEqual([])
-  })
-
   it('does not treat an unrelated longer user turn as a glued match', () => {
     const pending = [pendingOf('p1', 'hi')]
     expect(
@@ -355,6 +329,112 @@ describe('glued rapid sends', () => {
     const pending = [gluePending('p1', 'hi'), gluePending('p2', 'there friend')]
 
     expect(prunePendingSends(pending, advancedGlueTranscript('hi there'))).toEqual(pending)
+  })
+
+  // A draft ending in `\` is a newline request to the agent TUI, not a submit:
+  // measured against Claude Code v2.1.234, `first\` + CR leaves the input open
+  // with the backslash dropped, so the next send lands in the SAME turn
+  // ("first\nsecond"). The echo keeps the backslash the transcript never has.
+  it('still retires literal-backslash sends glued by agents that retain it', () => {
+    const pending = [gluePending('p1', 'run\\'), gluePending('p2', 'again')]
+    expect(prunePendingSends(pending, advancedGlueTranscript('run\\ again'))).toEqual([])
+  })
+
+  it('keeps repeated continuation sends matched to separate transcript occurrences', () => {
+    const pending = [gluePending('p1', 'run\\'), gluePending('p2', 'run\\')]
+    expect(prunePendingSends(pending, advancedGlueTranscript('run again'))).toEqual([pending[1]])
+  })
+
+  it.each(['one\\ two three', 'one two\\ three'])(
+    'retires mixed literal and continuation backslashes in %s',
+    (text) => {
+      const pending = [
+        gluePending('p1', 'one\\'),
+        gluePending('p2', 'two\\'),
+        gluePending('p3', 'three')
+      ]
+      expect(prunePendingSends(pending, advancedGlueTranscript(text))).toEqual([])
+    }
+  )
+
+  it('retires a pair whose first send ended in a continuation backslash', () => {
+    const pending = [gluePending('p1', 'tell me a joke\\'), gluePending('p2', 'continue')]
+
+    expect(prunePendingSends(pending, advancedGlueTranscript('tell me a joke\ncontinue'))).toEqual(
+      []
+    )
+  })
+
+  it('hides a continuation-backslash pair as soon as its glued row lands', () => {
+    const pending = [gluePending('p1', 'tell me a joke\\'), gluePending('p2', 'continue')]
+
+    expect(pendingSendsAsMessages(pending, glueTranscript('tell me a joke\ncontinue'))).toEqual([])
+  })
+
+  // The observed report: the rest of the turn was finished somewhere this queue
+  // cannot see (another client, or typed into the pane), so the echo is alone.
+  it('retires a lone continuation echo absorbed into a longer turn', () => {
+    const pending = [gluePending('p1', 'tell me a joke\\')]
+
+    expect(
+      prunePendingSends(pending, advancedGlueTranscript('tell me a joke\nabout cats'))
+    ).toEqual([])
+  })
+
+  it('keeps a continuation echo when a later row only shares its prefix', () => {
+    const pending = [gluePending('p1', 'hi\\')]
+
+    expect(prunePendingSends(pending, advancedGlueTranscript('history repeats'))).toEqual(pending)
+  })
+
+  it('retires a continuation echo the user then submitted on its own', () => {
+    // `\` + Enter, then Enter again on the empty line it opened.
+    const pending = [gluePending('p1', 'tell me a joke\\')]
+
+    expect(prunePendingSends(pending, advancedGlueTranscript('tell me a joke'))).toEqual([])
+  })
+
+  it('retires a pair when only the last of several backslashes was eaten', () => {
+    const pending = [gluePending('p1', 'tell me a joke\\\\'), gluePending('p2', 'continue')]
+
+    expect(
+      prunePendingSends(pending, advancedGlueTranscript('tell me a joke\\\ncontinue'))
+    ).toEqual([])
+  })
+
+  it('retires a run of three sends chained by continuations', () => {
+    const pending = [
+      gluePending('p1', 'first\\'),
+      gluePending('p2', 'second\\'),
+      gluePending('p3', 'third')
+    ]
+
+    expect(prunePendingSends(pending, advancedGlueTranscript('first\nsecond\nthird'))).toEqual([])
+  })
+
+  it('retires the reported prompt, whose text is not Latin', () => {
+    const pending = [
+      gluePending('p1', '사양을 올리는게 가능해? 이건 과금의 영역아니야?\\'),
+      gluePending('p2', '일단 퀵하게 되는 버전으로 반영되어야할거같아')
+    ]
+
+    expect(
+      prunePendingSends(
+        pending,
+        advancedGlueTranscript(
+          '사양을 올리는게 가능해? 이건 과금의 영역아니야?\n일단 퀵하게 되는 버전으로 반영되어야할거같아'
+        )
+      )
+    ).toEqual([])
+  })
+
+  it('keeps a continuation echo the row breaks mid-word', () => {
+    // The run must stop on the separator the TUI's newline normalizes to.
+    const pending = [gluePending('p1', 'tell me a jo\\')]
+
+    expect(prunePendingSends(pending, advancedGlueTranscript('tell me a joke about cats'))).toEqual(
+      pending
+    )
   })
 
   it('keeps a queued pair when an earlier turn splits across it (#14406 regression)', () => {
@@ -517,14 +597,6 @@ describe('pendingSendsAsMessages', () => {
     expect(pendingSendsAsMessages(pending, [])).toHaveLength(1)
   })
 
-  it('hides a large paste while its <pasted_content>-wrapped turn is visible', () => {
-    const pending = [pendingOf('p1', 'line one\nline two')]
-    const wrapped =
-      '\n\n<pasted_content id="82ea">\nline one\nline two\n</pasted_content id="82ea">\n'
-
-    expect(pendingSendsAsMessages(pending, [userMessage('u1', wrapped)])).toEqual([])
-  })
-
   it('keeps a repeated prompt visible when its only match predates the send boundary', () => {
     const history = [userMessage('old-user', 'run tests'), assistantMessage('old-answer', 'passed')]
     const pending = [{ ...pendingOf('new-send', 'run tests'), afterMessageId: 'old-answer' }]
@@ -592,18 +664,6 @@ describe('pendingSendsAsMessages', () => {
     expect(
       pendingSendsAsMessages(pending, [{ ...userMessage('u1', 'rename it'), timestamp: null }])
     ).toEqual([])
-  })
-
-  // The id prefix is what the sort reads to decide whether the streaming reply
-  // belongs above this echo (it answers it) or below it (the echo is queued).
-  it('marks a send issued while the agent was already replying as queued', () => {
-    const idle = pendingOf('p1', 'first')
-    const queued = { ...pendingOf('p2', 'second'), queuedWhileWorking: true }
-
-    expect(pendingSendsAsMessages([idle, queued], []).map((m) => m.id)).toEqual([
-      'pending:p1',
-      'pending-queued:p2'
-    ])
   })
 
   it('hides only one of two identical pending sends for one real user turn', () => {

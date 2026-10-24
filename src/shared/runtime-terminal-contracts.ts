@@ -1,7 +1,4 @@
-import type {
-  AgentProviderSessionMetadata,
-  SleepingAgentLaunchConfig
-} from './agent-session-resume'
+import type * as AgentSessionResume from './agent-session-resume'
 import type { StartupCommandDelivery } from './codex-startup-delivery'
 import type { ExecutionHostId } from './execution-host'
 import type { PtyIncarnationId } from './pty-incarnation'
@@ -9,6 +6,7 @@ import type { PtyLivenessVerdict } from './pty-liveness-verdict'
 import type { RuntimeListingHostScope } from './runtime-listing-host-scope'
 import type { RuntimeTerminalComposerRead } from './runtime-terminal-composer-read'
 import type { RuntimeMobileSessionTabsResult } from './runtime-session-contracts'
+import type { StartupCwdFallback } from './startup-cwd-fallback'
 import type { TabGroupLayoutNode } from './tab-types'
 import type { TerminalExitCause } from './terminal-exit-cause'
 import type { TerminalPaneLayoutNode } from './terminal-tab-types'
@@ -255,8 +253,8 @@ type RuntimeTerminalCreateBaseRequestPayload = {
   cwd?: string
   env?: Record<string, string>
   envToDelete?: string[]
-  launchConfig?: SleepingAgentLaunchConfig
-  resumeProviderSession?: AgentProviderSessionMetadata
+  launchConfig?: AgentSessionResume.SleepingAgentLaunchConfig
+  resumeProviderSession?: AgentSessionResume.AgentProviderSessionMetadata
   launchToken?: string
   launchAgent?: TuiAgent
   viewMode?: 'terminal' | 'chat'
@@ -293,6 +291,10 @@ export type RuntimeTerminalCreate = {
   isReattach?: true
   /** Spawn process identity for host-internal ownership proof. */
   processId?: number
+  /** Host-internal: the requested folder was gone, so the process started at the workspace root. */
+  startupCwdFallback?: StartupCwdFallback
+  /** Host-internal saved-folder decision; excluded by RPC result projection. */
+  savedStartupCwd?: string
 }
 
 export type RuntimeTerminalSplit = {

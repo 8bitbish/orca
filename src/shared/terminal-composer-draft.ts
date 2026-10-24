@@ -36,8 +36,8 @@ export type TerminalComposerPrompt = TerminalComposerDraft & {
 /** One composer row: `text` is its typed cells, `raw` every cell, `legacy` typed-else-raw. */
 type ComposerLine = { text: string; raw: string; legacy: string; wrapped: boolean }
 
-const COMPOSER_FRAME_LINE = /^[─━-]{8,}\s*$/
-const CODEX_FOOTER_LINE = /^\s*(?:gpt-\S+|o\d\S*)\s+[·•]\s+\S.*$/i
+const COMPOSER_FRAME_LINE = /^[\u2500\u2501-]{8,}\s*$/
+const CODEX_FOOTER_LINE = /^\s*(?:gpt-\S+|o\d\S*)\s+[\u00B7\u2022]\s+\S.*$/i
 
 function composerContinuationRows(
   context: TerminalCursorContext,
@@ -106,7 +106,7 @@ function isStockPlaceholder(afterCursor: string, continuationRows: ComposerLine[
     .replace(/\s+/g, ' ')
     .trim()
   return (
-    /^Try\s+["“]/.test(text) ||
+    /^Try\s+["\u201C]/.test(text) ||
     text === 'Ask Codex to do anything' ||
     text === 'Ask a follow-up question'
   )
@@ -125,7 +125,7 @@ function joinComposerLines(lines: { text: string; wrapped: boolean }[]): string 
     .trim()
 }
 
-const PROMPT_GLYPH_PREFIX = /^\s*[❯›»]\s?/
+const PROMPT_GLYPH_PREFIX = /^\s*[\u276F\u203A\u00BB]\s?/
 
 /** The prompt box at the cursor, if one is on screen. `text` holds only what was typed. */
 export function detectTerminalComposerPrompt(
@@ -147,7 +147,8 @@ export function detectTerminalComposerPrompt(
   }
   for (let index = cursorIndex; index >= 0; index -= 1) {
     const row = context.rows[index] ?? ''
-    const glyph = row.match(/^\s*([❯›»])/)?.[1] as '❯' | '›' | '»' | undefined
+    const matched = row.match(/^\s*([\u276F\u203A\u00BB])/)?.[1]
+    const glyph = (['❯', '›', '»'] as const).find((candidate) => candidate === matched)
     if (glyph) {
       if (glyph === '❯' && !COMPOSER_FRAME_LINE.test(context.rows[index - 1] ?? '')) {
         return null

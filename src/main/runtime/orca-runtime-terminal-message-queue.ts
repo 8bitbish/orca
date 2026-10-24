@@ -56,6 +56,15 @@ export abstract class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeSid
     this.attachTerminalMessageQueueStatusSource(messageQueueStatusSourceFromHookServer(server))
   }
 
+  /** Both stores the hook server feeds: the queue's status source and the agent-status store. */
+  attachAgentHookServer(
+    server: Parameters<typeof messageQueueStatusSourceFromHookServer>[0] &
+      Parameters<OrcaRuntimeWithAgentTransitions['attachAgentStatusStore']>[0]
+  ): () => void {
+    this.attachTerminalMessageQueueHookServer(server)
+    return this.attachAgentStatusStore(server)
+  }
+
   override onPtyExit(
     ...args: Parameters<InstanceType<typeof OrcaRuntimeSidebarBase>['onPtyExit']>
   ): ReturnType<InstanceType<typeof OrcaRuntimeSidebarBase>['onPtyExit']> {

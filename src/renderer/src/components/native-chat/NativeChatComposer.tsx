@@ -11,10 +11,7 @@ import { NativeChatComposerField } from './NativeChatComposerField'
 import type { NativeChatResolvedTarget } from './native-chat-composer-target'
 import { useNativeChatComposerAttachments } from './use-native-chat-composer-attachments'
 import { nativeChatImageSendBlock } from './native-chat-image-reattach'
-import {
-  nativeChatComposerTargetKey,
-  useNativeChatComposerHandle
-} from './use-native-chat-composer-handle'
+import { useNativeChatComposerHandle } from './use-native-chat-composer-handle'
 import { useNativeChatFileDrops } from './use-native-chat-file-drops'
 import { useNativeChatComposerKeyDown } from './use-native-chat-composer-keydown'
 import { useNativeChatSendLifecycle } from './use-native-chat-send-lifecycle'
@@ -130,6 +127,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       caret,
       recalledFromHistory: recall.active,
       disabled,
+      isComposing: imeEnterGesture.isComposing,
       structuredTransport,
       editor: { textareaRef, setDraft, setCaret, setActiveSuggestion },
       setNotice
@@ -176,6 +174,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
     const imageBlock = nativeChatImageSendBlock(imageAttachments)
     const sendBlockedReason = imageBlock.reason ?? structuredTransport?.sendBlockedReason ?? null
     const sendHeld =
+      attachments.pastedTextSaving ||
       disabled ||
       structuredTransport?.sendOut === true ||
       imageBlock.holdsSend ||
@@ -248,6 +247,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       setNotice
     }
     const sendPty = useNativeChatPtyComposerSend({
+      draftScopeKey,
       ...ptyCommandRouting,
       draft,
       imageAttachments,
@@ -270,12 +270,14 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
     const handlePasteEvent = useNativeChatComposerHandle(ref, {
       attachmentScopeKey: draftScopeKey,
       textareaRef,
+      isComposing: imeEnterGesture.isComposing,
       caret,
       draft,
       setDraft,
       setCaret,
       setActiveSuggestion,
-      targetKey: nativeChatComposerTargetKey(paneKey, targetPtyId, structuredTransport),
+      paneKey,
+      targetPtyId,
       agent,
       disabled,
       resolveAttachmentOwner,
@@ -287,6 +289,8 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       resolvePendingImageAttachment: attachments.pendingChips.resolve,
       revealPendingImageAttachment: attachments.revealPendingImageAttachment,
       dropPendingImageAttachment: attachments.dropPendingImageAttachment,
+      pastesInline: () => goalMode.active,
+      pastedTextEditor: structuredTransport ? attachments.scopeEditor : null,
       setNotice,
       sendPty,
       sendStructured,

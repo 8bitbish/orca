@@ -43,6 +43,10 @@ import {
   BeginClaudeSignInParams,
   ConsumeCodexResetCreditParams,
   FinishClaudeSignInParams,
+  HostAccountSignInCodeParams,
+  HostAccountSignInFlowParams,
+  HostAccountSignInStartParams,
+  HostAccountSignInWaitParams,
   ListAccountsParams,
   RemoveAccountParams,
   RemoveDataAccountParams,
@@ -407,6 +411,7 @@ import { NativeChatSlackImage, NativeChatSlackNames } from './native-chat-slack-
 import {
   NotificationGetMissedSinceParams,
   NotificationRegisterPushParams,
+  NotificationReportDesktopPresenceParams,
   NotificationUnsubscribeParams,
   NotificationsSubscribeParams
 } from './notifications-params'
@@ -635,6 +640,7 @@ import {
 import {
   WorkspacePortKillHostParams,
   WorkspacePortKillParams,
+  WorkspacePortProbePageParams,
   WorkspacePortScanHostParams,
   WorkspacePortScanParams
 } from './workspace-ports-params'
@@ -689,6 +695,10 @@ export const RPC_PARAMS_BY_METHOD = {
   'accounts.cancelClaudeSignIn': FinishClaudeSignInParams,
   'accounts.consumeCodexResetCredit': ConsumeCodexResetCreditParams,
   'accounts.finishClaudeSignIn': FinishClaudeSignInParams,
+  'accounts.hostSignInCancel': HostAccountSignInFlowParams,
+  'accounts.hostSignInStart': HostAccountSignInStartParams,
+  'accounts.hostSignInSubmitCode': HostAccountSignInCodeParams,
+  'accounts.hostSignInWait': HostAccountSignInWaitParams,
   'accounts.list': ListAccountsParams,
   'accounts.listData': null,
   'accounts.minimaxClearApiKey': null,
@@ -976,6 +986,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'git.generatePullRequestFields': GitGeneratePullRequestFields,
   'git.history': GitHistory,
   'git.localBranches': WorktreeSelectorOfGitParams,
+  'git.mutationInFlight': WorktreeSelectorOfGitParams,
   'git.pull': GitTargetedRemote,
   'git.push': GitPush,
   'git.rebaseFromBase': GitRebaseFromBase,
@@ -1177,6 +1188,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'network.browserTunnel': BrowserNetworkTunnelAttachParams,
   'notifications.getMissedSince': NotificationGetMissedSinceParams,
   'notifications.registerPush': NotificationRegisterPushParams,
+  'notifications.reportDesktopPresence': NotificationReportDesktopPresenceParams,
   'notifications.subscribe': NotificationsSubscribeParams,
   'notifications.testPush': null,
   'notifications.unregisterPush': null,
@@ -1424,6 +1436,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'updater.install': null,
   'workspacePorts.kill': WorkspacePortKillParams,
   'workspacePorts.killHost': WorkspacePortKillHostParams,
+  'workspacePorts.probePage': WorkspacePortProbePageParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'workspacePorts.scanHost': WorkspacePortScanHostParams,
   'worktree.activate': WorktreeActivate,

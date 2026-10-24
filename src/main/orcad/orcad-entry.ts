@@ -31,6 +31,7 @@ import { ORCAD_USAGE, parseArgs, resolveOrcadWebClientRoot } from './orcad-comma
 import type { OrcadRuntimeCleanup } from './orcad-runtime-lifetime'
 import { installOrcadStopRequestListeners } from './orcad-stop-request-listener'
 import { prepareOrcadManagedStop } from './orcad-managed-stop-admission'
+import { bindOrcadStopTerminalAdmission } from './orcad-stop-terminal-admission'
 import type { OrcadHandle, OrcadOptions } from './orcad-start-contract'
 import { beginOrcadIdleExit, bindOrcadIdleShutdown } from './orcad-managed-idle-exit-host'
 import { orcadAutomationsKeepHostBusy, startOrcadAutomations } from './orcad-automations'
@@ -256,8 +257,6 @@ async function startOrcadRuntime(
   })
   paneGridsForShutdown = runtime
 
-  // Why here too: orcad is the execution host for its PTYs, so its queue reads its own store.
-  runtime.attachTerminalMessageQueueHookServer(agentHookServer)
   accountLaunch?.attachToRuntime(runtime)
 
   // Why before any launch: a desktop that owns this host's accounts pushed them on an earlier run.
@@ -290,7 +289,8 @@ async function startOrcadRuntime(
     agentHookServer,
     () => runtime
   )
-  registerCleanup(runtime.attachAgentStatusStore(agentHookServer))
+  // Why the queue too: orcad is the execution host for its PTYs, so its queue reads its own store.
+  registerCleanup(runtime.attachAgentHookServer(agentHookServer))
 
   // Why the headless entry point rather than registerPtyHandlers directly: this is the
   // same call `--serve` makes, and it threads the store through. Without the store the
@@ -341,6 +341,7 @@ async function startOrcadRuntime(
   })
 
   const bindHost = resolveOrcadBindHost(options.bind)
+  bindOrcadStopTerminalAdmission(runtime.terminalUpdateAdmission)
   const rpc = new OrcaRuntimeRpcServer({
     runtime,
     userDataPath: runtimeUserDataPath,
