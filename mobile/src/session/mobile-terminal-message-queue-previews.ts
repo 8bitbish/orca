@@ -1,4 +1,4 @@
-import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
+import type { PendingNativeChatImage } from './native-chat/composer/mobile-native-chat-image-attachment'
 
 // Host image path → this phone's preview URI, for images queued from here. A queued item carries
 // only host paths, which the phone cannot render, so its echo and a restore need the local preview.

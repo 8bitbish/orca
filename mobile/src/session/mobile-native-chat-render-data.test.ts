@@ -33,7 +33,6 @@ describe('mobileNativeChatEmptyState', () => {
   it.each(['waiting-session', 'awaiting-transcript'] as const)(
     'says the conversation is not found yet while %s, never that the chat is new',
     (status) => {
-      // A chat with history whose agent reported no conversation reads the same as a new one.
       expect(mobileNativeChatEmptyState(status, 'claude')).toEqual({
         title: "Can't find this conversation yet",
         subtitle:
@@ -59,7 +58,6 @@ describe('mobileNativeChatEmptyState', () => {
   })
 })
 
-/** Mirrors the view: fold the raw transcript, then assemble the list. */
 function build(
   messages: NativeChatMessage[],
   streaming: string | null,
@@ -133,9 +131,6 @@ describe('buildMobileNativeChatTransientData', () => {
   })
 
   it('folds transcript image marker turns into image-ref blocks (desktop parity)', () => {
-    // Claude records an attached image as `[Image: source: /path]` plus a
-    // caption turn carrying `[Image #1]`; the fold must merge them into one
-    // user turn with an image-ref block instead of showing raw marker text.
     const data = build(
       [
         user('u1', '[Image: source: /tmp/a.png]'),
@@ -267,10 +262,7 @@ describe('buildMobileNativeChatTransientData', () => {
   })
 
   it('appends a synthetic bubble for gated streaming text, between transcript and pending', () => {
-    // Whether text streams at all is the gate's call
-    // (`mobile-native-chat-streaming-gate.test.ts`); this only places it.
-    // The echo is flagged queued because that is what puts it after the bubble —
-    // an unflagged (idle) send is the prompt the reply answers and sorts above it.
+    // Flagged queued so it sorts after the bubble; an unflagged (idle) send sorts above the reply it prompts.
     const data = build([user('u1', 'hi')], 'thinking out loud', [
       { id: 'p1', text: 'queued', queuedWhileWorking: true }
     ])
@@ -305,9 +297,7 @@ describe('foldMobileNativeChatMessages', () => {
     }
   }
 
-  // The chat reads a 40-message tail, so the window regularly opens on a result
-  // whose `tool_use` is older than the window. It used to render as its own
-  // bubble of raw shell output with no owning call.
+  // Read windows may begin after tool_use; leading orphan results must not become raw-output bubbles.
   it('drops a leading tool result whose call is older than the read window', () => {
     const folded = fold([
       toolResult('orphan', 'Exit code 1\norca-ide not found'),
@@ -337,7 +327,6 @@ describe('foldMobileNativeChatMessages', () => {
     }
   }
 
-  // Desktop draws a Codex plan update in place, as its task list.
   it('draws a Codex plan update where it happened, as an update_plan call', () => {
     const folded = fold([
       assistant('a1', 'Working.'),
@@ -396,7 +385,6 @@ describe('foldMobileNativeChatMessages', () => {
   })
 
   it('draws a skill command the user ran as their message, as desktop does', () => {
-    // The rows the host reader decoded from a Claude Code session where `/hello Kelvin` ran a skill.
     const folded = fold([
       {
         ...user(
@@ -415,10 +403,7 @@ describe('foldMobileNativeChatMessages', () => {
   })
 })
 
-// Claude consumes a mid-turn send through a `queued_command` attachment and writes
-// no `type:"user"` record for it, so that echo has no row to match - ever. What
-// made the conversation read as scrambled was not the unmatched echo itself but
-// where it rendered: appended after every turn, so it re-read below each new one.
+// Claude may consume queued commands without a user record; unmatched echoes must stay at their send position rather than trail every later turn.
 describe('buildMobileNativeChatTransientData anchoring', () => {
   function row(id: string, role: 'user' | 'assistant', text: string): NativeChatMessage {
     return { id, role, blocks: [{ type: 'text', text }], timestamp: 1, source: 'transcript' }
@@ -434,7 +419,6 @@ describe('buildMobileNativeChatTransientData anchoring', () => {
     })
     expect(data.map((m) => m.id)).toEqual(['m1', 'm2', 'p1'])
 
-    // The agent keeps working. The echo must NOT drift below the new turns.
     const later = [
       ...folded,
       row('m3', 'assistant', 'still working'),

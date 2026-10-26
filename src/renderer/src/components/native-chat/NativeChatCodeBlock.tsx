@@ -114,8 +114,7 @@ function NativeChatFenceSource({
   plain: boolean
 }): React.JSX.Element {
   const rowKey = useContext(NativeChatMarkdownRowKeyContext)
-  // Off until the reader asks; kept in the transcript's store so the row unmounting under
-  // windowing, or a growing reply re-cutting its blocks, does not undo it. Never saved.
+  // Keep wrap state in the transcript store so windowing and streaming block recuts cannot reset it; never persist it.
   const { open: wrapped, setOpen: setWrapped } = useNativeChatDisclosure(
     rowKey === undefined || sourceLine === undefined
       ? undefined
@@ -175,7 +174,6 @@ function NativeChatFenceSource({
   )
 }
 
-/** Looks like the Copy button beside it; pressed keeps the hover fill. */
 function NativeChatCodeWrapButton({
   wrapped,
   onToggle

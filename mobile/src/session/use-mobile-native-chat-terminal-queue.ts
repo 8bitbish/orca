@@ -3,18 +3,18 @@ import type { Dispatch, SetStateAction } from 'react'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import type { TerminalQueuedMessage } from '../../../src/shared/terminal-message-queue-contract'
 import type { RpcClient } from '../transport/rpc-client'
-import type { MobileNativeChatResolution } from './mobile-native-chat-eligibility'
+import type { MobileNativeChatResolution } from './native-chat/mobile-native-chat-eligibility'
 import type {
   MobileNativeChatAcceptSend,
   MobileNativeChatSendOrigin
-} from './mobile-native-chat-pending-echo'
+} from './native-chat/mobile-native-chat-pending-echo'
 import { mobileQueueOrphanReachedTranscript } from './mobile-terminal-message-queue-orphans'
 import {
   queuedImagesWithPreviews,
   rememberQueuedImagePreviews
 } from './mobile-terminal-message-queue-previews'
-import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
-import { classifyMobileNativeChatSend } from './mobile-native-chat-send-classification'
+import type { PendingNativeChatImage } from './native-chat/composer/mobile-native-chat-image-attachment'
+import { classifyMobileNativeChatSend } from './native-chat/mobile-native-chat-send-classification'
 import { routeMobileNativeChatSendThroughQueue } from './mobile-native-chat-queue-send'
 import type { MobileNativeChatQueueStackProps } from './MobileNativeChatTerminalQueuedMessages'
 import {

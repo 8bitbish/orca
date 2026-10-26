@@ -3,7 +3,7 @@ import type { NativeChatMessage } from '../../../../shared/native-chat-types'
 import {
   deriveNativeChatStreamingText,
   nativeChatStreamingMessage
-} from '../../../../shared/native-chat-streaming'
+} from '../../../../shared/native-chat/native-chat-streaming'
 import { pendingSendsAsMessages, type NativeChatPendingSend } from './native-chat-pending'
 import {
   commandMarkersAsMessages,

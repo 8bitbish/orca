@@ -71,7 +71,7 @@ export function useNativeChatPtyComposerSend(
       if ((text.trim() === '' && imagePaths.length === 0) || args.disabled) {
         return false
       }
-      // Why: keep option-command and prompt writes from interleaving on the PTY input line.
+      // Prevent option commands from interleaving with prompt writes on the PTY input line.
       if (args.isDispatchingSessionOption) {
         return false
       }
@@ -146,7 +146,7 @@ function sendNow(
         }
       : launchSendOptions
   let pendingHandle: NativeChatSendHandle | null = null
-  // Why: slash-like text must not silently drop its attached images.
+  // Slash-like drafts with images must retain their attachments.
   if (classification !== 'chat' && imagePaths.length === 0) {
     pendingHandle =
       args.agent === 'codex' && isSlashCommandDraft(text)

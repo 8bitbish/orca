@@ -71,7 +71,6 @@ export function createReposApi(): NonNullable<Partial<PreloadApi>['repos']> {
       return getDefaultCreateProjectParent(result.resolvedPath)
     },
     onCloneProgress: () => noopUnsubscribe,
-    getGitUsername: () => Promise.resolve(''),
     // A paired web client never reads the host's files for an icon.
     getAppIcon: () => Promise.resolve(null),
     getBaseRefDefault: async ({ repoId }) =>

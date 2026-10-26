@@ -42,9 +42,6 @@ export const reposApi = {
     return () => ipcRenderer.removeListener('repos:clone-progress', listener)
   },
 
-  getGitUsername: (args: { repoId: string }): Promise<string> =>
-    ipcRenderer.invoke('repos:getGitUsername', args),
-
   getAppIcon: (args: { repoId: string }): Promise<string | null> =>
     ipcRenderer.invoke('repos:getAppIcon', args),
 

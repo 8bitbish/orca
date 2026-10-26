@@ -1,7 +1,3 @@
-// Centralized record→block mapping for native-chat transcripts. Kept separate
-// from the reader so the Claude and Codex per-record decoders share one place
-// to evolve as CLI transcript schemas drift (plan KTD risk: schema drift).
-
 import type {
   NativeChatBlock,
   NativeChatImageRefBlock,
@@ -10,7 +6,6 @@ import type {
 import { asRecord, extractString } from '../ai-vault/session-scanner-values'
 import { nativeChatThoughtMarkerBlocks } from '../../shared/native-chat-thought-marker'
 
-/** Coerce an arbitrary tool-result payload into a single output string. */
 export function toolResultOutput(value: unknown): string {
   if (typeof value === 'string') {
     return value
@@ -63,7 +58,6 @@ export function claudeThinkingOnlyBlocks(content: unknown): NativeChatBlock[] | 
   return blocks.length > 0 ? blocks : nativeChatThoughtMarkerBlocks()
 }
 
-/** Build the blocks for one Claude content array (string or block[]). */
 export function claudeContentBlocks(content: unknown): NativeChatBlock[] {
   if (typeof content === 'string') {
     const text = content.trim()

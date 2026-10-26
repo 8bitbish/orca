@@ -57,7 +57,6 @@ import { NativeChatReplyScope } from './NativeChatReplyScope'
 import { NativeChatQueuedMessages } from './NativeChatQueuedMessages'
 import { useNativeChatPaneQueueStop } from './use-native-chat-pane-queue-stop'
 
-/** Renders the bridge UI after NativeChatSessionGate resolves its agent session. */
 export function NativeChatResolvedView({
   paneKey,
   agent,
@@ -72,8 +71,7 @@ export function NativeChatResolvedView({
   readTerminalScreen,
   contextMenuActions
 }: NativeChatResolvedViewProps): React.JSX.Element {
-  // Primitive owner selection (no useShallow): routes the pane's read/subscribe to
-  // the remote runtime host for a runtime-owned pane; null keeps the local path.
+  // Route reads/subscriptions through the pane’s runtime owner; null retains local routing.
   const selectOwner = useMemo(() => createNativeChatRuntimeSelector(terminalTabId), [terminalTabId])
   const runtimeEnvironmentId = useAppStore(selectOwner)
   const keybindings = useAppStore((s) => s.keybindings)
@@ -88,42 +86,34 @@ export function NativeChatResolvedView({
   const launchPrompt = useAppStore((s) => s.nativeChatLaunchPromptByTabId[terminalTabId] ?? null)
   const clearNativeChatLaunchPrompt = useAppStore((s) => s.clearNativeChatLaunchPrompt)
   const paneLaunchPrompt = launchPrompt?.agent === agent ? launchPrompt : null
-  // Launch context prefilled into the TUI input as an unsent draft; the
-  // composer adopts it so the GUI view shows the same context as the TUI.
+  // Adopt the TUI’s unsent launch context into the GUI composer.
   const launchDraftSignal = useNativeChatLaunchDraftSignal({
     terminalTabId,
     agent,
     messages: session.messages,
-    // 'awaiting' counts too: adopting a prefill against a transcript that hasn't
-    // flushed would re-offer a prompt the user already submitted.
+    // Treat awaiting transcripts as unsettled to avoid re-offering an already-submitted prefill.
     transcriptLoading: isNativeChatTranscriptUnsettled(session.readPhase)
   })
-  // The live-session merge reconciles hooks with replayable transcript turn
-  // boundaries; all working consumers must use that one lifecycle decision.
+  // Use the live session’s reconciled lifecycle for every working-state consumer.
   const liveWorking = session.status === 'working'
-  // The agent's in-progress reply preview (hook), shown as a live streaming
-  // bubble while it works — before the completed turn flushes to the transcript.
+  // Preview the in-progress hook reply before its completed transcript turn arrives.
   const hookPreview = useAppStore((s) => s.agentStatusByPaneKey[paneKey]?.lastAssistantMessage)
   // Tool stdout/errors ride the same field for status-card previews; they are not the reply.
   const hookPreviewIsToolOutput = useAppStore(
     (s) => s.agentStatusByPaneKey[paneKey]?.lastAssistantMessageIsToolOutput === true
   )
-  // Why: Stop suppression must clear on a newer working epoch even when status
-  // never leaves 'working' (interrupt + immediate next turn coalesced).
+  // A coalesced interrupt/restart can stay working; the newer epoch must still clear Stop suppression.
   const workingEpoch = useAppStore((s) => s.agentStatusByPaneKey[paneKey]?.stateStartedAt ?? null)
   const canSend = useNativeChatCanSend(targetPtyId)
-  // Reuse the verified composer send path for interactive cards and composer
-  // stop (Stop sends ESC, the agent-TUI interrupt key).
+  // Share verified composer delivery with prompt answers and ESC-based Stop.
   const send = useNativeChatInteractiveSend(paneKey, targetPtyId, agent)
-  // Every send this pane makes brings the latest into view, wherever the reader had scrolled.
   const { messageListRef, revealLatest } = useNativeChatRevealLatest()
   const interactiveSend = useNativeChatInteractiveSendReveal(send, targetPtyId, revealLatest)
   const [workingInterrupted, setWorkingInterrupted] = useState(false)
   const previousWorkingEpochRef = useRef<number | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<NativeChatComposerHandle>(null)
-  // The question card's free-text row; keeps Paste working while the card
-  // replaces the composer.
+  // Keep Paste targeted while the question card replaces the composer.
   const questionAnswerInputRef = useRef<HTMLInputElement>(null)
   const fileLinkContext = useNativeChatFileLinkContext(terminalTabId)
   const onPaste = useNativeChatPasteBridge({ rootRef, composerRef, questionAnswerInputRef })
@@ -134,13 +124,10 @@ export function NativeChatResolvedView({
   )
   const delivery = useNativeChatPendingDelivery({ paneKey, agent, session, liveWorking })
   const { pending, record, clear, appendDeliveredEcho } = delivery
-  // Slash commands aren't chat turns, so they get a small local "Ran /clear"
-  // system line instead of a user bubble. Capped + cached per conversation.
+  // Slash commands are local session-scoped feedback, not user turns; cap and cache their markers.
   const [commandMarkers, setCommandMarkers] = useState<NativeChatCommandMarker[]>(() =>
     readCommandMarkerCache(commandMarkerScope)
   )
-  // Command markers are session-scoped because slash commands like /clear are
-  // local feedback for a specific transcript boundary.
   useEffect(() => {
     setCommandMarkers(readCommandMarkerCache(commandMarkerScope))
     setWorkingInterrupted(false)
@@ -213,8 +200,7 @@ export function NativeChatResolvedView({
     messages: sessionAfterCommandBoundaries.messages,
     transcriptSettled: session.readPhase === 'ready'
   })
-  // Why one derived value: an answerable card takes the input region from the composer, which
-  // would type into the agent's selector; both are never visible in one commit.
+  // A prompt card and composer must never share the input region: composer text would answer the agent’s selector.
   const promptCardPresentation = useNativeChatPromptCardPresentation({
     paneKey,
     targetPtyId,
@@ -241,9 +227,7 @@ export function NativeChatResolvedView({
     working: liveWorking,
     previewIsToolOutput: hookPreviewIsToolOutput
   })
-  // Derive the view state from the pending-augmented session so a send into an
-  // otherwise-empty conversation flips to the list (showing the queued bubble)
-  // instead of staying on the empty state.
+  // Include pending sends when selecting view state so the first echo leaves the empty screen immediately.
   const viewState = selectNativeChatViewState(sessionWithPending)
 
   const isConversation = viewState.kind === 'ready'
@@ -287,7 +271,6 @@ export function NativeChatResolvedView({
     { sessionId, isVisible }
   )
 
-  // Only the focused conversation accepts chat text-size shortcuts.
   useNativeChatFontSize(isConversation && isVisible && isFocusedGroup, rootRef)
   const find = useNativeChatFind(isVisible && isFocusedGroup, rootRef, composerRef, messageListRef)
   const contextMenu = useNativeChatContextMenu({
@@ -385,10 +368,7 @@ export function NativeChatResolvedView({
       {collapsedCard ? (
         <NativeChatPromptStrip card={collapsedCard} onExpand={promptCardPresentation.expand} />
       ) : null}
-      {/* canSend reflects the mobile presence-lock: when a mobile client holds
-          the pty, the composer shows its guarded state instead of racing the
-          mobile driver (R8). Under a card it stays mounted but hidden, so its state survives;
-          detaching the ref keeps root typing, paste and reveal focus off it. */}
+      {/* Honor mobile PTY ownership; retain the hidden composer’s state but detach its ref from typing, paste and focus routes. */}
       <div hidden={shownPromptCard !== null} className="contents">
         <NativeChatComposer
           ref={shownPromptCard ? undefined : composerRef}

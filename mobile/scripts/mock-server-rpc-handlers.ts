@@ -51,8 +51,7 @@ let fakeWorktrees =
   readCatalogFile<RuntimeWorktreePsSummary>('MOCK_WORKTREES_FILE', 'worktrees') ??
   createMockWorktrees(FAKE_REPOS, MOCK_WORKTREE_COUNT)
 
-// Mutable quick-command list so the mobile Quick Commands sheet can add/edit/
-// delete against the mock the same way it does a paired desktop.
+// Mutable commands let mock-backed mobile sheet add/edit/delete like a paired desktop.
 let fakeQuickCommands: TerminalQuickCommand[] = [
   {
     id: 'qc-codex-review',

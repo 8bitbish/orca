@@ -47,9 +47,8 @@ function nativeChatComposerTargetKey(
   ])
 }
 
-/** Typed and pasted insertion for the composer, exposed on the handle the chat
- *  root uses to route keystrokes and pastes into it, plus the reply send a project
- *  card uses and the queued-message restore. Returns the paste handler. */
+/** Expose typed/pasted insertion, the project-card reply send and queued-message restore to pane
+ *  routing, and return the paste handler. */
 export function useNativeChatComposerHandle(
   ref: ForwardedRef<NativeChatComposerHandle>,
   args: UseNativeChatComposerHandleArgs
