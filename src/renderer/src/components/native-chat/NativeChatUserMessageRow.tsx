@@ -16,7 +16,10 @@ import { useNativeChatRowFenceScope } from './use-native-chat-row-fence-scope'
 import { NativeChatCopyButton } from './NativeChatCopyButton'
 import { NativeChatMessageTimestamp } from './NativeChatMessageTimestamp'
 import { NativeChatAgentMessageSenders } from './NativeChatAgentMessageSenders'
-import { NativeChatImageAttachments } from './NativeChatTranscriptChrome'
+import {
+  NativeChatDetailsDisclosure,
+  NativeChatImageAttachments
+} from './NativeChatTranscriptChrome'
 import type { deriveNativeChatRowContent } from '../../../../shared/native-chat-row-content'
 
 const USER_META_REVEAL =
@@ -162,6 +165,15 @@ export function NativeChatUserMessageRow({
               {translate('components.native-chat.dismissDeliveryNotice', 'Dismiss')}
             </Button>
           ) : null}
+        </div>
+      ) : null}
+      {deliveryNotice?.detail ? (
+        <div className="max-w-[85%]">
+          <NativeChatDetailsDisclosure
+            summary={translate('components.native-chat.notices.details', 'Details')}
+          >
+            {deliveryNotice.detail}
+          </NativeChatDetailsDisclosure>
         </div>
       ) : null}
     </div>
