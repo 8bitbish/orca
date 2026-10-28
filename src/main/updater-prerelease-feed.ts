@@ -11,6 +11,9 @@ const MAX_MANIFEST_PROBE_CANDIDATES = 6
 
 // Atom includes stable and prerelease tags without channel filtering.
 const TAG_HREF_RE = new RegExp(`href="${RELEASES_URL_PATTERN}\\/tag\\/([^"]+)"`, 'g')
+const LATEST_TAG_PATH_RE = new RegExp(
+  `^${new URL(UPDATER_RELEASES_URL).pathname.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}\\/tag\\/([^/]+)$`
+)
 
 export function getReleaseDownloadUrl(tag: string): string {
   return `${RELEASES_DOWNLOAD_BASE}/${encodeURIComponent(tag)}`
@@ -106,17 +109,19 @@ function getManifestAssetNames(manifestText: string): string[] {
 
 type ReleaseReadiness = 'ready' | 'not-ready' | 'unavailable'
 
-function getGitHubReleaseAssetReadiness(assetUrl: string): Promise<ReleaseReadiness> {
+type ReleaseHeadResponse = { statusCode: number; redirectUrl?: string }
+
+function requestGitHubReleaseHead(assetUrl: string): Promise<ReleaseHeadResponse | null> {
   return new Promise((resolve) => {
     const request = net.request({ method: 'HEAD', url: assetUrl, redirect: 'manual' })
     let settled = false
-    const settle = (readiness: ReleaseReadiness): void => {
+    const settle = (response: ReleaseHeadResponse | null): void => {
       if (settled) {
         return
       }
       settled = true
       clearTimeout(timeout)
-      resolve(readiness)
+      resolve(response)
     }
     const timeout = setTimeout(() => {
       try {
@@ -124,29 +129,33 @@ function getGitHubReleaseAssetReadiness(assetUrl: string): Promise<ReleaseReadin
       } catch {
         // The request may already have been cancelled by Electron.
       }
-      settle('unavailable')
+      settle(null)
     }, FETCH_TIMEOUT_MS)
 
-    request.on('redirect', (statusCode) => {
+    request.on('redirect', (statusCode, _method, redirectUrl) => {
       // GitHub's redirect proves existence without fetching the signed storage URL.
-      settle(statusCode >= 300 && statusCode < 400 ? 'ready' : 'unavailable')
+      settle({ statusCode, redirectUrl })
     })
-    request.on('response', (response) => {
-      settle(
-        response.statusCode === 404
-          ? 'not-ready'
-          : response.statusCode >= 200 && response.statusCode < 300
-            ? 'ready'
-            : 'unavailable'
-      )
-    })
-    request.on('error', () => settle('unavailable'))
+    request.on('response', (response) => settle({ statusCode: response.statusCode }))
+    request.on('error', () => settle(null))
     try {
       request.end()
     } catch {
-      settle('unavailable')
+      settle(null)
     }
   })
+}
+
+async function getGitHubReleaseAssetReadiness(assetUrl: string): Promise<ReleaseReadiness> {
+  const response = await requestGitHubReleaseHead(assetUrl)
+  if (!response) {
+    return 'unavailable'
+  }
+  const ready =
+    response.redirectUrl !== undefined
+      ? response.statusCode >= 300 && response.statusCode < 400
+      : response.statusCode >= 200 && response.statusCode < 300
+  return response.statusCode === 404 ? 'not-ready' : ready ? 'ready' : 'unavailable'
 }
 
 async function getReleaseAssetReadiness(tag: string, assetName: string): Promise<ReleaseReadiness> {
@@ -206,6 +215,31 @@ async function getPlatformManifestReadiness(tag: string): Promise<ReleaseReadine
         : 'ready'
   } catch {
     return 'unavailable'
+  }
+}
+
+export async function fetchLatestStableReleaseTag(): Promise<string | null> {
+  try {
+    // Resolve only the release-page redirect; installer redirects continue on to signed storage URLs.
+    const latestUrl = `${UPDATER_RELEASES_URL}/latest`
+    const response = await requestGitHubReleaseHead(latestUrl)
+    if (!response?.redirectUrl || response.statusCode < 300 || response.statusCode >= 400) {
+      return null
+    }
+    const target = new URL(response.redirectUrl, latestUrl)
+    const match = target.pathname.match(LATEST_TAG_PATH_RE)
+    if (target.origin !== 'https://github.com' || !match) {
+      return null
+    }
+    const tag = decodeURIComponent(match[1])
+    const version = normalizeTagToVersion(tag)
+    // Personal builds are all -local prereleases; GitHub's Latest one is the stable release.
+    if (!isValidVersion(version) || (isPrereleaseVersion(version) && !/-local\./.test(version))) {
+      return null
+    }
+    return (await getPlatformManifestReadiness(tag)) === 'ready' ? tag : null
+  } catch {
+    return null
   }
 }
 

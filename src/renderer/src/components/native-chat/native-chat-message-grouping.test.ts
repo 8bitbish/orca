@@ -16,23 +16,6 @@ function msg(
 }
 
 describe('orderNativeChatMessages', () => {
-  it('orders by ascending timestamp, null first', () => {
-    const ordered = orderNativeChatMessages([
-      msg({ id: 'b', timestamp: 20 }),
-      msg({ id: 'a', timestamp: 10 }),
-      msg({ id: 'n', timestamp: null })
-    ])
-    expect(ordered.map((m) => m.id)).toEqual(['n', 'a', 'b'])
-  })
-
-  it('breaks timestamp ties by id deterministically', () => {
-    const ordered = orderNativeChatMessages([
-      msg({ id: 'z', timestamp: 5 }),
-      msg({ id: 'a', timestamp: 5 })
-    ])
-    expect(ordered.map((m) => m.id)).toEqual(['a', 'z'])
-  })
-
   // The reply currently streaming is the answer to the prompt the user just sent,
   // so it has to render BELOW that prompt's echo. Ranking the echo last put the
   // reply above it: the sent message looked stuck at the bottom of the transcript

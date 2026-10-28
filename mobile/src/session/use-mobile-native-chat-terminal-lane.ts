@@ -1,11 +1,11 @@
 import type { AgentStatusEntry } from '../../../src/shared/agent-status-types'
 import type { RpcClient } from '../transport/rpc-client'
 import type { StructuredAgentSessionHostSupport } from './mobile-structured-agent-session-host-support'
-import { useMobileNativeChatAskDismiss } from './use-mobile-native-chat-ask-dismiss'
+import { useMobileNativeChatAskDismiss } from './native-chat/input/use-mobile-native-chat-ask-dismiss'
 import {
   useMobileNativeChatPrompts,
   type MobileNativeChatPrompts
-} from './use-mobile-native-chat-prompts'
+} from './native-chat/input/use-mobile-native-chat-prompts'
 import type { MobileStructuredAskSession } from './use-mobile-structured-async-question'
 import type { MobileNativeChatSession } from './use-mobile-native-chat-session'
 import { useMobileNativeChatTerminalQueue } from './use-mobile-native-chat-terminal-queue'
@@ -50,10 +50,10 @@ export function useMobileNativeChatTerminalLane(
     session.status === 'ready' || (session.status === 'error' && session.messages.length > 0)
   const dismissal = useMobileNativeChatAskDismiss({
     ask: prompts.ask,
-    detectedAsk: prompts.detectedAsk,
+    startedAt: prompts.waitStartedAt,
     scopeKey: args.scopeKey,
     sessionKey: sessionId,
-    observing: showNativeChat && (prompts.detectedAsk != null || transcriptSettled)
+    observing: showNativeChat && (prompts.ask != null || transcriptSettled)
   })
   const terminalQueue = useMobileNativeChatTerminalQueue({
     ...queueArgs,

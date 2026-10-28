@@ -98,7 +98,7 @@ export type MobileNativeChatImageAttachments = {
    *  chips (and only those) once the send is accepted. */
   readonly sendNativeChat: (text: string) => Promise<boolean>
   /** Puts images back as chips on the active scope (a queued message restored to the composer). */
-  readonly restoreImages: (images: readonly Omit<PendingNativeChatImage, 'id'>[]) => void
+  readonly restoreImages?: (images: readonly Omit<PendingNativeChatImage, 'id'>[]) => void
 }
 
 const NO_FILES: readonly PendingNativeChatFile[] = []

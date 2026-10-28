@@ -18,6 +18,7 @@ vi.mock('./pr-sidebar/MermaidDiagram', () => ({ MermaidDiagram: 'MermaidDiagram'
 vi.mock('./markup-preview/MobileMarkupPreview', () => ({
   MobileMarkupPreview: 'MobileMarkupPreview'
 }))
+vi.mock('./MobileSourceCopyButton', () => ({ MobileSourceCopyButton: 'MobileSourceCopyButton' }))
 
 /** Each rendered table row's cell styles, header row first. */
 function renderTableCellStyles(content: string): unknown[][] {

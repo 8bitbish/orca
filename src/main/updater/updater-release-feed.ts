@@ -1,10 +1,10 @@
 import { app } from 'electron'
 import {
+  fetchLatestStableReleaseTag,
   fetchNewerReleaseTagsWithReadiness,
   getReleaseDownloadUrl
 } from '../updater-prerelease-feed'
 import { isMissingUpdateManifestFailure, isPrereleaseVersion } from '../updater-fallback'
-import { UPDATER_RELEASES_URL } from '../updater-release-repository'
 import type { CheckFailureSource } from './updater-state'
 import type { UpdateCheckVariant } from './updater-types'
 import { ReleaseFeedPreflightError } from './updater-state'
@@ -208,10 +208,19 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
     }
     this.clearPrereleaseFallbackContext()
     this.clearPublishingWindowLastGoodCheck()
-    const url = `${UPDATER_RELEASES_URL}/latest/download`
-    console.info(
-      `[updater] release feed fallback: current=${currentVersion} includePrerelease=${includePrerelease} → ${url}`
-    )
+    const stableTag = await fetchLatestStableReleaseTag()
+    if (!this.isActiveUpdateCheckAttempt(attemptId)) {
+      return 'not-available'
+    }
+    if (!stableTag) {
+      throw new ReleaseFeedPreflightError(
+        'manifest-unavailable',
+        'default',
+        'Unable to resolve a ready stable release on GitHub'
+      )
+    }
+    const url = getReleaseDownloadUrl(stableTag)
+    console.info(`[updater] stable fallback feed pinned: current=${currentVersion} → ${url}`)
     autoUpdater.setFeedURL({ provider: 'generic', url })
     return 'ready'
   }

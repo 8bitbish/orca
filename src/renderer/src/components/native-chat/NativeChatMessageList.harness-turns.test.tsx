@@ -18,7 +18,7 @@ import { assembleNativeChatSession, compareMessages } from './native-chat-sessio
 import {
   nativeChatLatestTurnId,
   nativeChatTranscriptSettledTurns
-} from './native-chat-terminal-turn'
+} from '../../../../shared/native-chat/native-chat-terminal-turn'
 import {
   buildNativeChatTranscriptSlots,
   type NativeChatMessageSlot

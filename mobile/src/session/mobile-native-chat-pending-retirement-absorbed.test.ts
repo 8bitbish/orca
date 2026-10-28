@@ -2,8 +2,10 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
-import type { MobileNativeChatPendingMessage } from './mobile-native-chat-pending-echo'
-import { retireLandedMobileNativeChatPending } from './mobile-native-chat-pending-retirement'
+import {
+  retireLandedMobileNativeChatPending,
+  type MobileNativeChatPendingMessage
+} from './native-chat/mobile-native-chat-pending-echo'
 
 const FIXTURE = join(
   __dirname,
@@ -26,9 +28,9 @@ describe('retireLandedMobileNativeChatPending on a prompt absorbed mid-turn', ()
     return {
       id: `p-${send.id}`,
       text: send.text,
-      expectedOccurrence: 1,
-      baselineTailMessageId: tail.id,
-      baselineResolved: true
+      sentAt,
+      afterMessageId: tail.id,
+      afterMessageTimestamp: tail.timestamp
     }
   }
 

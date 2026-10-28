@@ -7,7 +7,7 @@ import type {
   TerminalQueuedMessage
 } from '../../../src/shared/terminal-message-queue-contract'
 import type { RpcClient } from '../transport/rpc-client'
-import type { MobileNativeChatSendOrigin } from './mobile-native-chat-pending-echo'
+import type { MobileNativeChatSendOrigin } from './native-chat/mobile-native-chat-pending-echo'
 import { clearMobileQueueOrphansForTests } from './mobile-terminal-message-queue-orphans'
 import { clearQueuedImagePreviewsForTests } from './mobile-terminal-message-queue-previews'
 import { useMobileNativeChatTerminalQueue } from './use-mobile-native-chat-terminal-queue'
@@ -26,9 +26,8 @@ function sendOrigin(text: string, baselineTailMessageId: string): MobileNativeCh
     draftEditGeneration: 0,
     pendingKey: null,
     normalizedText: text,
-    baselineOccurrences: 0,
-    baselineTailMessageId,
-    baselineResolved: true
+    boundary: { afterMessageId: baselineTailMessageId },
+    sentAt: 0
   }
 }
 
@@ -77,7 +76,7 @@ describe('useMobileNativeChatTerminalQueue', () => {
     result = useMobileNativeChatTerminalQueue({
       client,
       supported: true,
-      resolution: { agent: 'claude', sessionId: 's1', transcriptPath: null },
+      resolution: { agent: 'claude', sessionId: 's1', transcriptPath: null, agentConfirmed: true },
       terminal: 'term-1',
       scopeKey: 'host\0wt\0tab',
       messages,

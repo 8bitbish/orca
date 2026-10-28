@@ -63,6 +63,7 @@ const AGENT_RANK: Record<AgentDotState, number> = {
   interrupted: 2,
   // An end the host could not prove ranks with the other finished states.
   unconfirmed: 2,
+  unverifiable: 2,
   idle: 3
 }
 

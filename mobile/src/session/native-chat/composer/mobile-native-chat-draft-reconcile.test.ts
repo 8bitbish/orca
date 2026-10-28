@@ -4,10 +4,10 @@ import {
   findLandedImagePreviewEchoes,
   findLandedUnconfirmedSends,
   migrateImagePreviewMessageIds,
-  normalizeReconcileText,
   type PendingImagePreviewEcho,
   type UnconfirmedSend
 } from './mobile-native-chat-draft-reconcile'
+import { normalizeNativeChatUserText as normalizeReconcileText } from '../../../../../src/shared/native-chat-image-transcript-markers'
 
 function userText(id: string, text: string): NativeChatMessage {
   return {
@@ -19,8 +19,12 @@ function userText(id: string, text: string): NativeChatMessage {
   }
 }
 
-function pending(id: string, images: string[], expectedOccurrence = 1): PendingImagePreviewEcho {
-  return { id, text: '', images, expectedOccurrence, baselineTailMessageId: null }
+function pending(
+  id: string,
+  images: string[],
+  matchingOccurrence?: number
+): PendingImagePreviewEcho {
+  return { id, text: '', images, sentAt: 0, matchingOccurrence, afterMessageId: null }
 }
 
 describe('mobile native chat image preview reconciliation', () => {
@@ -43,7 +47,7 @@ describe('mobile native chat image preview reconciliation', () => {
     }
 
     expect(
-      findLandedImagePreviewEchoes(messages, [{ ...preview, baselineTailMessageId: 'prompt' }])
+      findLandedImagePreviewEchoes(messages, [{ ...preview, afterMessageId: 'prompt' }])
     ).toEqual([])
     expect(findLandedUnconfirmedSends(messages, [unconfirmed])).toEqual([unconfirmed])
     expect(findLandedImagePreviewEchoes(messages, [preview])).toEqual([
@@ -157,6 +161,24 @@ describe('mobile native chat image preview reconciliation', () => {
         messageId: 'prompt',
         images: ['file:///a.jpg', 'file:///b.jpg']
       }
+    ])
+  })
+
+  it('binds past an older identical photo whose source row was the send boundary', () => {
+    const messages = [
+      userText('old-source', '[Image: source: /tmp/old.png]'),
+      userText('old-prompt', 'look[Image #1]'),
+      userText('new-source', '[Image: source: /tmp/new.png]'),
+      userText('new-prompt', 'look[Image #1]')
+    ]
+    const preview = {
+      ...pending('pending', ['file:///new.jpg']),
+      text: 'look',
+      afterMessageId: 'old-source'
+    }
+
+    expect(findLandedImagePreviewEchoes(messages, [preview])).toEqual([
+      { pendingId: 'pending', messageId: 'new-prompt', images: ['file:///new.jpg'] }
     ])
   })
 

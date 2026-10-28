@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { MobileRepoIcon } from '../../components/MobileRepoIcon'
 import { colors } from '../../theme/mobile-theme'
-import { repoColor } from '../../worktree/repo-color'
+import { repoColor } from '../../tasks/mobile-tasks-repository-presentation'
 import type { MobileNativeChatProjectRepo } from './mobile-native-chat-project'
 
 /** The reply's own `icon`, then the repo icon the host screen shows, then a monogram. */

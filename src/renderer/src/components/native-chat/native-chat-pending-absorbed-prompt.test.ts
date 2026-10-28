@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest'
 import type { NativeChatMessage } from '../../../../shared/native-chat-types'
 import { assembleNativeChatSession } from './native-chat-session-assembler'
 import {
+  isPendingMessageId,
   pendingSendsAsMessages,
   prunePendingSends,
   type NativeChatPendingSend
-} from './native-chat-pending'
-import { isPendingMessageId } from './native-chat-synthetic-message-ids'
+} from '../../../../shared/native-chat-pending-sends'
 
 const FIXTURE = join(
   __dirname,

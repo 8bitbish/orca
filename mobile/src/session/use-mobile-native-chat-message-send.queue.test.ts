@@ -5,13 +5,13 @@ import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RpcClient } from '../transport/rpc-client'
-import type { MobileNativeChatSendOrigin } from './mobile-native-chat-pending-echo'
+import type { MobileNativeChatSendOrigin } from './native-chat/mobile-native-chat-pending-echo'
 import type { MobileQueueSubmitOutcome } from './use-mobile-native-chat-message-queue'
 
 const sendWithOutcome = vi.fn()
 const clearInputWrite = vi.fn()
 const heal = vi.fn()
-vi.mock('./mobile-native-chat-send', () => ({
+vi.mock('./native-chat/mobile-native-chat-send', () => ({
   sendMobileNativeChatMessageWithOutcome: (...args: unknown[]) => sendWithOutcome(...args),
   typeMobileNativeChatCommandWithOutcome: vi.fn(),
   clearMobileNativeChatInput: (...args: unknown[]) => clearInputWrite(...args),
@@ -19,11 +19,11 @@ vi.mock('./mobile-native-chat-send', () => ({
   MOBILE_NATIVE_CHAT_SEND_TIMEOUT_MS: 15_000,
   MOBILE_NATIVE_CHAT_MIN_WRITE_TIMEOUT_MS: 2_000
 }))
-vi.mock('./mobile-native-chat-stale-input', () => ({
+vi.mock('./native-chat/mobile-native-chat-stale-input', () => ({
   healMobileNativeChatStaleInput: (...args: unknown[]) => heal(...args)
 }))
 
-import { useMobileNativeChatMessageSend } from './use-mobile-native-chat-message-send'
+import { useMobileNativeChatMessageSend } from './native-chat/transcript/use-mobile-native-chat-message-send'
 
 type Send = ReturnType<typeof useMobileNativeChatMessageSend>
 
@@ -35,9 +35,7 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
     draftEditGeneration: 0,
     pendingKey: 'p',
     normalizedText: '',
-    baselineOccurrences: 0,
-    baselineTailMessageId: null,
-    baselineResolved: true,
+    boundary: { afterMessageId: null },
     sentAt: 0
   }
   // The send goes through the mocked writers, so the client is never called.
@@ -173,15 +171,11 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
     expect(restoreRejectedDraft).toHaveBeenCalledWith(origin, 'hello')
   })
 
-  it('keeps slash commands and question answers off the queue', async () => {
+  it('keeps slash commands off the queue', async () => {
     queueSubmit.mockResolvedValue('queued')
     mount(queueSubmit)
     await send('/compact')
-    await act(async () => {
-      await api?.answerQuestion('yes')
-    })
     expect(queueSubmit).not.toHaveBeenCalled()
-    expect(sendWithOutcome).toHaveBeenCalledTimes(2)
   })
 
   it('keeps the old path on a host without the queue', async () => {

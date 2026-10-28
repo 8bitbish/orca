@@ -8,7 +8,7 @@ import {
   type StyleProp,
   type TextStyle
 } from 'react-native'
-import type { NativeChatVisualDirective } from '../../../src/shared/native-chat-visual-directive'
+import type { NativeChatVisualDirective } from '../../../src/shared/native-chat/native-chat-visual-directive'
 import { isMobileMermaidLanguage } from './mobile-mermaid-language'
 import { mobileMarkdownTableColumnWidths } from './mobile-markdown-table-columns'
 import { mobileMarkdownVisualPlaceholderIndex } from './mobile-markdown-visual-lines'
@@ -26,6 +26,7 @@ import {
 } from './mobile-markdown-agent-fences'
 import type { MobileMarkdownFenceRenderer } from './mobile-markdown-renderers'
 import { MermaidDiagram } from './pr-sidebar/MermaidDiagram'
+import { MobileSourceCopyButton } from './MobileSourceCopyButton'
 
 /** Prose base size — passed to MermaidDiagram fallback mono text. */
 const MERMAID_BASE = 13
@@ -74,13 +75,18 @@ function renderCode(node: Code, key: number, ctx: MarkdownBlockContext): ReactNo
   }
   const codeBlock = (
     <View key={key} style={styles.codeBlock}>
-      {node.lang ? <NativeText style={styles.codeLanguage}>{node.lang}</NativeText> : null}
-      <MarkdownText
-        selectable
-        style={[styles.codeText, scaledMarkdownText(styles.codeText, ctx.textScale)]}
-      >
-        {node.value}
-      </MarkdownText>
+      <View style={styles.codeBody}>
+        {node.lang ? <NativeText style={styles.codeLanguage}>{node.lang}</NativeText> : null}
+        <MarkdownText
+          selectable
+          style={[styles.codeText, scaledMarkdownText(styles.codeText, ctx.textScale)]}
+        >
+          {node.value}
+        </MarkdownText>
+      </View>
+      {node.value ? (
+        <MobileSourceCopyButton text={node.value} accessibilityLabel="Copy code" />
+      ) : null}
     </View>
   )
   const rendered = ctx.markupPreviews

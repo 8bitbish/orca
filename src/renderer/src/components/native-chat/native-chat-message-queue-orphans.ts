@@ -1,5 +1,5 @@
 import type { TerminalQueuedMessage } from '../../../../shared/terminal-message-queue-contract'
-import { setBoundedScopeCacheEntry } from '../../../../shared/native-chat-scope-cache'
+import { setBoundedScopeCacheEntry } from '../../../../shared/native-chat/native-chat-scope-cache'
 
 /** A queued message the host can no longer send, held here so the user can restore it. */
 export type NativeChatOrphanedQueuedMessage = {

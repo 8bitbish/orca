@@ -2,7 +2,7 @@ import { Brain } from 'lucide-react-native'
 import { Text, View } from 'react-native'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import { colors } from '../theme/mobile-theme'
-import { styles } from './mobile-native-chat-message-styles'
+import { styles } from './native-chat/transcript/mobile-native-chat-message-styles'
 import { mobileNativeChatThoughtMarkerLabel } from './mobile-native-chat-thought-rows'
 
 /** A thought with no text: one line in the reasoning row's look, with nothing to open. */

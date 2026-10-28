@@ -1,19 +1,22 @@
 import { memo, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
+import { useMobileColorScheme } from '../../theme/use-mobile-color-scheme'
+import { themedStyleSheet } from '../../theme/themed-styles'
+import { readableMermaidFlowchartSvg } from '../../../../src/shared/mermaid-flowchart-contrast'
 import { MobileDiagramHeader } from '../MobileDiagramHeader'
-import { MERMAID_DIAGRAM_CONFIG } from './mermaid-diagram-config'
+import { mermaidDiagramConfig } from './mermaid-diagram-config'
 import { loadPageMermaid } from './mermaid-page-engine'
 
-/** Rendered SVG by source, newest last. The chat list unmounts rows scrolled away and keeps their
+/** Rendered SVG by color scheme and source, newest last. The chat list unmounts rows scrolled away and keeps their
  *  measured height as space; a remounted diagram that waited on mermaid drew short first, and the
  *  pinned end jumped by the difference and back. */
 const renderedSvg = new Map<string, { id: string; svg: string }>()
 const RENDERED_SVG_KEPT = 64
 
-function rememberSvg(source: string, id: string, svg: string): void {
-  renderedSvg.delete(source)
-  renderedSvg.set(source, { id, svg })
+function rememberSvg(key: string, id: string, svg: string): void {
+  renderedSvg.delete(key)
+  renderedSvg.set(key, { id, svg })
   const oldest = renderedSvg.keys().next()
   if (renderedSvg.size > RENDERED_SVG_KEPT && !oldest.done) {
     renderedSvg.delete(oldest.value)
@@ -29,6 +32,8 @@ export type MermaidDiagramProps = {
 // No separate sandbox process: mermaid strict mode sanitizes serialized SVG via DOMPurify before insertion; hostile fixtures run on both engines in mobile-web-app-mermaid-render.test.mjs.
 // Source is a JS string argument, never inline-script interpolation.
 export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: MermaidDiagramProps) {
+  const colorScheme = useMobileColorScheme()
+  const renderKey = `${colorScheme}\n${source}`
   const hostRef = useRef<View>(null)
   // Remember failing source, not flag, so next source need not clear failure through effect.
   const [failedSource, setFailedSource] = useState<string | null>(null)
@@ -41,31 +46,32 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
   // Before layout, so a remounted diagram is measured at its drawn size, and mermaid isn't run again.
   useLayoutEffect(() => {
     const host = hostRef.current
-    const kept = renderedSvg.get(source)
+    const kept = renderedSvg.get(renderKey)
     if (host instanceof HTMLElement && kept) {
       // Already sanitized when mermaid rendered it; only its stylesheet's `#<id>` is retargeted.
       host.innerHTML = kept.svg.replaceAll(kept.id, id)
     }
-  }, [id, source])
+  }, [id, renderKey])
 
   useEffect(() => {
     // react-native-web renders View as a div and forwards the ref to it.
     const host = hostRef.current
-    if (!(host instanceof HTMLElement) || renderedSvg.has(source)) {
+    if (!(host instanceof HTMLElement) || renderedSvg.has(renderKey)) {
       return
     }
     let disposed = false
     void (async () => {
       try {
         const mermaid = await loadPageMermaid()
-        mermaid.initialize(MERMAID_DIAGRAM_CONFIG)
+        mermaid.initialize(mermaidDiagramConfig(colorScheme))
         const { svg } = await mermaid.render(id, source)
         if (disposed) {
           return
         }
         // Only mermaid sanitizes its serialization; strict mode already made returned SVG safe to parse.
-        host.innerHTML = svg
-        rememberSvg(source, id, svg)
+        const readable = readableMermaidFlowchartSvg(svg, colors.textPrimary, colors.bgRaised)
+        host.innerHTML = readable
+        rememberSvg(renderKey, id, readable)
       } catch {
         if (!disposed) {
           setFailedSource(source)
@@ -77,7 +83,7 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
       // React owns container, not mermaid contents; clear prior diagram on source change.
       host.replaceChildren()
     }
-  }, [id, source])
+  }, [colorScheme, id, renderKey, source])
 
   if (failed) {
     return (
@@ -117,6 +123,7 @@ export const MermaidDiagram = memo(function MermaidDiagram({ source, base }: Mer
 
 /** The frame and label, so a diagram and its fallback sit in the same box. */
 function MermaidFrame({ children }: { children: ReactNode }) {
+  useMobileColorScheme()
   return (
     <View style={styles.frame} testID="mermaid-diagram">
       <View style={styles.label}>
@@ -128,7 +135,7 @@ function MermaidFrame({ children }: { children: ReactNode }) {
 }
 
 // No rule reaches the SVG: mermaid emits it with `width="100%"` and its own natural `max-width`.
-const styles = StyleSheet.create({
+const styles = themedStyleSheet(() => ({
   frame: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
@@ -153,4 +160,4 @@ const styles = StyleSheet.create({
   hidden: { display: 'none' },
   fallbackScroll: { padding: spacing.sm },
   fallbackText: { color: colors.textPrimary, fontFamily: typography.monoFamily }
-})
+}))

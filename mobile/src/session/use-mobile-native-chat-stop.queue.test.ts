@@ -48,6 +48,7 @@ describe('useMobileNativeChatStop with the host queue', () => {
         enabled: true,
         handleRef: { current: 'terminal-1' },
         deviceTokenRef: { current: 'mobile-1' },
+        agentRef: { current: 'opencode' },
         streamIdentity: 'stream-1',
         cancelPending,
         onSendError,

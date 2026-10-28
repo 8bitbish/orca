@@ -4,12 +4,15 @@ import {
   deriveNativeChatStreamingText,
   nativeChatStreamingMessage
 } from '../../../../shared/native-chat/native-chat-streaming'
-import { pendingSendsAsMessages, type NativeChatPendingSend } from './native-chat-pending'
+import {
+  isQueuedPendingMessageId,
+  pendingSendsAsMessages,
+  type NativeChatPendingSend
+} from '../../../../shared/native-chat-pending-sends'
 import {
   commandMarkersAsMessages,
   type NativeChatCommandMarker
 } from './native-chat-command-marker'
-import { isQueuedPendingMessageId } from './native-chat-synthetic-message-ids'
 
 /** The session as the pane draws it: the transcript, then local command lines, the streaming
  *  preview and the sends not yet in the transcript. The list sorts the streaming bubble below

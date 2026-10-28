@@ -1,4 +1,4 @@
-import { createElement } from 'react'
+import { createElement, type ReactNode } from 'react'
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
@@ -8,7 +8,7 @@ vi.mock('react-native', async () => {
   const React = await import('react')
   const node =
     (name: string) =>
-    ({ children, ...props }: { children?: unknown }): unknown =>
+    ({ children, ...props }: { children?: ReactNode }): unknown =>
       React.createElement(name, props, children)
   return {
     ActivityIndicator: 'ActivityIndicator',
@@ -23,22 +23,173 @@ vi.mock('react-native', async () => {
   }
 })
 vi.mock('expo-clipboard', () => ({ setStringAsync: vi.fn() }))
-vi.mock('lucide-react-native', () => ({
-  ArrowUp: 'ArrowUp',
-  Brain: 'Brain',
-  ChevronDown: 'ChevronDown',
-  ChevronRight: 'ChevronRight',
-  Copy: 'Copy',
-  SquareChevronRight: 'SquareChevronRight',
-  SquareTerminal: 'SquareTerminal',
-  Wrench: 'Wrench'
-}))
+// Every icon is a host element named after it; the row draws whichever tool icons it needs.
+vi.mock('lucide-react-native', () =>
+  Object.fromEntries(
+    [
+      'Activity',
+      'AlertCircle',
+      'AlertTriangle',
+      'ArrowDown',
+      'ArrowDownUp',
+      'ArrowRight',
+      'ArrowUp',
+      'ArrowUpFromLine',
+      'ArrowUpRight',
+      'AtSign',
+      'Bell',
+      'Bold',
+      'Bot',
+      'Box',
+      'Braces',
+      'Brain',
+      'Briefcase',
+      'Building2',
+      'CalendarClock',
+      'CaseSensitive',
+      'Check',
+      'CheckCircle2',
+      'ChevronDown',
+      'ChevronLeft',
+      'ChevronRight',
+      'ChevronUp',
+      'ChevronsLeftRight',
+      'ChevronsRight',
+      'Circle',
+      'CircleCheck',
+      'CircleDashed',
+      'CircleDot',
+      'CircleHelp',
+      'CircleX',
+      'Clock',
+      'CloudUpload',
+      'Code',
+      'Code2',
+      'CodeXml',
+      'Copy',
+      'CornerDownLeft',
+      'CornerDownRight',
+      'Cpu',
+      'Database',
+      'Download',
+      'Edit3',
+      'Eraser',
+      'ExternalLink',
+      'Eye',
+      'File',
+      'FileCode2',
+      'FileMinus2',
+      'FilePen',
+      'FilePenLine',
+      'FilePlus2',
+      'FileText',
+      'FileWarning',
+      'Folder',
+      'FolderTree',
+      'Gauge',
+      'GitBranch',
+      'GitMerge',
+      'GitPullRequest',
+      'GitPullRequestArrow',
+      'GitPullRequestClosed',
+      'GitPullRequestDraft',
+      'Globe',
+      'GripVertical',
+      'Hand',
+      'Heading1',
+      'Heading2',
+      'Heading3',
+      'History',
+      'Hourglass',
+      'Image',
+      'ImageIcon',
+      'ImageOff',
+      'ImagePlus',
+      'Info',
+      'Italic',
+      'KeyRound',
+      'Keyboard',
+      'Layers',
+      'LifeBuoy',
+      'Link',
+      'Link2',
+      'Link2Off',
+      'List',
+      'ListChecks',
+      'ListEnd',
+      'ListOrdered',
+      'ListTodo',
+      'LoaderCircle',
+      'LockKeyhole',
+      'Maximize2',
+      'MessageSquare',
+      'MessageSquareMore',
+      'Mic',
+      'Minus',
+      'Monitor',
+      'Moon',
+      'MoreHorizontal',
+      'MoreVertical',
+      'Package',
+      'Palette',
+      'PanelLeftClose',
+      'PanelLeftOpen',
+      'Paperclip',
+      'PenTool',
+      'Pencil',
+      'Pilcrow',
+      'Pin',
+      'PinOff',
+      'Play',
+      'Plug',
+      'Plus',
+      'PowerOff',
+      'QrCode',
+      'Quote',
+      'RefreshCw',
+      'Rocket',
+      'RotateCcw',
+      'RotateCw',
+      'Save',
+      'ScrollText',
+      'Search',
+      'Send',
+      'Server',
+      'Settings',
+      'Shield',
+      'ShieldAlert',
+      'ShieldCheck',
+      'ShieldQuestion',
+      'Smartphone',
+      'Sparkles',
+      'Square',
+      'SquareChevronRight',
+      'SquareTerminal',
+      'StickyNote',
+      'Strikethrough',
+      'SunMoon',
+      'Terminal',
+      'TextSelect',
+      'Trash2',
+      'Undo2',
+      'User',
+      'UserCircle',
+      'UserPlus',
+      'VideoOff',
+      'WifiOff',
+      'Workflow',
+      'Wrench',
+      'X',
+      'XCircle'
+    ].map((name) => [name, name])
+  )
+)
 vi.mock('../components/MobileMarkdown', () => ({ MobileMarkdown: 'MobileMarkdown' }))
-vi.mock('./MobileNativeChatMessageActionsSheet', () => ({
+vi.mock('./native-chat/transcript/MobileNativeChatMessageActionsSheet', () => ({
   MobileNativeChatMessageActionsSheet: 'MessageActionsSheet'
 }))
 
-import { MobileNativeChatMessage } from './MobileNativeChatMessage'
+import { MobileNativeChatMessage } from './native-chat/transcript/MobileNativeChatMessage'
 
 // Claude Code 2.1.x journals a thinking block with empty text; the transcript gives no state.
 const thought = (id: string, timestamp: number, text = ''): NativeChatMessage => ({

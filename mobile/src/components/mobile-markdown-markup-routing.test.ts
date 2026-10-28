@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MobileMarkdown } from './MobileMarkdown'
 import { MobileMarkdownRenderersContext } from './mobile-markdown-renderers'
 
+vi.mock('./MobileSourceCopyButton', () => ({ MobileSourceCopyButton: 'MobileSourceCopyButton' }))
 vi.mock('react-native', () => ({
   Linking: { openURL: vi.fn() },
   Platform: { OS: 'ios' },
