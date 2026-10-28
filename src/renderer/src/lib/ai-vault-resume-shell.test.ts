@@ -1,6 +1,5 @@
-import { getDefaultSettings } from '../../../shared/constants'
-import { TEST_REPO, makeWorktree } from '../store/slices/worktrees-slice-test-fixtures'
 import { describe, expect, it, vi } from 'vitest'
+import type { AppState } from '@/store/types'
 
 vi.mock('@/lib/new-workspace', () => ({
   CLIENT_PLATFORM: 'darwin'
@@ -10,43 +9,29 @@ import { buildAiVaultResumeCopyCommandForWorktree } from './ai-vault-resume-comm
 
 type ResumeShellState = Parameters<typeof buildAiVaultResumeCopyCommandForWorktree>[0]['state']
 
-function makeState(
-  worktreeHostId?: Parameters<typeof makeWorktree>[0]['hostId']
-): ResumeShellState {
+function makeState(worktreeHostId?: string): ResumeShellState {
   return {
     activeRepoId: 'repo-1',
     activeWorktreeId: 'repo-1::worktree-1',
     folderWorkspaces: [],
     projectGroups: [],
-    repos: [{ ...TEST_REPO, id: 'repo-1', path: '/home/alice/repo' }],
-    endpointProjectHostSetups: [],
-    endpointProjects: [
-      {
-        id: 'repo-1',
-        displayName: 'repo',
-        badgeColor: '',
-        createdAt: 0,
-        updatedAt: 0,
-        sourceRepoIds: ['repo-1']
-      }
-    ],
+    repos: [{ id: 'repo-1', path: '/home/alice/repo' }],
+    projects: [{ id: 'repo-1', sourceRepoIds: ['repo-1'] }],
     settings: {
-      ...getDefaultSettings('/tmp'),
-      agentPermissionOverrides: { codex: 'own' },
       agentDefaultArgs: { codex: '' },
       agentDefaultEnv: { codex: {} }
     },
     worktreesByRepo: {
       'repo-1': [
-        makeWorktree({
+        {
           id: 'repo-1::worktree-1',
           repoId: 'repo-1',
           path: '/home/alice/repo',
           ...(worktreeHostId ? { hostId: worktreeHostId } : {})
-        })
+        }
       ]
     }
-  }
+  } as unknown as AppState
 }
 
 describe('copied real-home Codex resume command', () => {

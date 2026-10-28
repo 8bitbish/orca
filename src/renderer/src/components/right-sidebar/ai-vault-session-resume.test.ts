@@ -53,11 +53,9 @@ function makeTargetState(
     folderWorkspaces: [],
     projectGroups: [],
     repos: [],
-    endpointProjects: [],
-    endpointProjectHostSetups: [],
     worktreesByRepo: {},
     ...overrides
-  }
+  } as AiVaultSessionResumeTargetState
 }
 
 function makeFolderTargetState(

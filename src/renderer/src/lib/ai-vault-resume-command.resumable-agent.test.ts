@@ -1,6 +1,5 @@
-import { getDefaultSettings } from '../../../shared/constants'
-import { TEST_REPO, makeWorktree } from '../store/slices/worktrees-slice-test-fixtures'
 import { describe, expect, it, vi } from 'vitest'
+import type { AppState } from '@/store/types'
 import {
   buildAiVaultResumeCopyCommandForWorktree,
   buildAiVaultResumeStartupForWorktree
@@ -10,7 +9,17 @@ vi.mock('@/lib/new-workspace', () => ({
   CLIENT_PLATFORM: 'darwin'
 }))
 
-type ResumableAgentState = Parameters<typeof buildAiVaultResumeCopyCommandForWorktree>[0]['state']
+type ResumableAgentState = Pick<
+  AppState,
+  | 'activeRepoId'
+  | 'activeWorktreeId'
+  | 'folderWorkspaces'
+  | 'projectGroups'
+  | 'projects'
+  | 'repos'
+  | 'settings'
+  | 'worktreesByRepo'
+>
 
 function makeState(): ResumableAgentState {
   return {
@@ -18,29 +27,16 @@ function makeState(): ResumableAgentState {
     activeWorktreeId: 'repo-1::worktree-1',
     folderWorkspaces: [],
     projectGroups: [],
-    repos: [{ ...TEST_REPO, id: 'repo-1', path: '/Users/ada/repo' }],
-    endpointProjectHostSetups: [],
-    endpointProjects: [
-      {
-        id: 'repo-1',
-        displayName: 'repo',
-        badgeColor: '',
-        createdAt: 0,
-        updatedAt: 0,
-        sourceRepoIds: ['repo-1']
-      }
-    ],
+    repos: [{ id: 'repo-1', path: '/Users/ada/repo' }],
+    projects: [{ id: 'repo-1', sourceRepoIds: ['repo-1'] }],
     settings: {
-      ...getDefaultSettings('/tmp'),
       agentDefaultArgs: { claude: '', codex: '' },
       agentDefaultEnv: { claude: {}, codex: {} }
     },
     worktreesByRepo: {
-      'repo-1': [
-        makeWorktree({ id: 'repo-1::worktree-1', repoId: 'repo-1', path: '/Users/ada/repo' })
-      ]
+      'repo-1': [{ id: 'repo-1::worktree-1', repoId: 'repo-1', path: '/Users/ada/repo' }]
     }
-  }
+  } as unknown as ResumableAgentState
 }
 
 const KIMI_SESSION = {
