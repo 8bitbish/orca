@@ -10,6 +10,7 @@ import { NativeChatMermaidDiagram } from './NativeChatMermaidDiagram'
 import { NativeChatWidgetCard } from './NativeChatWidgetCard'
 import { NativeChatProjectCard } from './NativeChatProjectCard'
 import { NativeChatProofCard } from './NativeChatProofCard'
+import { NativeChatLinkCards } from './NativeChatLinkCards'
 import { NativeChatShellRunBlock } from './NativeChatShellRunBlock'
 import { NativeChatSlackDraftCard } from './NativeChatSlackDraftCard'
 import { NativeChatSlackMessageCard } from './NativeChatSlackMessageCard'
@@ -25,7 +26,7 @@ import { NativeChatHighlightedCode } from './NativeChatHighlightedCode'
  *  Finished mermaid fences, and html/svg/widget fences in a reply, render as diagrams;
  *  a finished project-card fence in a reply renders as a live project card, and a
  *  slack-message or slack-draft fence as a Slack card, a proof-card fence as a
- *  viewer of an agent's finished work; a finished
+ *  viewer of an agent's finished work, a link-cards fence as link previews; a finished
  *  shell fence in the agent's reply gets a Run button when the chat can run it. */
 export function NativeChatCodeBlock({
   children,
@@ -73,6 +74,9 @@ export function NativeChatCodeBlock({
   }
   if (route === 'proof-card') {
     return <NativeChatProofCard source={code} fallback={source} />
+  }
+  if (route === 'link-cards') {
+    return <NativeChatLinkCards source={code} fallback={source} />
   }
   if (route === 'shell-run') {
     return <NativeChatShellRunBlock language={language} code={code} body={children} />

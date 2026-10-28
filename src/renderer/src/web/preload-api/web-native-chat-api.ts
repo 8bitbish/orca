@@ -7,6 +7,7 @@ import {
   parseNativeChatSlackNamesResult
 } from '../../../../shared/native-chat-slack-names-contract'
 import { buildNativeChatSlackLinks } from '../../../../shared/native-chat-slack-links'
+import { parseNativeChatLinkPreviewResult } from '../../../../shared/native-chat-link-preview-contract'
 import {
   parseRuntimeNativeChatReadSessionResult,
   parseRuntimeNativeChatTurnLifecycle
@@ -26,6 +27,10 @@ export function createWebNativeChatApi(): NativeChatApi {
       parseNativeChatSlackNamesResult(
         await callRuntimeResult<unknown>('nativeChat.slackNames', request).catch(() => null)
       ) ?? EMPTY_NATIVE_CHAT_SLACK_NAMES,
+    linkPreview: async (request) =>
+      parseNativeChatLinkPreviewResult(
+        await callRuntimeResult<unknown>('nativeChat.linkPreview', request).catch(() => null)
+      ),
     openSlack: async (href) => {
       const target = parseNativeChatSlackHref(href)
       if (!target) {

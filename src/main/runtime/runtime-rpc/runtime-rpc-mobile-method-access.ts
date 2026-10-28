@@ -9,6 +9,7 @@ import { TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS } from './runtime-rpc-mobile-term
 export const PERSONAL_MOBILE_RPC_METHODS: ReadonlySet<string> = new Set([
   'nativeChat.slackImage',
   'nativeChat.slackNames',
+  'nativeChat.linkPreview',
   ...NATIVE_CHAT_PROOF_MEDIA_MOBILE_METHODS,
   ...NATIVE_CHAT_PROOF_IMAGE_REGION_MOBILE_METHODS,
   ...TERMINAL_MESSAGE_QUEUE_MOBILE_METHODS

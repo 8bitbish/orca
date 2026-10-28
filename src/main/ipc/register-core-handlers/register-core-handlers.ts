@@ -35,6 +35,7 @@ import { registerAiVaultHandlers } from '../ai-vault'
 import { registerAiVaultSearchHandlers } from '../ai-vault-search'
 import { registerNativeChatHandlers } from '../native-chat'
 import { registerNativeChatSlackHandlers } from '../native-chat-slack'
+import { registerNativeChatLinkPreviewHandlers } from '../native-chat-link-preview'
 import { registerNativeChatProofHandlers } from '../native-chat-proof'
 import { registerNotificationHandlers } from '../notifications'
 import { registerNotebookHandlers } from '../notebook'
@@ -293,6 +294,7 @@ export function registerCoreHandlers(
   )
   registerNativeChatHandlers()
   registerNativeChatSlackHandlers()
+  registerNativeChatLinkPreviewHandlers()
   registerNativeChatProofHandlers()
   registerClipboardHandlers(store, {
     localChatAttachmentStore: async () => {

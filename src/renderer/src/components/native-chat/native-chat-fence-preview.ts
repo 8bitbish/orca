@@ -10,6 +10,7 @@ import { NATIVE_CHAT_PROJECT_CARD_FENCE } from '../../../../shared/native-chat-p
 import { NATIVE_CHAT_SLACK_MESSAGE_FENCE } from '../../../../shared/native-chat-slack-card-payload'
 import { NATIVE_CHAT_SLACK_DRAFT_FENCE } from '../../../../shared/native-chat-slack-draft-card-payload'
 import { NATIVE_CHAT_PROOF_CARD_FENCE } from '../../../../shared/native-chat-proof-card-payload'
+import { NATIVE_CHAT_LINK_CARDS_FENCE } from '../../../../shared/native-chat-link-cards-payload'
 import { nativeChatShellRunBlock } from '../../../../shared/native-chat-shell-run-block'
 
 export { NATIVE_CHAT_PROJECT_CARD_FENCE }
@@ -23,11 +24,12 @@ export type NativeChatFenceRoute =
   | 'slack-message'
   | 'slack-draft'
   | 'proof-card'
+  | 'link-cards'
   | 'shell-run'
   | 'code'
 
 export type NativeChatFencePreviewScope = {
-  /** Live HTML/SVG/widget previews, project, Slack and proof cards; on for assistant replies only. */
+  /** Live HTML/SVG/widget previews, project, Slack, proof and link cards; on for assistant replies only. */
   markupPreviews: boolean
   /** Body of the message's trailing unclosed fence, or null when every fence closed. */
   openFenceBody: string | null
@@ -111,7 +113,8 @@ export function nativeChatFenceRoute({
     normalized !== NATIVE_CHAT_PROJECT_CARD_FENCE &&
     normalized !== NATIVE_CHAT_SLACK_MESSAGE_FENCE &&
     normalized !== NATIVE_CHAT_SLACK_DRAFT_FENCE &&
-    normalized !== NATIVE_CHAT_PROOF_CARD_FENCE
+    normalized !== NATIVE_CHAT_PROOF_CARD_FENCE &&
+    normalized !== NATIVE_CHAT_LINK_CARDS_FENCE
   ) {
     return scope.shellRuns === true && nativeChatShellRunBlock(language, code) !== null
       ? 'shell-run'

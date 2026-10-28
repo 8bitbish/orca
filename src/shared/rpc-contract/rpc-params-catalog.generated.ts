@@ -414,6 +414,7 @@ import {
   ManagedServerSelector,
   ManagedServerUpdate
 } from './managed-server-params'
+import { NativeChatLinkPreview } from './native-chat-link-preview-params'
 import { NativeChatSession, NativeChatUnsubscribe } from './native-chat-params'
 import {
   NativeChatProofImageRegion,
@@ -1208,6 +1209,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'mobileWeb.bundle.chunk': MobileWebBundleChunkParamsSchema,
   'mobileWeb.bundle.manifest': null,
   'mobileWeb.bundle.range': MobileWebBundleChunkParamsSchema,
+  'nativeChat.linkPreview': NativeChatLinkPreview,
   'nativeChat.proofImageRegion': NativeChatProofImageRegion,
   'nativeChat.proofMediaInfo': NativeChatProofMediaInfo,
   'nativeChat.proofMediaRead': NativeChatProofMediaRead,

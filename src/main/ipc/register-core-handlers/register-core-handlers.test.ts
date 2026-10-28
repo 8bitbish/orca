@@ -435,6 +435,10 @@ vi.mock('../native-chat-slack', () => ({
   registerNativeChatSlackHandlers: registerNativeChatSlackHandlersMock
 }))
 
+vi.mock('../native-chat-link-preview', () => ({
+  registerNativeChatLinkPreviewHandlers: vi.fn()
+}))
+
 vi.mock('../native-chat-proof', () => ({
   registerNativeChatProofHandlers: registerNativeChatProofHandlersMock
 }))

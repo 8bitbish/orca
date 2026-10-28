@@ -8,6 +8,7 @@ import type {
 import type { AgentType } from '../../shared/native-chat-types'
 import type { NativeChatSlackImageRequest } from '../../shared/native-chat-slack-image-contract'
 import type { NativeChatSlackNamesRequest } from '../../shared/native-chat-slack-names-contract'
+import type { NativeChatLinkPreviewRequest } from '../../shared/native-chat-link-preview-contract'
 import type {
   NativeChatProofImageRequest,
   NativeChatProofVideoRequest
@@ -47,6 +48,8 @@ export const nativeChatApi = {
     ipcRenderer.invoke('nativeChat:slackImage', request),
   slackNames: (request: NativeChatSlackNamesRequest) =>
     ipcRenderer.invoke('nativeChat:slackNames', request),
+  linkPreview: (request: NativeChatLinkPreviewRequest) =>
+    ipcRenderer.invoke('nativeChat:linkPreview', request),
   openSlack: (href: string): Promise<boolean> => ipcRenderer.invoke('nativeChat:openSlack', href),
   proofImage: (request: NativeChatProofImageRequest) =>
     ipcRenderer.invoke('nativeChat:proofImage', request),

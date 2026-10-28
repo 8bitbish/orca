@@ -20181,6 +20181,9 @@
         "stopUnverifiable": "Couldn't confirm the agent stopped. Queued messages send when it finishes.",
         "sendNextNow": "Send next now"
       },
+      "linkCards": {
+        "more": "{{count}} more links not shown"
+      },
       "proof": {
         "videoMissing": "Recording not found",
         "imageMissing": "Screenshot not found",

@@ -41,6 +41,7 @@ import { SSH_METHODS } from './ssh'
 import { MANAGED_SERVER_METHODS } from './managed-server'
 import { SPEECH_METHODS } from './speech'
 import { NATIVE_CHAT_SLACK_METHODS } from './native-chat-slack'
+import { NATIVE_CHAT_LINK_PREVIEW_METHODS } from './native-chat-link-preview'
 import { NATIVE_CHAT_PROOF_MEDIA_METHODS } from './native-chat-proof-media'
 import { TERMINAL_MESSAGE_QUEUE_METHODS } from './terminal-message-queue'
 import { CLIENT_UI_METHODS } from './client-ui'
@@ -122,6 +123,7 @@ export const ALL_RPC_METHODS = [
   ...(ORCA_LAYOUT_OWNER_IS_MAIN ? [...LAYOUT_APPLY_METHODS, ...LAYOUT_VIEW_REPORT_METHODS] : []),
   ...NATIVE_CHAT_METHODS,
   ...NATIVE_CHAT_SLACK_METHODS,
+  ...NATIVE_CHAT_LINK_PREVIEW_METHODS,
   ...NATIVE_CHAT_PROOF_MEDIA_METHODS,
   ...TERMINAL_MESSAGE_QUEUE_METHODS,
   ...FILE_METHODS,

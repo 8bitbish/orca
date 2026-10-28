@@ -168,7 +168,7 @@ function result(
 }
 
 /** Re-encodes to at most `width` wide; PNG keeps transparency when it is small enough. */
-function reencode(
+export function reencodeSlackCacheImage(
   decoded: SlackCacheDecodedImage,
   mimeType: SlackCacheImageMime,
   width: number,
@@ -240,6 +240,7 @@ export async function readSlackCacheImage(
   const width = thumbnail
     ? (thumbnailWidth ?? NATIVE_CHAT_SLACK_IMAGE_THUMBNAIL_WIDTH)
     : FULL_REENCODE_WIDTH
-  const image = (decoded ? reencode(decoded, mimeType, width, limit) : null) ?? original
+  const image =
+    (decoded ? reencodeSlackCacheImage(decoded, mimeType, width, limit) : null) ?? original
   return image ? { ok: true, image } : { ok: false, reason: 'too-large-to-send' }
 }

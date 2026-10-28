@@ -1,4 +1,8 @@
 import type {
+  NativeChatLinkPreviewRequest,
+  NativeChatLinkPreviewResult
+} from '../../shared/native-chat-link-preview-contract'
+import type {
   AgentType,
   NativeChatMessage,
   NativeChatTurnLifecycle
@@ -84,6 +88,11 @@ export type NativeChatApi = {
   slackImage: (request: NativeChatSlackImageRequest) => Promise<NativeChatSlackImageResult | null>
   /** Names for unlabelled mention ids from the slack-mcp cache on the chat's host. */
   slackNames: (request: NativeChatSlackNamesRequest) => Promise<NativeChatSlackNamesResult>
+  /** A link card's page preview, fetched by the chat's host; null when nothing loaded,
+   *  or the host predates the call. */
+  linkPreview: (
+    request: NativeChatLinkPreviewRequest
+  ) => Promise<NativeChatLinkPreviewResult | null>
   /** Opens a Slack chip href (`slack-user:` etc.) in Slack; false when nothing opened. */
   openSlack: (href: string) => Promise<boolean>
   /** A proof card image from ~/.orca-personal/proof/ on this machine. */
