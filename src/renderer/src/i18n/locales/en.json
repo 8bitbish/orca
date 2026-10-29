@@ -14308,11 +14308,6 @@
           "e59a252eca": "Regenerate code",
           "d0b52871ce": "Your phones are paired.",
           "051978a785": "Your phone is paired.",
-          "channel": {
-            "group": "Release channel",
-            "preview": "Preview",
-            "stable": "Stable"
-          },
           "pairingQrError": "This pairing code couldn’t be rendered as a QR code. Copy it into Orca Mobile instead.",
           "noRelayCode": "No pairing code available",
           "noPairingCode": "No pairing code available",
@@ -14327,8 +14322,7 @@
           "directAddressHint": "Optional. Pick the Wi‑Fi or Tailscale address your phone should use when nearby — usually faster than Relay. Relay still works when you’re away.",
           "androidHelp": {
             "guide": "Install guide"
-          },
-          "downloadApp": "Download app"
+          }
         },
         "MobilePage": {
           "e17393c6a3": "Phone preview",
@@ -14359,12 +14353,8 @@
         "mobile": {
           "platform": {
             "copy": {
-              "preview": {
-                "tagline": "Newest features, updated daily."
-              },
-              "stable": {
-                "tagline": "The public release, updated weekly."
-              }
+              "downloadApk": "Download APK",
+              "openAppStore": "Open App Store"
             }
           }
         },
