@@ -11,6 +11,7 @@ import {
   nativeChatRowTurnKeys
 } from '../../../../shared/native-chat/transcript/native-chat-turn-grouping'
 import type { NativeChatMessage } from '../../../../shared/native-chat-types'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { NativeChatMessageList } from './NativeChatMessageList'
 import { installNativeChatMessageListTestViewport } from './native-chat-message-list-test-viewport'
 import { createNativeChatMessageListProjection } from './native-chat-message-list-projection'
@@ -165,7 +166,8 @@ describe('terminal-backed transcript with background-task notifications', () => 
         isWorking={false}
         expandSignal={false}
         settledTurns={nativeChatTranscriptSettledTurns(session.messages)}
-      />
+      />,
+      { wrapper: TooltipProvider }
     )
 
     for (const reply of [1, 2, 3, 4]) {
@@ -193,7 +195,8 @@ describe('terminal-backed transcript with background-task notifications', () => 
         workingStartedAt={startedAt}
         expandSignal={false}
         settledTurns={nativeChatTranscriptSettledTurns(upToNotification)}
-      />
+      />,
+      { wrapper: TooltipProvider }
     )
 
     // The prompt before it keeps its settled duration; the running turn counts on its own bar.

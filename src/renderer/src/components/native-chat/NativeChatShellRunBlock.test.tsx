@@ -7,6 +7,7 @@ import type { NativeChatMessage } from '../../../../shared/native-chat-types'
 import type { Repo } from '../../../../shared/repo-types'
 import { useAppStore } from '@/store'
 import { makeWorktree } from '../../store/slices/store-test-helpers'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { MessageRow } from './NativeChatMessageRow'
 import { NativeChatShellRunConfirmDialog } from './NativeChatShellRunConfirmDialog'
 import {
@@ -67,7 +68,8 @@ function renderRow(row: NativeChatMessage, scope: NativeChatShellRunScope | null
       <NativeChatShellRunContext.Provider value={scope}>{node}</NativeChatShellRunContext.Provider>
     ) : (
       node
-    )
+    ),
+    { wrapper: TooltipProvider }
   )
 }
 
