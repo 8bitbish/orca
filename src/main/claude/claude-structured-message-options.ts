@@ -24,10 +24,11 @@ export async function applyClaudeMessageOptions(
   session: ClaudeSession,
   options: AgentSessionExecutionOptions,
   timeoutMs: number | undefined,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  logger: StructuredAgentSessionLogger = defaultLogger
 ): Promise<void> {
   throwIfSignalAborted(signal)
-  const model = options.model ?? (await defaultModelForMessage(session, timeoutMs, signal))
+  const model = options.model ?? (await defaultModelForMessage(session, timeoutMs, signal, logger))
   if (model && session.appliedInputOptions.get('model') !== model) {
     await waitForPromiseWithSignal(
       setClaudeStructuredOption(session, { key: 'model', value: model }, timeoutMs),
@@ -43,8 +44,11 @@ export async function applyClaudeMessageOptions(
       signal
     )
   } else if (!effort && session.options.has('effort')) {
-    // Omission restores configuration; without its value a live control cannot clear the override.
-    throw new AgentSessionOptionRejectedError('Claude did not report its configured effort')
+    // Unknown configured effort can't be restored; send on Claude's current effort rather than drop the message.
+    neverThrowingStructuredAgentSessionLogger(logger).warn(
+      'Claude did not report its configured effort; sending on its current effort',
+      { scope: 'claude-message-options' }
+    )
   }
 
   throwIfSignalAborted(signal)
@@ -61,7 +65,8 @@ export async function applyClaudeMessageOptions(
 async function defaultModelForMessage(
   session: ClaudeSession,
   timeoutMs: number | undefined,
-  signal?: AbortSignal
+  signal: AbortSignal | undefined,
+  logger: StructuredAgentSessionLogger
 ): Promise<string | undefined> {
   if (session.configuredDefaults?.model) {
     return session.configuredDefaults.model
@@ -77,7 +82,10 @@ async function defaultModelForMessage(
   const listed = listedModels(response ? { models: response } : null)
   const fallback = listed.find((model) => model.isDefault)?.id
   if (!fallback) {
-    throw new AgentSessionOptionRejectedError('Claude did not report its default model')
+    neverThrowingStructuredAgentSessionLogger(logger).warn(
+      'Claude did not report its default model; sending on its current model',
+      { scope: 'claude-message-options' }
+    )
   }
   return fallback
 }
@@ -104,7 +112,7 @@ export async function dispatchClaudeMessage(
           : input.executionOptions
       input.onInputPreparation?.()
       if (messageOptions !== undefined) {
-        await applyClaudeMessageOptions(session, messageOptions, timeoutMs, input.signal)
+        await applyClaudeMessageOptions(session, messageOptions, timeoutMs, input.signal, logger)
       }
       input.signal?.throwIfAborted()
       input.onExecutionSnapshot?.()

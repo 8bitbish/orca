@@ -36,7 +36,6 @@ import {
 } from './claude-agent-sdk-user-message-queue'
 import { AgentSessionPreDispatchError } from '../native-chat/agent-session-wire/structured-agent-session-operation-settlement'
 import { isAgentSessionOptionRejectedError } from '../native-chat/agent-session-wire/structured-agent-session-option-error'
-import { ClaudeControlRequestError } from './claude-stream-json-connection'
 
 const MAX_ACTIVE_DISPATCH_WAITERS = 64
 
@@ -194,12 +193,9 @@ export async function dispatchClaudeTurn(
         return {
           state: 'rejected',
           ...claudeDispatchRejection(
-            agentSessionFailureFact(
-              'providerRejected',
-              error.cause instanceof ClaudeControlRequestError
-                ? { detail: providerDiagnostic(error.message, 'person') }
-                : {}
-            )
+            agentSessionFailureFact('providerRejected', {
+              detail: providerDiagnostic(error.message, 'person')
+            })
           )
         }
       }

@@ -266,6 +266,28 @@ describe('Claude accepted message choices', () => {
     expect(claude.connections[0]!.sent).toHaveLength(0)
   })
 
+  it('sends a message without an effort choice when Claude does not report its configured effort', async () => {
+    const claude = fakeClaude({ initModels: MODELS, routes: { list_models: () => MODELS } })
+    const adapter = adapterFor(claude)
+    await adapter.acquire({
+      identity: identityFor(),
+      fence: 7,
+      spawnToken: 'spawn-9',
+      options: { model: 'sonnet', effort: 'high' },
+      events: recordingJournalSink()
+    })
+    await expect(
+      adapter.dispatch({
+        sessionId: 'session-1',
+        clientMessageId: 'no-effort',
+        body: USER_MESSAGE,
+        executionOptions: { model: 'opus' },
+        fence: 7
+      })
+    ).resolves.toMatchObject({ state: 'admitted' })
+    expect(claude.connections[0]!.sent).toHaveLength(1)
+  })
+
   it('restores A after an applied unanswered B and an uncorrelated old init', async () => {
     let actual: string | undefined = 'sonnet'
     const claude = fakeClaude({ initModels: MODELS, routes: { list_models: () => MODELS } })
