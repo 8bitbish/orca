@@ -16,6 +16,7 @@ import type { NativeChatOptionPickerRequest } from './native-chat-composer-types
 export type NativeChatWorkingSend = { kind: 'queue' | 'send'; disabled: boolean }
 
 export type NativeChatComposerActionsProps = {
+  editSession?: { cancel: () => void }
   attachDisabled: boolean
   dictationDisabled: boolean
   sendDisabled: boolean
@@ -49,6 +50,7 @@ export type NativeChatComposerActionsProps = {
 }
 
 export function NativeChatComposerActions({
+  editSession,
   attachDisabled,
   dictationDisabled,
   sendDisabled,
@@ -93,7 +95,17 @@ export function NativeChatComposerActions({
     ? translate('components.native-chat.composer.stopDictation', 'Stop dictation')
     : translate('components.native-chat.composer.startDictation', 'Start dictation')
   const sendReason = stops ? null : (sendBlockedReason ?? null)
-  const sendButton = (
+  const sendButton = editSession ? (
+    <Button
+      type="button"
+      size="sm"
+      disabled={sendDisabled}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={handleCriticalAction}
+    >
+      {translate('components.native-chat.queuedMessages.save', 'Save')}
+    </Button>
+  ) : (
     <Button
       type="button"
       data-native-chat-critical-action={stops ? 'stop' : undefined}
@@ -233,6 +245,11 @@ export function NativeChatComposerActions({
           </Tooltip>
         ) : null}
         <DraftNotSavedIcon shown={draftNotSaved === true} />
+        {editSession ? (
+          <Button type="button" variant="ghost" size="sm" onClick={editSession.cancel}>
+            {translate('common.cancel', 'Cancel')}
+          </Button>
+        ) : null}
         {sendReason ? (
           <Tooltip>
             <TooltipTrigger asChild>

@@ -1,6 +1,6 @@
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 import type { TerminalQueuedMessage } from '../../../src/shared/terminal-message-queue-contract'
-import { normalizeNativeChatUserText } from '../../../src/shared/native-chat-image-transcript-markers'
+import { normalizeNativeChatUserText } from '../../../src/shared/native-chat/transcript/native-chat-image-transcript-markers'
 import { normalizedUserText } from './native-chat/composer/mobile-native-chat-draft-reconcile'
 
 /** A queued message the host can no longer send, kept here so the user can restore it. */

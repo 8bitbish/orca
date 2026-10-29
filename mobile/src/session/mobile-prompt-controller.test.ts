@@ -286,3 +286,7 @@ describe('prompt cards through the production controller, send contract and view
     }
   )
 })
+
+vi.mock('./MobileQueuedMessageComposer', () => ({
+  MobileQueuedMessageComposer: 'QueuedMessageComposer'
+}))

@@ -10,12 +10,11 @@ import { useMobileNativeChatSessionOptionController } from './native-chat/input/
 import { useMobileNativeChatSessionLane } from './use-mobile-native-chat-session-lane'
 import { useMobileStructuredNativeChatSendBridge } from './use-mobile-structured-native-chat-send-bridge'
 import { useMobileNativeChatTerminalLane } from './use-mobile-native-chat-terminal-lane'
-import { useNativeChatAcceptedAction } from './use-native-chat-action-outcomes'
 import { useMobileNativeChatTerminalTurn } from './use-mobile-native-chat-terminal-turn'
 import type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
 import { useMobileBridgeChatPromptWrites } from './use-mobile-bridge-chat-prompt-writes'
 import { useMobileNativeChatActiveResolution } from './use-mobile-native-chat-active-resolution'
-import { useMobileNativeChatPromptCards } from './native-chat/input/use-mobile-native-chat-prompt-cards'
+import { useMobileNativeChatPromptController } from './use-mobile-native-chat-prompt-controller'
 import { mobileNativeChatScopeKey } from './native-chat/mobile-native-chat-scope-key'
 
 export type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
@@ -37,6 +36,7 @@ export function useMobileNativeChatController(args: {
   agentSessionHostSupport?: StructuredAgentSessionHostSupport | null
   onSendError: Parameters<typeof useMobileNativeChatSessionLane>[0]['onSendError']
   // Any accepted chat write clears the held failure banner, including answers and permission replies.
+  onQueuedEditNotice?: (message: string) => void
   onSendResolved: () => void
 }): MobileNativeChatController {
   const {
@@ -74,16 +74,14 @@ export function useMobileNativeChatController(args: {
   // Fixed hook order mounts the lane before drafts; defer Edit’s append through a ref and delete nothing until copying succeeds.
   const appendComposerTextRef = useRef<(text: string) => boolean>(() => false)
   const nativeChatLane = useMobileNativeChatSessionLane({
-    client,
-    hostId,
+    ...args,
+    composerScopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId),
     structured: activeChatStructured,
     resolution: activeChatResolution,
     sourceIdentity,
     enabled: showNativeChat,
-    connState,
     hostSupport: agentSessionHostSupport,
     appendComposerTextRef,
-    onSendError,
     onActionResolved: onSendResolved
   })
   const { structuredSession: structuredNativeChat, session: nativeChatSession } = nativeChatLane
@@ -115,19 +113,14 @@ export function useMobileNativeChatController(args: {
     transcriptSettled: nativeChatSession.status === 'ready'
   })
 
-  const promptScopeKey = mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId)
-  // Only a terminal-backed chat has a bridge prompt lane and a host queue.
-  const { bridgeAsk, terminalQueue, structuredAnswer } = useMobileNativeChatTerminalLane({
+  // Only a terminal-backed chat has a host queue.
+  const { terminalQueue } = useMobileNativeChatTerminalLane({
     client,
     hostSupport: agentSessionHostSupport,
     resolution: activeChatStructured ? null : activeChatResolution,
-    structured: activeChatStructured ? structuredNativeChat : null,
     terminal: args.activeHandle ?? null,
-    scopeKey: promptScopeKey,
-    status: nativeChatStatus,
+    scopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId),
     session: nativeChatSession,
-    sessionId: activeChatSessionId,
-    showNativeChat,
     captureSendOrigin,
     acceptSend,
     clearDraftForSend,
@@ -140,12 +133,7 @@ export function useMobileNativeChatController(args: {
     ? client != null && activeChatSessionId != null && connState === 'connected'
     : nativeChatInputLeaseReady && connState === 'connected' && activeChatAgentConfirmed
 
-  const {
-    answerAsk: bridgeAnswerAsk,
-    cancelAsk: handleNativeChatCancelAsk,
-    respondPermission: legacyHandleNativeChatRespondPermission,
-    stop: handleNativeChatStop
-  } = useMobileBridgeChatPromptWrites({
+  const { stop: handleNativeChatStop, ...bridgePromptWrites } = useMobileBridgeChatPromptWrites({
     client,
     enabled: inputSendable && !activeChatStructured,
     handleRef: activeHandleRef,
@@ -157,12 +145,25 @@ export function useMobileNativeChatController(args: {
     hostStop: terminalQueue.queue.active ? terminalQueue.queue.stop : null
   })
 
+  const { hasPromptCard, ...prompts } = useMobileNativeChatPromptController({
+    enabled: activeChatStructured || activeChatResolution != null,
+    structured: activeChatStructured ? structuredNativeChat : null,
+    status: nativeChatStatus,
+    session: nativeChatSession,
+    scopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId),
+    sessionId: activeChatSessionId,
+    streamIdentity,
+    visible: showNativeChat,
+    terminal: bridgePromptWrites,
+    onSendResolved
+  })
+
   const terminalTurn = useMobileNativeChatTerminalTurn({
     status: nativeChatStatus,
     resolution: activeChatResolution,
     session: activeChatStructured ? null : nativeChatSession,
     latestPendingId: chatPending.at(-1)?.id ?? null,
-    hasPromptCard: (bridgeAsk.permission ?? bridgeAsk.ask) != null,
+    hasPromptCard,
     scopeKey: streamIdentity,
     stop: handleNativeChatStop
   })
@@ -237,22 +238,10 @@ export function useMobileNativeChatController(args: {
     recordSessionOptionCommandRef.current = recordNativeChatSessionOptionCommand
     appendComposerTextRef.current = appendComposerText
   }, [appendComposerText, recordNativeChatSessionOptionCommand])
-  const answerAsk = useNativeChatAcceptedAction(structuredAnswer ?? bridgeAnswerAsk, onSendResolved)
-  const cancelAsk = useNativeChatAcceptedAction(handleNativeChatCancelAsk, onSendResolved)
-  const promptCards = useMobileNativeChatPromptCards({
-    terminal: {
-      permission: bridgeAsk.permission,
-      waitStartedAt: bridgeAsk.waitStartedAt,
-      scopeKey: promptScopeKey,
-      sessionKey: streamIdentity,
-      observing: showNativeChat && !activeChatStructured && nativeChatStatus != null,
-      respondPermission: legacyHandleNativeChatRespondPermission
-    },
-    structured: activeChatStructured ? structuredNativeChat : null,
-    onSendResolved
-  })
 
   return {
+    reportQueuedEditError: onSendError,
+    chatComposerScopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId),
     sessionViewReady,
     isTabChatView,
     setTabView,
@@ -260,6 +249,7 @@ export function useMobileNativeChatController(args: {
     showNativeChat,
     showNativeChatRef,
     nativeChatAgent: activeChatResolution?.agent ?? null,
+    nativeChatSessionLive: activeChatResolution?.sessionLive === true,
     chatDraftKey,
     setChatComposerText,
     getChatComposerEditGeneration,
@@ -287,14 +277,7 @@ export function useMobileNativeChatController(args: {
     nativeChatCommandRefusalCauses: structuredNativeChat.commandRefusalCauses,
     nativeChatCanStop: activeChatStructured ? structuredNativeChat.canStop : nativeChatAgentWorking,
     nativeChatStreamingText: terminalTurn.streamingText,
-    ...promptCards,
-    nativeChatAsk: bridgeAsk.showAsk || bridgeAsk.collapsedAsk ? bridgeAsk.ask : null,
-    nativeChatAskKey: bridgeAsk.askKey,
-    dismissNativeChatAsk: bridgeAsk.dismissAsk,
-    collapseNativeChatAsk: bridgeAsk.collapseAsk,
-    nativeChatCollapsedPrompt: bridgeAsk.collapsedAsk ?? promptCards.nativeChatCollapsedPrompt,
-    handleNativeChatAnswerAsk: answerAsk,
-    handleNativeChatCancelAsk: cancelAsk,
+    ...prompts,
     handleNativeChatStop: activeChatStructured ? structuredNativeChat.cancel : terminalTurn.stop,
     nativeChatQueued: structuredNativeChat.queued,
     nativeChatBackgroundTasks: activeChatStructured ? structuredNativeChat.backgroundTasks : null,

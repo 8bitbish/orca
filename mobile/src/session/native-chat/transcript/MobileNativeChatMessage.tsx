@@ -12,7 +12,7 @@ import {
 import {
   isRenderableSubagentGroup,
   withoutSubagentGroupTwins
-} from '../../../../../src/shared/native-chat-subagent-summary'
+} from '../../../../../src/shared/native-chat/transcript/native-chat-subagent-summary'
 import type {
   NativeChatBlock,
   NativeChatMessage,
@@ -30,7 +30,7 @@ import { MobileNativeChatThoughtMarkerLine } from '../../MobileNativeChatThought
 import { isNativeChatThoughtMarker } from '../../../../../src/shared/native-chat-thought-marker'
 import { mobileNativeChatRowId } from '../../mobile-native-chat-reading-place'
 import { nativeChatWorkRunEntries } from '../../../../../src/shared/native-chat/native-chat-work-run'
-import { nativeChatReasoningDisclosureKey } from '../../../../../src/shared/native-chat-reasoning-row'
+import { nativeChatReasoningDisclosureKey } from '../../../../../src/shared/native-chat/transcript/native-chat-reasoning-row'
 import { MobileNativeChatTurnStatus } from './MobileNativeChatTurnStatus'
 import { MobileNativeChatNoticeRow } from './MobileNativeChatNoticeRow'
 import { MobileNativeChatRowOverlaysContext } from './mobile-native-chat-row-overlays'

@@ -11,7 +11,7 @@ import {
   parseJsonObject,
   timestampMs
 } from '../ai-vault/session-scanner-values'
-import { imageSourcePathFromText } from '../../shared/native-chat-image-transcript-markers'
+import { imageSourcePathFromText } from '../../shared/native-chat/transcript/native-chat-image-transcript-markers'
 import { isHarnessTurnOpenerText } from '../../shared/harness-injected-user-turns'
 import { claudeContentBlocks, claudeThinkingOnlyBlocks } from './transcript-record-blocks'
 import { unwrapClaudePastedContentBlock } from '../../shared/claude-pasted-content'

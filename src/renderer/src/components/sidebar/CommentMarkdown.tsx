@@ -3,11 +3,14 @@ import {
   CommentMarkdownMermaidContext,
   CommentMarkdownMermaidSourceContext
 } from './comment-markdown-mermaid-policy'
-import Markdown, { defaultUrlTransform, type Components } from 'react-markdown'
+import {
+  defaultUrlTransform,
+  type Components,
+  type Options as MarkdownOptions
+} from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import { remarkChatMath } from './chat-markdown-math'
-import { useChatMathRendering } from './chat-markdown-math-rendering'
 import { copyChatMathSelection } from './chat-markdown-math-selection'
 import remarkCjkFriendly from 'remark-cjk-friendly/parseOnly'
 import rehypeRaw from 'rehype-raw'
@@ -27,14 +30,13 @@ import {
   type FileLinkExists
 } from './comment-markdown-native-chat-file-links'
 import { CommentMarkdownBlockLineContext } from './comment-markdown-code-renderers'
-import { rehypeWordFade } from './comment-markdown-word-fade'
 import { remarkUnknownHtmlAsText } from './comment-markdown-unknown-html-as-text'
 import { CommentMarkdownWords } from './CommentMarkdownWords'
 import {
-  splitMarkdownTopLevelBlocks,
-  type MarkdownBlock,
-  type MarkdownBlockSplit
-} from './markdown-top-level-blocks'
+  MemoizedMarkdown,
+  useMarkdownBlocks,
+  markdownBlockContent
+} from './comment-markdown-block-pipeline'
 import {
   GITHUB_CALLOUT_SANITIZE_ATTRIBUTE,
   remarkGitHubCallouts
@@ -44,9 +46,9 @@ import { NATIVE_CHAT_SLACK_LINK_PROTOCOLS } from '../../../../shared/native-chat
 
 export type { CommentMarkdownLinkClickHandler } from './comment-markdown-element-renderers'
 
-type MarkdownPlugins = NonNullable<React.ComponentProps<typeof Markdown>['rehypePlugins']>
-type RemarkPlugins = NonNullable<React.ComponentProps<typeof Markdown>['remarkPlugins']>
-type UrlTransform = NonNullable<React.ComponentProps<typeof Markdown>['urlTransform']>
+type MarkdownPlugins = NonNullable<MarkdownOptions['rehypePlugins']>
+type RemarkPlugins = NonNullable<MarkdownOptions['remarkPlugins']>
+type UrlTransform = NonNullable<MarkdownOptions['urlTransform']>
 
 type GitHubRepoReference = {
   owner: string
@@ -249,6 +251,8 @@ const rehypePlugins: MarkdownPlugins = [rehypeRaw, [rehypeSanitize, commentMarkd
 /** Keep extensions stable per surface; new objects rebuild components and remount their contents. */
 export type CommentMarkdownExtension = {
   remarkPlugins: RemarkPlugins
+  /** Extra flow syntax requires one of these markers; omitted means unknown grammar. */
+  extraFlowSyntaxMarkers?: readonly string[]
   sanitizeAttributes: Record<string, readonly string[]>
   components: Components
 }
@@ -287,49 +291,6 @@ type CommentMarkdownProps = React.ComponentPropsWithoutRef<'div'> & {
   extension?: CommentMarkdownExtension
   /** Show raw HTML that sanitize would strip as literal text instead of dropping its tags. */
   unknownHtmlAsText?: boolean
-}
-
-/** One render of the pipeline; memoized so an unchanged block is not parsed again. */
-const MemoizedMarkdown = React.memo(function DeferredMarkdown({
-  math,
-  fadeWords,
-  ...props
-}: React.ComponentProps<typeof Markdown> & { math: boolean; fadeWords: boolean }) {
-  const renderMath = useChatMathRendering(math)
-  const plugins = React.useMemo(
-    () => [
-      ...(props.rehypePlugins ?? []),
-      ...(math ? [renderMath] : []),
-      ...(fadeWords ? [rehypeWordFade] : [])
-    ],
-    [props.rehypePlugins, math, renderMath, fadeWords]
-  )
-  return <Markdown {...props} rehypePlugins={plugins} />
-})
-
-/** The content as the blocks to render. Cut into blocks from the first time it is growing, and
- *  from then on, so the stream ending does not redraw what is already there. */
-function useMarkdownBlocks(
-  content: string,
-  growing: boolean,
-  math: boolean
-): readonly MarkdownBlock[] {
-  const [previous, setPrevious] = React.useState<MarkdownBlockSplit | null>(null)
-  if (!growing && previous === null) {
-    return [{ start: 0, line: 1, text: content }]
-  }
-  if (previous?.source === content) {
-    return previous.blocks
-  }
-  const next = splitMarkdownTopLevelBlocks(content, previous, math)
-  setPrevious(next)
-  return next.blocks
-}
-
-function markdownBlockContent(block: MarkdownBlock): string {
-  return block.literalMath && block.end !== undefined
-    ? block.text.slice(0, block.end - block.start)
-    : block.text
 }
 
 // Why forwardRef + rest props: Radix's HoverCardTrigger asChild merges a ref
@@ -398,7 +359,7 @@ const CommentMarkdown = React.memo(
       const withExtension = extension ? [...withMath, ...extension.remarkPlugins] : withMath
       return githubRepo ? [...withExtension, remarkGitHubReferences(githubRepo)] : withExtension
     }, [extension, fileLinkExists, githubRepo, math, unknownHtmlAsText])
-    const blocks = useMarkdownBlocks(content, growing, math)
+    const blocks = useMarkdownBlocks(content, growing, math, activeRemarkPlugins, extension)
     const [hadWordFade, setHadWordFade] = React.useState(fadeWords)
     if (fadeWords && !hadWordFade) {
       setHadWordFade(true)
@@ -427,6 +388,7 @@ const CommentMarkdown = React.memo(
             {blocks.map((block, index) => (
               <CommentMarkdownBlockLineContext.Provider key={block.start} value={block.line}>
                 <MemoizedMarkdown
+                  block={block.tree ? block : undefined}
                   remarkPlugins={activeRemarkPlugins}
                   rehypePlugins={activeRehypePlugins}
                   math={math}

@@ -6,17 +6,22 @@ export type PairConfirmRouteState =
   | { kind: 'ready'; offer: PairingOffer; errorMessage: '' }
   | { kind: 'error'; offer: null; errorMessage: string }
 
-export function resolvePairConfirmRouteState(code: string | undefined): PairConfirmRouteState {
+export function resolvePairConfirmRouteState(
+  code: string | string[] | undefined
+): PairConfirmRouteState {
   if (!code) {
     return { kind: 'error', offer: null, errorMessage: 'Missing pairing code' }
   }
 
-  const offer = parsePairingCode(code)
+  const offer = typeof code === 'string' ? parsePairingCode(code) : null
   if (!offer) {
     return {
       kind: 'error',
       offer: null,
-      errorMessage: pairingRefusalMessage(code, 'Not a valid pairing code')
+      errorMessage:
+        typeof code === 'string'
+          ? pairingRefusalMessage(code, 'Not a valid pairing code')
+          : 'Not a valid pairing code'
     }
   }
 

@@ -174,24 +174,6 @@ jobs:
           path: ${{ steps.module-cache.outputs.path }}
           key: ${{ steps.module-cache.outputs.key }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Seal unit module cache
-        id: module-cache-seal
-        if: >-
-          success() && steps.module-cache.outputs.key != '' &&
-          steps.module-cache-restore.outputs.cache-hit != 'true' &&
-          (github.event_name == 'pull_request' ||
-          github.ref == 'refs/heads/main' && github.event_name != 'pull_request' ||
-          inputs.module_cache_seed && github.event_name == 'workflow_dispatch')
-        run: node config/scripts/ci-unit-module-cache.mjs seal
-
-      - name: Save unit module cache
-        if: steps.module-cache-seal.outputs.ready == 'true'
-        continue-on-error: true
-        uses: actions/cache/save@v5
-        with:
-          path: ${{ steps.module-cache.outputs.path }}
-          key: ${{ steps.module-cache.outputs.key }}
-
       - name: Upload unit shard assignment
         if: always()
         # Diagnostic upload outages must not change the test verdict.

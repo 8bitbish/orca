@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { translate } from '@/i18n/i18n'
+import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
 import type { AgentType, NativeChatMessage } from '../../../../shared/native-chat-types'
 import {
   nativeChatPendingMessageId,
@@ -35,6 +36,7 @@ export function useNativeChatPendingDelivery(args: {
   /** A send into a working agent queues behind the in-flight reply instead of being answered by it. */
   liveWorking?: boolean
 }) {
+  const languageRevision = useUiLanguageRevision()
   const { paneKey, agent, liveWorking = false } = args
   const { messages } = args.session
   const sessionId = args.session.sessionId ?? null
@@ -188,6 +190,7 @@ export function useNativeChatPendingDelivery(args: {
       })
     }
     return result
-  }, [pending, cancel])
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- translate() reads the UI language implicitly.
+  }, [pending, cancel, languageRevision])
   return { pending, record, appendDeliveredEcho, cancel, reject, holdUnconfirmed, clear, notices }
 }

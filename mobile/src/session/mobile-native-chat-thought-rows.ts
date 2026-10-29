@@ -7,7 +7,7 @@ import { isNativeChatThoughtMarker } from '../../../src/shared/native-chat-thoug
 import {
   nativeChatReasoningHeadline,
   nativeChatReasoningHeadlineText
-} from '../../../src/shared/native-chat-reasoning-row'
+} from '../../../src/shared/native-chat/transcript/native-chat-reasoning-row'
 import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
 
 /** The end a transcript-read duration implies, for a reasoning row the journal did not time. */

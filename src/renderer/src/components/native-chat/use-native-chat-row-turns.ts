@@ -8,7 +8,7 @@ import type { AgentType, NativeChatMessage } from '../../../../shared/native-cha
 import {
   nativeChatHarnessTurns,
   nativeChatRowTurnKeys
-} from '../../../../shared/native-chat-turn-grouping'
+} from '../../../../shared/native-chat/transcript/native-chat-turn-grouping'
 import { nativeChatSessionThoughtSeconds } from '../../../../shared/native-chat-thought-duration'
 import { compareMessages } from './native-chat-session-assembler'
 import {

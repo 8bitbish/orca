@@ -76,7 +76,13 @@ describe('useMobileNativeChatTerminalQueue', () => {
     result = useMobileNativeChatTerminalQueue({
       client,
       supported: true,
-      resolution: { agent: 'claude', sessionId: 's1', transcriptPath: null, agentConfirmed: true },
+      resolution: {
+        agent: 'claude',
+        sessionId: 's1',
+        transcriptPath: null,
+        agentConfirmed: true,
+        sessionLive: true
+      },
       terminal: 'term-1',
       scopeKey: 'host\0wt\0tab',
       messages,

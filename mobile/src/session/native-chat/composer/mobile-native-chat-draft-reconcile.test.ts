@@ -7,7 +7,7 @@ import {
   type PendingImagePreviewEcho,
   type UnconfirmedSend
 } from './mobile-native-chat-draft-reconcile'
-import { normalizeNativeChatUserText as normalizeReconcileText } from '../../../../../src/shared/native-chat-image-transcript-markers'
+import { normalizeNativeChatUserText as normalizeReconcileText } from '../../../../../src/shared/native-chat/transcript/native-chat-image-transcript-markers'
 
 function userText(id: string, text: string): NativeChatMessage {
   return {

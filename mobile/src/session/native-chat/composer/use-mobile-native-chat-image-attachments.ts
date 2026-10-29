@@ -1,16 +1,18 @@
-import { useCallback, useRef, useState } from 'react'
+import {
+  readMobileNativeChatDraftInputs,
+  useMobileNativeChatDraftInputs
+} from './mobile-native-chat-draft-inputs'
+import { useCallback, useMemo } from 'react'
 import { buildAgentTuiClearInputForText } from '../../../../../src/shared/agent-tui-input-clear'
 import type { RpcClient } from '../../../transport/rpc-client'
 import type { ConnectionState } from '../../../transport/types'
 import type { MobileImageSource } from '../../../platform/media-picker-contract'
+import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
 import {
-  appendPendingNativeChatImages,
-  type PendingNativeChatImage
-} from './mobile-native-chat-image-attachment'
-import {
-  NO_NATIVE_CHAT_IMAGE_ATTACHMENTS,
-  withoutScopeAttachments,
-  type MobileNativeChatImagesByScope
+  dropMobileNativeChatDraftImages,
+  addMobileNativeChatDraftImages,
+  routeMobileNativeChatImageSendToQueue,
+  type MobileNativeChatImageQueueSend
 } from './mobile-native-chat-image-scope-state'
 import {
   MOBILE_NATIVE_CHAT_IMAGE_SETTLE_MS,
@@ -80,10 +82,7 @@ type Args = {
   readonly onAttachSuccess?: () => void
   readonly onError?: () => void
   /** Offers the send to the host queue before any paste (terminal chats on a queue host). */
-  readonly queueSend?: (
-    text: string,
-    images: readonly PendingNativeChatImage[]
-  ) => Promise<'queued' | 'direct' | 'rejected'>
+  readonly queueSend?: MobileNativeChatImageQueueSend
   // Injected so the settle between image paste and submit is instant in tests.
   readonly sleep?: (ms: number) => Promise<void>
 }
@@ -127,20 +126,9 @@ export function useMobileNativeChatImageAttachments({
   queueSend,
   sleep = defaultSleep
 }: Args): MobileNativeChatImageAttachments {
-  const [attachmentsByScope, setAttachmentsByScope] = useState<MobileNativeChatImagesByScope>({})
-  const idCounter = useRef(0)
-  const attachments =
-    (scopeKey ? attachmentsByScope[scopeKey] : undefined) ?? NO_NATIVE_CHAT_IMAGE_ATTACHMENTS
-
-  const addUploadedImages = useCallback(
-    (scope: string, uploadedImages: Omit<PendingNativeChatImage, 'id'>[]) => {
-      setAttachmentsByScope((prev) => ({
-        ...prev,
-        [scope]: appendPendingNativeChatImages(prev[scope] ?? [], uploadedImages, idCounter)
-      }))
-    },
-    []
-  )
+  const inputs = useMobileNativeChatDraftInputs(scopeKey)
+  const images = inputs.images
+  const attachments = useMemo(() => [...images], [images])
 
   const { attachImage, isAttaching } = useMobileNativeChatImageUpload({
     client,
@@ -150,7 +138,7 @@ export function useMobileNativeChatImageAttachments({
     scopeKey,
     structuredNativeChat,
     showToast,
-    onImagesUploaded: addUploadedImages,
+    onImagesUploaded: addMobileNativeChatDraftImages,
     onAttachSuccess,
     onError
   })
@@ -161,27 +149,15 @@ export function useMobileNativeChatImageAttachments({
       if (!scope) {
         return
       }
-      setAttachmentsByScope((prev) => withoutScopeAttachments(prev, scope, new Set([id])))
+      dropMobileNativeChatDraftImages(scope, [{ id }])
     },
     [scopeKey]
   )
 
   const restoreImages = useCallback(
-    (images: readonly Omit<PendingNativeChatImage, 'id'>[]) => {
-      if (scopeKey && images.length > 0) {
-        addUploadedImages(scopeKey, [...images])
-      }
-    },
-    [addUploadedImages, scopeKey]
-  )
-
-  // Drops only what rode along: a chip attached while the send was in flight waits for its own.
-  const dropSentAttachments = useCallback(
-    (scope: string, sent: readonly PendingNativeChatImage[]) => {
-      const sentIds = new Set(sent.map((attachment) => attachment.id))
-      setAttachmentsByScope((prev) => withoutScopeAttachments(prev, scope, sentIds))
-    },
-    []
+    (images: readonly Omit<PendingNativeChatImage, 'id'>[]) =>
+      addMobileNativeChatDraftImages(scopeKey, images),
+    [scopeKey]
   )
 
   const sendNativeChat = useCallback(
@@ -200,8 +176,10 @@ export function useMobileNativeChatImageAttachments({
       const sentAt = Date.now()
       try {
         const scope = scopeKey
-        const pendingImages =
-          (scope ? attachmentsByScope[scope] : undefined) ?? NO_NATIVE_CHAT_IMAGE_ATTACHMENTS
+        if ((readMobileNativeChatDraftInputs(scope).pending ?? 0) > 0) {
+          return false
+        }
+        const pendingImages = attachments
         // Hold Send until all selected files finish uploading.
         const storedFiles = structuredNativeChat
           ? files.flatMap((file) =>
@@ -221,7 +199,7 @@ export function useMobileNativeChatImageAttachments({
             [...pendingImages, ...storedFiles]
           )
           if (outcome !== 'rejected') {
-            dropSentAttachments(scope, pendingImages)
+            dropMobileNativeChatDraftImages(scope, pendingImages)
             onFilesSent?.(storedFiles.map((file) => file.id))
           }
           return outcome !== 'rejected'
@@ -259,14 +237,13 @@ export function useMobileNativeChatImageAttachments({
         }
         try {
           // Why first: a held message must not also be pasted into the running turn.
-          const routed = queueSend ? await queueSend(text, pendingImages) : 'direct'
-          if (routed !== 'direct') {
-            if (routed === 'queued') {
-              dropSentAttachments(scope, pendingImages)
-            } else {
-              onError?.()
-            }
-            return routed === 'queued'
+          const queued = await routeMobileNativeChatImageSendToQueue(
+            queueSend,
+            { scope, text, images: pendingImages },
+            onError
+          )
+          if (queued !== null) {
+            return queued
           }
           const seededLaunchDraft = readSeededLaunchDraft()
           const pasted = await pasteMobileNativeChatImagePaths({
@@ -312,7 +289,7 @@ export function useMobileNativeChatImageAttachments({
           }
           if (outcome !== 'rejected') {
             // Drop only chips in this send, including unknown delivery to avoid duplicate retries; preserve newly attached chips.
-            dropSentAttachments(scope, pendingImages)
+            dropMobileNativeChatDraftImages(scope, pendingImages)
           }
           return outcome !== 'rejected'
         } catch {
@@ -330,9 +307,8 @@ export function useMobileNativeChatImageAttachments({
     },
     [
       activeHandleRef,
-      attachmentsByScope,
+      attachments,
       baseSend,
-      dropSentAttachments,
       client,
       connState,
       agent,
@@ -349,5 +325,12 @@ export function useMobileNativeChatImageAttachments({
     ]
   )
 
-  return { attachments, isAttaching, attachImage, removeAttachment, sendNativeChat, restoreImages }
+  return {
+    attachments,
+    isAttaching: isAttaching || (inputs.pending ?? 0) > 0,
+    attachImage,
+    removeAttachment,
+    sendNativeChat,
+    restoreImages
+  }
 }

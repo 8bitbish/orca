@@ -9,7 +9,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import {
   nativeChatHarnessTurns,
   nativeChatRowTurnKeys
-} from '../../../../shared/native-chat-turn-grouping'
+} from '../../../../shared/native-chat/transcript/native-chat-turn-grouping'
 import type { NativeChatMessage } from '../../../../shared/native-chat-types'
 import { NativeChatMessageList } from './NativeChatMessageList'
 import { installNativeChatMessageListTestViewport } from './native-chat-message-list-test-viewport'

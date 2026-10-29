@@ -127,8 +127,10 @@ export function useNativeChatComposerHandle(
   useImperativeHandle(
     ref,
     () => ({
+      isComposing,
       focus,
       insertTypedText,
+      insertPastedText: insertPastedTextOrFile,
       acceptsText,
       appendText,
       handlePasteEvent,
@@ -138,8 +140,10 @@ export function useNativeChatComposerHandle(
       restoreDraft
     }),
     [
+      isComposing,
       focus,
       insertTypedText,
+      insertPastedTextOrFile,
       acceptsText,
       appendText,
       handlePasteEvent,
