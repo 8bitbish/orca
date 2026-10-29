@@ -75,7 +75,6 @@ describe('HeroFlow height', () => {
         platform="ios"
         onPlatformChange={vi.fn()}
         installQrUrl={null}
-        installCopy={{ ctaLabel: 'Open TestFlight', url: 'https://example.com' }}
         iosChannel="preview"
         onIosChannelChange={vi.fn()}
         onOpenAndroidInstallGuide={vi.fn()}
@@ -123,7 +122,6 @@ describe('HeroFlow height', () => {
         platform="ios"
         onPlatformChange={vi.fn()}
         installQrUrl={null}
-        installCopy={{ ctaLabel: 'Open TestFlight', url: 'https://example.com' }}
         iosChannel="preview"
         onIosChannelChange={vi.fn()}
         onOpenAndroidInstallGuide={vi.fn()}
@@ -166,7 +164,6 @@ describe('HeroFlow height', () => {
     const onOpenAndroidInstallGuide = vi.fn()
     renderFlow(0, {
       platform: 'android',
-      installCopy: { ctaLabel: 'Download APK', url: 'https://example.com/app-release.apk' },
       onOpenAndroidInstallGuide
     })
 
