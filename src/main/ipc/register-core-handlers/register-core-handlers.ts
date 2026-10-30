@@ -3,6 +3,7 @@ import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../shared/layout-owner-switch'
 import { registerAppHandlers } from '../app'
 import { registerWslMoveWiring } from '../wsl-move-driver-wiring'
 import { registerWslDriveProjectHandlers } from '../wsl-drive-project-handlers'
+import { installProjectRuntimeGitRouter } from '../../project-runtime-git-router'
 import { registerCliHandlers } from '../cli'
 import { registerPreflightHandlers } from '../preflight'
 import type { Store } from '../../persistence/loading-store/store'
@@ -35,9 +36,7 @@ import { registerEphemeralVmHandlers } from '../ephemeral-vm'
 import { registerAiVaultHandlers } from '../ai-vault'
 import { registerAiVaultSearchHandlers } from '../ai-vault-search'
 import { registerNativeChatHandlers } from '../native-chat'
-import { registerNativeChatSlackHandlers } from '../native-chat-slack'
-import { registerNativeChatLinkPreviewHandlers } from '../native-chat-link-preview'
-import { registerNativeChatProofHandlers } from '../native-chat-proof'
+import { registerNativeChatCardHandlers } from '../native-chat-card-handlers'
 import { registerNotificationHandlers } from '../notifications'
 import { registerNotebookHandlers } from '../notebook'
 import { registerOnboardingHandlers } from '../onboarding'
@@ -55,6 +54,7 @@ import { registerSkillsHandlers } from '../skills'
 import { registerSkillDeleteIpcHandlers } from '../skill-delete/handlers'
 import { registerWorkspaceSpaceHandlers } from '../workspace-space'
 import { registerWorkspacePortHandlers } from '../workspace-ports'
+import { registerLinkPreviewHandlers } from '../link-preview'
 import { registerLocalhostWorktreeLabelHandlers } from '../localhost-worktree-labels'
 import { registerAutomationHandlers } from '../automations'
 import { registerKeybindingHandlers } from '../keybindings'
@@ -253,6 +253,7 @@ export function registerCoreHandlers(
   registerEmulatorVideoStreamHandlers()
   registerWorkspaceSpaceHandlers(store)
   registerWorkspacePortHandlers(store)
+  registerLinkPreviewHandlers()
   registerLocalhostWorktreeLabelHandlers(store)
   registerFilesystemHandlers(store, commitMessageAgentEnv)
   registerFilesystemWatcherHandlers()
@@ -264,7 +265,8 @@ export function registerCoreHandlers(
     invalidateTransport: invalidateRuntimeEnvironmentTransport
   })
   registerWslMoveWiring(store, runtime)
-  registerWslDriveProjectHandlers(store)
+  registerWslDriveProjectHandlers(store, runtime)
+  installProjectRuntimeGitRouter(store)
   registerEphemeralVmHandlers(store, pluginService)
   // Session history and terminal resume are not chats; a refused host leaves nothing to check.
   const ensureStructuredSessionOwnership = () =>
@@ -292,9 +294,7 @@ export function registerCoreHandlers(
     deleteRuntimeAiVaultSession(getRuntimeEnvironmentRegistryRoot(), environmentId, args)
   )
   registerNativeChatHandlers()
-  registerNativeChatSlackHandlers()
-  registerNativeChatLinkPreviewHandlers()
-  registerNativeChatProofHandlers()
+  registerNativeChatCardHandlers()
   registerClipboardHandlers(store, {
     localChatAttachmentStore: async () => {
       await ensureStructuredAgentSessionHostUnlessRefused(() =>

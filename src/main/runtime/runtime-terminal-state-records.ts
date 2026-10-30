@@ -176,6 +176,11 @@ export type RuntimeVisibleTerminalState = {
   generation: number
 }
 
+export type ProviderTerminalBufferWait = {
+  snapshot: PtyProviderBufferSnapshot | null
+  late: Promise<PtyProviderBufferSnapshot | null> | null
+}
+
 export type ProviderBufferAcquisition = {
   generation: number
   scrollbackRows: number

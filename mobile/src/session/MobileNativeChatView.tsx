@@ -50,6 +50,7 @@ import {
 } from './native-chat/composer/MobileNativeChatComposer'
 import { MobileNativeChatPromptCard } from './native-chat/input/MobileNativeChatPromptCard'
 import type { MobileNativeChatMicProps } from './native-chat/composer/MobileNativeChatComposerMic'
+import { useMobileNativeChatPromptInputOwner } from './native-chat/input/use-mobile-native-chat-prompt-input-owner'
 import {
   NO_COMPOSER_TRAY,
   type ComposerTrayProps
@@ -57,10 +58,8 @@ import {
 import type { MobileChatPermission } from './native-chat/input/mobile-native-chat-permission'
 import type { MobileChatQuestion } from './native-chat/input/mobile-native-chat-question'
 import type { MobileNativeChatSessionOptionPickersProps } from './native-chat/input/MobileNativeChatSessionOptionPickers'
-import {
-  MobileNativeChatTerminalQueuedMessages,
-  type MobileNativeChatQueueSurface
-} from './MobileNativeChatTerminalQueuedMessages'
+import { MobileNativeChatTerminalQueuedMessages } from './MobileNativeChatTerminalQueuedMessages'
+import type { MobileNativeChatQueueSurface } from './MobileNativeChatTerminalQueuedMessages'
 import { mobileNativeChatComposerPlaceholder } from './mobile-native-chat-composer-placeholder'
 import { MobileNativeChatScrollRootsBoundary } from './MobileNativeChatScrollRootsBoundary'
 import { MobileNativeChatRowList } from './native-chat/transcript/MobileNativeChatRowList'
@@ -185,6 +184,7 @@ export function MobileNativeChatView({
   isAttaching,
   onMicPress,
   micActive,
+  micStarting,
   micProcessing,
   dictationMode,
   onMicPressIn,
@@ -322,8 +322,12 @@ export function MobileNativeChatView({
   const lockReason = useSettledMobileNativeChatInputLock(inputLockReason)
   const composerPlaceholder = mobileNativeChatComposerPlaceholder(lockReason, turnIndicator, queue)
   // Lock only terminal-backed Send: it can answer an agent prompt, while drafting is harmless and structured sends queue.
-  const expandedPromptOwnsSend =
-    !structuredActivityUi && !collapsedPrompt && (ask ?? permission ?? question) != null
+  const promptShown = !collapsedPrompt && (ask ?? permission ?? question) != null
+  const expandedPromptOwnsSend = !structuredActivityUi && promptShown
+  const promptOwnsInput = useMobileNativeChatPromptInputOwner(
+    { promptShown, ask, askRequiresTerminal, permission, micActive, micProcessing },
+    inputRef
+  )
   const emptyStateView = emptyState ? <MobileNativeChatEmptyStateView copy={emptyState} /> : null
 
   if (readFailedFinally && emptyStateView) {
@@ -364,6 +368,7 @@ export function MobileNativeChatView({
       )}
       <MobileNativeChatPromptCard
         key={promptKey ?? undefined}
+        answering={promptOwnsInput && keyboardInset > 0}
         {...{ ask, askKey, onDismissAsk, onAnswerAsk, onCancelAsk, onCancelPrompt, onCollapseAsk }}
         requiresTerminal={askRequiresTerminal}
         onAnswerInTerminal={onAnswerInTerminal}
@@ -387,44 +392,39 @@ export function MobileNativeChatView({
           <Text style={styles.sendErrorText}>{sendErrorMessage}</Text>
         </View>
       ) : null}
-      {}
       {trayContent}
-      <MobileNativeChatDraftComposer
-        draftScopeKey={composerScopeKey}
-        structured={structuredActivityUi ? structuredComposer : null}
-        draftKey={draftKey}
-        onChangeText={onComposerTextChange}
-        onSend={handleSend}
-        sendSurfaceId={sendSurfaceId}
-        {...{ getSendCompletionGeneration, getComposerEditGeneration, inputRef }}
-        agent={agent}
-        sessionOptions={sessionOptions}
-        onAttachImage={onAttachImage}
-        attachments={attachments}
-        onRemoveAttachment={onRemoveAttachment}
-        isAttaching={isAttaching}
-        onMicPress={onMicPress}
-        micActive={micActive}
-        micProcessing={micProcessing}
-        dictationMode={dictationMode}
-        onMicPressIn={onMicPressIn}
-        onMicPressOut={onMicPressOut}
-        disabled={lockReason !== null}
-        sendDisabled={expandedPromptOwnsSend}
-        placeholder={composerPlaceholder}
-        filePaths={filePaths}
-        onNeedFiles={onNeedFiles}
-        skillDiscovery={skillDiscovery}
-        onNeedSkills={onNeedSkills}
-        stop={
-          canStop
-            ? {
-                onStop,
-                held: turnIndicator?.stopRequestInFlight === true
-              }
-            : null
-        }
-      />
+      <View style={promptOwnsInput ? styles.hidden : undefined}>
+        <MobileNativeChatDraftComposer
+          draftScopeKey={composerScopeKey}
+          structured={structuredActivityUi ? structuredComposer : null}
+          draftKey={draftKey}
+          onChangeText={onComposerTextChange}
+          onSend={handleSend}
+          sendSurfaceId={sendSurfaceId}
+          {...{ getSendCompletionGeneration, getComposerEditGeneration, inputRef }}
+          agent={agent}
+          sessionOptions={sessionOptions}
+          onAttachImage={onAttachImage}
+          attachments={attachments}
+          onRemoveAttachment={onRemoveAttachment}
+          isAttaching={isAttaching}
+          onMicPress={onMicPress}
+          micActive={micActive}
+          micStarting={micStarting}
+          micProcessing={micProcessing}
+          dictationMode={dictationMode}
+          onMicPressIn={onMicPressIn}
+          onMicPressOut={onMicPressOut}
+          disabled={lockReason !== null}
+          sendDisabled={expandedPromptOwnsSend}
+          placeholder={composerPlaceholder}
+          filePaths={filePaths}
+          onNeedFiles={onNeedFiles}
+          skillDiscovery={skillDiscovery}
+          onNeedSkills={onNeedSkills}
+          stop={canStop ? { onStop, held: turnIndicator?.stopRequestInFlight === true } : null}
+        />
+      </View>
     </View>
   )
 }

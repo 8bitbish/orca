@@ -29,7 +29,7 @@ export function withScopeAttachments<List extends readonly unknown[]>(
 
 /** Drops the given chips from one scope's draft; chips attached meanwhile stay. */
 export function dropMobileNativeChatDraftImages(
-  scope: string,
+  scope: string | MobileNativeChatDraftDestination,
   images: readonly Pick<PendingNativeChatImage, 'id'>[]
 ): void {
   const dropped = new Set(images.map((image) => image.id))

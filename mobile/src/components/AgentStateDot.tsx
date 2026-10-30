@@ -1,6 +1,7 @@
 import { Activity } from 'lucide-react-native'
 import { Animated, View } from 'react-native'
 import type { AgentDotState } from '../worktree/agent-row-display'
+import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import { colors } from '../theme/mobile-theme'
 import { themedStyleSheet } from '../theme/themed-styles'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
@@ -33,6 +34,7 @@ export function agentStateDotColor(state: AgentDotState): string {
 /** `unverifiable` is a child row's lost contact: desktop's dashed amber ring, a missing-evidence
  *  mark rather than a state claim. */
 export function AgentStateDot({ state }: { state: AgentDotState | 'unverifiable' }) {
+  const t = useMobileTranslation()
   useMobileColorScheme()
   const rotate = useWorkingRingRotation(state === 'working')
 
@@ -46,7 +48,10 @@ export function AgentStateDot({ state }: { state: AgentDotState | 'unverifiable'
 
   if (state === 'monitoring') {
     return (
-      <View style={styles.wrapper} accessibilityLabel="Monitoring background tasks">
+      <View
+        style={styles.wrapper}
+        accessibilityLabel={t('components.agentStateDot.monitoring', 'Monitoring background tasks')}
+      >
         <Activity size={10} color={AGENT_WORKING_COLOR} />
       </View>
     )
@@ -54,7 +59,10 @@ export function AgentStateDot({ state }: { state: AgentDotState | 'unverifiable'
 
   if (state === 'unverifiable') {
     return (
-      <View style={styles.wrapper} accessibilityLabel="No recent update">
+      <View
+        style={styles.wrapper}
+        accessibilityLabel={t('components.agentStateDot.unverifiable', 'No recent update')}
+      >
         <View style={styles.dashedRing} />
       </View>
     )

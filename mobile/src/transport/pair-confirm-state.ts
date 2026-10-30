@@ -1,3 +1,4 @@
+import { translate } from '../i18n/mobile-i18n'
 import { parsePairingCode } from './pairing'
 import { pairingRefusalMessage } from './pairing-refusal-message'
 import type { PairingOffer } from './types'
@@ -10,7 +11,11 @@ export function resolvePairConfirmRouteState(
   code: string | string[] | undefined
 ): PairConfirmRouteState {
   if (!code) {
-    return { kind: 'error', offer: null, errorMessage: 'Missing pairing code' }
+    return {
+      kind: 'error',
+      offer: null,
+      errorMessage: translate('connection.pairConfirmState.missingCode', 'Missing pairing code')
+    }
   }
 
   const offer = typeof code === 'string' ? parsePairingCode(code) : null
@@ -18,10 +23,10 @@ export function resolvePairConfirmRouteState(
     return {
       kind: 'error',
       offer: null,
-      errorMessage:
-        typeof code === 'string'
-          ? pairingRefusalMessage(code, 'Not a valid pairing code')
-          : 'Not a valid pairing code'
+      errorMessage: pairingRefusalMessage(
+        typeof code === 'string' ? code : '',
+        translate('connection.pairConfirmState.invalidCode', 'Not a valid pairing code')
+      )
     }
   }
 

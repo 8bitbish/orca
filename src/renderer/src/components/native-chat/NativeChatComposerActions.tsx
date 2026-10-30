@@ -1,7 +1,9 @@
+import { memo } from 'react'
 import { ArrowUp, CircleAlert, ListPlus, Mic, Plus, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
+import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
 import type {
   SessionOptionDescriptor,
   SessionOptionsSurface
@@ -49,7 +51,8 @@ export type NativeChatComposerActionsProps = {
   agent?: string
 }
 
-export function NativeChatComposerActions({
+// Memoized: typing re-renders the composer per keystroke, and these controls rarely change with it.
+export const NativeChatComposerActions = memo(function NativeChatComposerActions({
   editSession,
   attachDisabled,
   dictationDisabled,
@@ -75,6 +78,7 @@ export function NativeChatComposerActions({
   focusComposer,
   agent
 }: NativeChatComposerActionsProps): React.JSX.Element {
+  useUiLanguageRevision()
   const stops = isWorking
   const handleCriticalAction = (event: React.MouseEvent<HTMLButtonElement>): void => {
     // Ignore a double-click’s second press after Send becomes Stop so it cannot cancel the newly started turn.
@@ -266,7 +270,7 @@ export function NativeChatComposerActions({
       </div>
     </div>
   )
-}
+})
 
 function DraftNotSavedIcon({ shown }: { shown: boolean }): React.JSX.Element | null {
   if (!shown) {

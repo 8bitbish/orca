@@ -15,7 +15,7 @@ import {
 } from '../../../shared/e2ee-crypto'
 import type { RuntimeRpcResponse } from '../../../shared/runtime-rpc-envelope'
 import {
-  AGENT_SESSION_THOUGHT_MARKER_CAPABILITY,
+  AGENT_SESSION_THOUGHT_MARKER_CAPABILITY as THOUGHT_MARKER,
   SESSION_TAB_CLOSE_INTENT_RUNTIME_CAPABILITY
 } from '../../../shared/protocol-version'
 
@@ -114,10 +114,7 @@ describe('WebRuntimeClient', () => {
     expect(frame).toMatchObject({ type: 'e2ee_auth', deviceToken: 'token' })
     expect(frame).toHaveProperty(
       'clientCapabilities',
-      expect.arrayContaining([
-        SESSION_TAB_CLOSE_INTENT_RUNTIME_CAPABILITY,
-        AGENT_SESSION_THOUGHT_MARKER_CAPABILITY
-      ])
+      expect.arrayContaining([SESSION_TAB_CLOSE_INTENT_RUNTIME_CAPABILITY, THOUGHT_MARKER])
     )
 
     client.close()
@@ -286,6 +283,53 @@ describe('WebRuntimeClient', () => {
       await Promise.resolve()
 
       expect(replacementSocket.send).toHaveBeenCalledTimes(1)
+    } finally {
+      client.close()
+      random.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
+  it('retires a socket whose handshake expires without waiting for the browser close event', async () => {
+    vi.useFakeTimers()
+    const timerWindow = window as unknown as {
+      setTimeout: typeof setTimeout
+      clearTimeout: typeof clearTimeout
+    }
+    timerWindow.setTimeout = setTimeout
+    timerWindow.clearTimeout = clearTimeout
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0)
+    const client = new WebRuntimeClient(
+      pairedRuntimeConnectionFromOffer({
+        v: 2,
+        endpoint: 'ws://127.0.0.1:6768',
+        deviceToken: 'token',
+        publicKeyB64: Buffer.alloc(32).toString('base64')
+      })
+    )
+
+    try {
+      const stalled = fakeSockets[0]!
+      stalled.readyState = FakeWebSocket.OPEN
+      stalled.onopen?.()
+      const callPromise = client.call('status.get', {}, { timeoutMs: 30_000 })
+      const settled = vi.fn()
+      callPromise.then(settled, settled)
+
+      // Browsers can hold a closing socket for tens of seconds before onclose fires.
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(stalled.close).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(500)
+      expect(fakeSockets).toHaveLength(2)
+
+      stalled.onerror?.()
+      stalled.onclose?.()
+      await Promise.resolve()
+      expect(settled).not.toHaveBeenCalled()
+      expect(fakeSockets).toHaveLength(2)
+
+      client.close()
+      await expect(callPromise).rejects.toThrow('Remote Orca runtime connection closed.')
     } finally {
       client.close()
       random.mockRestore()

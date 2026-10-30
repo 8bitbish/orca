@@ -9,8 +9,7 @@ import {
   neverThrowingStructuredAgentSessionLogger,
   type StructuredAgentSessionLogger
 } from '../native-chat/agent-session-wire/structured-agent-session-logger'
-import { listedModels } from './claude-structured-model-catalog'
-import { setClaudeStructuredOption } from './claude-structured-options'
+import { claudeTakesFlagSettings, setClaudeStructuredOption } from './claude-structured-options'
 import type { ClaudeSession } from './structured/claude-structured-session-state'
 import {
   isAbortSignalReason,
@@ -24,11 +23,10 @@ export async function applyClaudeMessageOptions(
   session: ClaudeSession,
   options: AgentSessionExecutionOptions,
   timeoutMs: number | undefined,
-  signal?: AbortSignal,
-  logger: StructuredAgentSessionLogger = defaultLogger
+  signal?: AbortSignal
 ): Promise<void> {
   throwIfSignalAborted(signal)
-  const model = options.model ?? (await defaultModelForMessage(session, timeoutMs, signal, logger))
+  const model = options.model
   if (model && session.appliedInputOptions.get('model') !== model) {
     await waitForPromiseWithSignal(
       setClaudeStructuredOption(session, { key: 'model', value: model }, timeoutMs),
@@ -37,22 +35,21 @@ export async function applyClaudeMessageOptions(
   }
 
   throwIfSignalAborted(signal)
-  const effort = options.effort ?? session.configuredDefaults?.effort
+  // Saved choices stay saved for a CLI that can apply them; this one runs on its own.
+  const takesFlagSettings =
+    (options.effort !== undefined || options.fastMode !== undefined) &&
+    (await claudeTakesFlagSettings(session))
+  throwIfSignalAborted(signal)
+  const effort = takesFlagSettings ? options.effort : undefined
   if (effort && session.appliedInputOptions.get('effort') !== effort) {
     await waitForPromiseWithSignal(
       setClaudeStructuredOption(session, { key: 'effort', value: effort }, timeoutMs),
       signal
     )
-  } else if (!effort && session.options.has('effort')) {
-    // Unknown configured effort can't be restored; send on Claude's current effort rather than drop the message.
-    neverThrowingStructuredAgentSessionLogger(logger).warn(
-      'Claude did not report its configured effort; sending on its current effort',
-      { scope: 'claude-message-options' }
-    )
   }
 
   throwIfSignalAborted(signal)
-  const fastMode = options.fastMode
+  const fastMode = takesFlagSettings ? options.fastMode : undefined
   if (fastMode !== undefined && session.appliedInputOptions.get('fastMode') !== fastMode) {
     await waitForPromiseWithSignal(
       setClaudeStructuredOption(session, { key: 'fastMode', value: fastMode }, timeoutMs),
@@ -60,34 +57,6 @@ export async function applyClaudeMessageOptions(
     )
   }
   throwIfSignalAborted(signal)
-}
-
-async function defaultModelForMessage(
-  session: ClaudeSession,
-  timeoutMs: number | undefined,
-  signal: AbortSignal | undefined,
-  logger: StructuredAgentSessionLogger
-): Promise<string | undefined> {
-  if (session.configuredDefaults?.model) {
-    return session.configuredDefaults.model
-  }
-  if (!session.options.has('model')) {
-    return undefined
-  }
-  const response = await waitForPromiseWithSignal(
-    session.connection.supportedModels({ timeoutMs }),
-    signal
-  ).catch(() => null)
-  throwIfSignalAborted(signal)
-  const listed = listedModels(response ? { models: response } : null)
-  const fallback = listed.find((model) => model.isDefault)?.id
-  if (!fallback) {
-    neverThrowingStructuredAgentSessionLogger(logger).warn(
-      'Claude did not report its default model; sending on its current model',
-      { scope: 'claude-message-options' }
-    )
-  }
-  return fallback
 }
 
 export async function dispatchClaudeMessage(
@@ -112,7 +81,7 @@ export async function dispatchClaudeMessage(
           : input.executionOptions
       input.onInputPreparation?.()
       if (messageOptions !== undefined) {
-        await applyClaudeMessageOptions(session, messageOptions, timeoutMs, input.signal, logger)
+        await applyClaudeMessageOptions(session, messageOptions, timeoutMs, input.signal)
       }
       input.signal?.throwIfAborted()
       input.onExecutionSnapshot?.()

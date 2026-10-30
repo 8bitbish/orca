@@ -1,3 +1,4 @@
+import { clientRequestsCommands } from './structured-agent-session-policy'
 import {
   clientReadsCurrentRequests,
   STRUCTURED_AGENT_SESSION_CURRENT_REQUESTS_METHODS
@@ -109,6 +110,7 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
   }),
   defineMethod({
     name: 'agentSession.create',
+    requires: ['accounts'],
     permission: 'workspace',
     params: CreateParams,
     handler: ORCA_LAYOUT_OWNER_IS_MAIN
@@ -238,6 +240,7 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
       }
       // Resolve after opening snapshot/missed batch; a racing close disposes the bound stream.
       dispose = await host.subscribe({
+        commandsOnRequest: clientRequestsCommands(ctx),
         readsCurrentRequests: clientReadsCurrentRequests(ctx),
         id: subscriptionId,
         sessionId: params.sessionId,
