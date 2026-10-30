@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { vi } from 'vitest'
+import { expect, vi } from 'vitest'
 import type { NativeChatMessage } from '../../../../shared/native-chat-types'
 import { NativeChatCodeBlock } from './NativeChatCodeBlock'
 import {
@@ -53,6 +53,22 @@ export function chatMessage(
   text: string
 ): NativeChatMessage {
   return { id, role, blocks: [{ type: 'text', text }], timestamp: null, source: 'transcript' }
+}
+
+/** A card's sent message: its reply with the card named in front, then the context tag line. */
+export function cardPress(reply: string): unknown {
+  return expect.toSatisfy((sent: unknown) => {
+    if (typeof sent !== 'string') {
+      return false
+    }
+    const [line, tag, ...rest] = sent.split('\n')
+    return (
+      rest.length === 0 &&
+      line.startsWith('Re: ') &&
+      line.endsWith(`: ${reply}`) &&
+      tag.startsWith('[companion-context] {"v":1,"type":"button"')
+    )
+  })
 }
 
 export const REPLY_SCOPE: NativeChatFencePreviewScope = {

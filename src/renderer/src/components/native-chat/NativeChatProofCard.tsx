@@ -25,6 +25,7 @@ import { NATIVE_CHAT_WORKTREE_LINK_SCHEME } from '../../../../shared/native-chat
 import { NativeChatFencePreviewContext } from './native-chat-fence-preview'
 import { nativeChatProjectCardKey } from './native-chat-project-card-choice'
 import { NativeChatProjectReplyContext } from './native-chat-project-reply-context'
+import { nativeChatProofCardPress } from '../../../../shared/native-chat-card-press'
 import { NativeChatProjectCardActions } from './NativeChatProjectCardActions'
 import { NativeChatProjectChip } from './NativeChatProjectChip'
 import { NativeChatProofViewer } from './NativeChatProofMedia'
@@ -270,6 +271,7 @@ export function NativeChatProofCard({
         cardKey={cardKey}
         messageId={messageId}
         channel={channel}
+        press={nativeChatProofCardPress(card)}
       />
     </figure>
   )

@@ -17,6 +17,7 @@ import {
   type NativeChatProjectReplyChannel
 } from './native-chat-project-reply-context'
 import type { NativeChatProjectLiveStatus } from './use-native-chat-project-live-status'
+import { cardPress } from './native-chat-slack-card-test-fixtures'
 
 const mocks = vi.hoisted(() => {
   const state: { live: NativeChatProjectLiveStatus; activate: ReturnType<typeof vi.fn> } = {
@@ -141,7 +142,7 @@ describe('NativeChatProjectCard', () => {
     renderCard(CARD, { send, canSend: true, messages: [] })
     const approve = screen.getByRole('button', { name: /^Approve/ })
     fireEvent.click(approve)
-    expect(send).toHaveBeenCalledWith('Approve: fix pnpm and re-run the hook')
+    expect(send).toHaveBeenCalledWith(cardPress('Approve: fix pnpm and re-run the hook'))
     expect(screen.getByRole('button', { name: /Sent “Approve: fix pnpm/ })).toBeDisabled()
     expect(screen.getByRole('button', { name: /^Reply…/ })).toBeDisabled()
     fireEvent.click(approve)
@@ -176,7 +177,7 @@ describe('NativeChatProjectCard', () => {
       target: { value: 'Try the other fix' }
     })
     fireEvent.click(screen.getByRole('button', { name: 'Send' }))
-    expect(send).toHaveBeenCalledWith('Try the other fix')
+    expect(send).toHaveBeenCalledWith(cardPress('Try the other fix'))
     unmount()
     renderCard(CARD, { send, canSend: true, messages: [] })
     expect(screen.getByRole('button', { name: /Sent “Try the other fix”/ })).toBeDisabled()

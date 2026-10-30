@@ -54,6 +54,7 @@ import { useMobileColorScheme } from '../../../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../../../i18n/use-mobile-translation'
 import { MobileNativeChatPacedProse } from './MobileNativeChatPacedProse'
 import { Prose } from './MobileNativeChatProse'
+import { withoutNativeChatCardPressTag } from '../../../../../src/shared/native-chat-card-press'
 
 function MobileNativeChatMessageImpl({
   message: rowMessage,
@@ -129,7 +130,8 @@ function MobileNativeChatMessageImpl({
   const attribution = agentMessageAttribution('Message from', message.from)
   const isUser = message.role === 'user' && attribution === null
   const isReasoning = message.role === 'reasoning'
-  const { prose, tools: blocksOfTools } = splitNativeChatBlocks(message.blocks)
+  const { prose: ownProse, tools: blocksOfTools } = splitNativeChatBlocks(message.blocks)
+  const prose = isUser ? withoutNativeChatCardPressTag(ownProse) : ownProse
   const { asks, unansweredAsks, work: ownTools } = nativeChatAskRunBlocks(blocksOfTools)
   const { openActions: openSheet } = useContext(MobileNativeChatRowOverlaysContext)
   const run = useMemo(() => (workRun ? nativeChatWorkRunEntries(workRun) : null), [workRun])

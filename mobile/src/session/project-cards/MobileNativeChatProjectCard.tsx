@@ -16,6 +16,7 @@ import {
 import { MobileNativeChatCardActions } from './MobileNativeChatCardActions'
 import { mobileNativeChatProjectStatusDot } from './mobile-native-chat-project-status-dot'
 import { MobileNativeChatProjectIcon } from './MobileNativeChatProjectIcon'
+import { nativeChatProjectCardPress } from '../../../../src/shared/native-chat-card-press'
 
 function StatusPill({ status }: { status: MobileNativeChatProjectStatus }): React.JSX.Element {
   return (
@@ -105,6 +106,7 @@ export function MobileNativeChatProjectCard({
         cardKey={cardKey}
         messageId={messageId}
         chat={projects}
+        press={nativeChatProjectCardPress(payload, project.name)}
       />
       {project.worktreeId ? (
         <View style={styles.footer}>

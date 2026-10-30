@@ -36,6 +36,7 @@ import {
   proofExpandableProps
 } from './MobileNativeChatProofOverflow'
 import { proofKeyed } from './MobileNativeChatProofParts'
+import { nativeChatProofCardPress } from '../../../../src/shared/native-chat-card-press'
 
 const KIND_LABELS: Record<NativeChatProofKind, string> = {
   web: 'Web',
@@ -225,6 +226,7 @@ export function MobileNativeChatProofCard({
         cardKey={cardKey}
         messageId={messageId}
         chat={chat}
+        press={nativeChatProofCardPress(card)}
       />
     </View>
   )

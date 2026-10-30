@@ -3,6 +3,10 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Check, CornerDownLeft, Pencil } from 'lucide-react-native'
 import type { NativeChatCardAction } from '../../../../src/shared/native-chat-card-actions'
 import {
+  nativeChatCardPressMessage,
+  type NativeChatCardPress
+} from '../../../../src/shared/native-chat-card-press'
+import {
   deriveNativeChatProjectCardChoice,
   type NativeChatProjectCardChoice
 } from '../../../../src/shared/native-chat-project-card-choice'
@@ -21,18 +25,21 @@ export type MobileNativeChatCardChat = Pick<
 
 /**
  * A chat card's reply buttons (project and Slack cards). Each shows the exact text it
- * sends as the user's next chat message; once one is chosen they all lock.
+ * sends as the user's next chat message, with the card named in front; once one is
+ * chosen they all lock.
  */
 export function MobileNativeChatCardActions({
   actions,
   cardKey,
   messageId,
-  chat
+  chat,
+  press
 }: {
   actions: readonly NativeChatCardAction[]
   cardKey: string | null
   messageId: string | undefined
   chat: MobileNativeChatCardChat
+  press: NativeChatCardPress | null
 }): React.JSX.Element | null {
   const [sent, setSent] = useState<NativeChatProjectCardChoice | null>(null)
   const [sending, setSending] = useState(false)
@@ -68,17 +75,17 @@ export function MobileNativeChatCardActions({
   const choice = sent ?? derived
   const locked = choice !== null || sending || !chat.canSend
 
-  const send = async (actionIndex: number, text: string, record: boolean): Promise<void> => {
+  const send = async (actionIndex: number, text: string, label?: string): Promise<void> => {
     if (locked || text.trim() === '') {
       return
     }
     setSending(true)
-    const accepted = await chat.send(text)
+    const accepted = await chat.send(press ? nativeChatCardPressMessage(press, text, label) : text)
     setSending(false)
     if (!accepted) {
       return
     }
-    if (record && cardKey) {
+    if (label === undefined && cardKey) {
       void recordMobileNativeChatProjectCardReply(cardKey, text)
     }
     setTyping(false)
@@ -103,13 +110,13 @@ export function MobileNativeChatCardActions({
                 placeholder="Type your answer"
                 placeholderTextColor={colors.textMuted}
                 style={styles.input}
-                onSubmitEditing={() => void send(index, draft.trim(), true)}
+                onSubmitEditing={() => void send(index, draft.trim())}
                 returnKeyType="send"
               />
               <Pressable
                 accessibilityRole="button"
                 disabled={draft.trim() === ''}
-                onPress={() => void send(index, draft.trim(), true)}
+                onPress={() => void send(index, draft.trim())}
                 style={[styles.sendButton, draft.trim() === '' ? styles.disabled : null]}
               >
                 <CornerDownLeft size={12} color={colors.bgBase} />
@@ -126,7 +133,9 @@ export function MobileNativeChatCardActions({
             accessibilityState={{ disabled: locked, selected: chosen }}
             disabled={locked}
             onPress={() =>
-              action.kind === 'reply' ? void send(index, action.reply, false) : setTyping(true)
+              action.kind === 'reply'
+                ? void send(index, action.reply, action.label)
+                : setTyping(true)
             }
             style={({ pressed }) => [
               styles.action,

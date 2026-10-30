@@ -28,6 +28,7 @@ import {
 import { MobileNativeChatSlackImages } from './MobileNativeChatSlackImages'
 import { MobileNativeChatSlackMrkdwn } from './MobileNativeChatSlackMrkdwn'
 import { useMobileNativeChatSlackNames } from './use-mobile-native-chat-slack-names'
+import { nativeChatSlackMessageCardPress } from '../../../../src/shared/native-chat-card-press'
 
 export function mobileNativeChatSlackThreadLine(
   thread: NonNullable<NativeChatSlackMessageCard['thread']>
@@ -97,6 +98,7 @@ export function MobileNativeChatSlackMessageCard({
         cardKey={cardKey}
         messageId={messageId}
         chat={chat}
+        press={nativeChatSlackMessageCardPress(card)}
       />
       <MobileNativeChatSlackOpenButton target={nativeChatSlackMessageCardTarget(card)} />
     </View>

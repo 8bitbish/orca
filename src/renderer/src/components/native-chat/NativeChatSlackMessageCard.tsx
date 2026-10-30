@@ -17,6 +17,7 @@ import { NativeChatFencePreviewContext } from './native-chat-fence-preview'
 import { nativeChatProjectCardKey } from './native-chat-project-card-choice'
 import { NativeChatProjectReplyContext } from './native-chat-project-reply-context'
 import { NativeChatCardStatusPill } from './NativeChatCardStatusPill'
+import { nativeChatSlackMessageCardPress } from '../../../../shared/native-chat-card-press'
 import { NativeChatProjectCardActions } from './NativeChatProjectCardActions'
 import { openNativeChatSlackTarget } from './NativeChatSlackChip'
 import {
@@ -150,6 +151,7 @@ export function NativeChatSlackMessageCard({
         cardKey={cardKey}
         messageId={messageId}
         channel={channel}
+        press={nativeChatSlackMessageCardPress(card)}
       />
       <div className="flex items-center justify-end border-t border-border/60 px-3.5 py-2">
         <Button

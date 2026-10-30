@@ -7,6 +7,7 @@ import { parseNativeChatProjectCardPayload } from '../../../../shared/native-cha
 import { nativeChatProjectCardKey } from './native-chat-project-card-choice'
 import { NativeChatProjectReplyContext } from './native-chat-project-reply-context'
 import { NativeChatCardStatusPill } from './NativeChatCardStatusPill'
+import { nativeChatProjectCardPress } from '../../../../shared/native-chat-card-press'
 import { NativeChatProjectCardActions } from './NativeChatProjectCardActions'
 import { NativeChatProjectIcon } from './NativeChatProjectIcon'
 import { focusNativeChatProject, useNativeChatProject } from './use-native-chat-project'
@@ -79,6 +80,7 @@ export function NativeChatProjectCard({
         cardKey={cardKey}
         messageId={messageId}
         channel={channel}
+        press={nativeChatProjectCardPress(payload, project.name)}
       />
       <div className="flex items-center justify-end border-t border-border/60 px-3.5 py-2">
         <Button

@@ -9,7 +9,12 @@ import {
   NativeChatProjectReplyContext,
   type NativeChatProjectReplyChannel
 } from './native-chat-project-reply-context'
-import { chatMessage, PIXEL_PNG, REPLY_SCOPE } from './native-chat-slack-card-test-fixtures'
+import {
+  cardPress,
+  chatMessage,
+  PIXEL_PNG,
+  REPLY_SCOPE
+} from './native-chat-slack-card-test-fixtures'
 
 // Made-up project and paths only.
 const BUNDLE = '/Users/someone/.orca-personal/proof/demo/2026-10-04-switch'
@@ -290,7 +295,7 @@ describe('NativeChatProofCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'PR #72' }))
     expect(openUrl).toHaveBeenCalledWith('https://example.com/pr/72')
     fireEvent.click(screen.getByRole('button', { name: /^Looks right/ }))
-    expect(send).toHaveBeenCalledWith('Looks right, ship it')
+    expect(send).toHaveBeenCalledWith(cardPress('Looks right, ship it'))
     cleanup()
     renderProofFence(source(), {
       send,
@@ -312,7 +317,7 @@ describe('NativeChatProofCard', () => {
     const box = screen.getByRole('textbox', { name: 'Needs changes…' })
     fireEvent.change(box, { target: { value: 'Make the handle bigger' } })
     fireEvent.submit(box.closest('form') as HTMLFormElement)
-    expect(send).toHaveBeenCalledWith('Make the handle bigger')
+    expect(send).toHaveBeenCalledWith(cardPress('Make the handle bigger'))
   })
 
   it('shows invalid JSON and off-schema cards as the raw block', () => {

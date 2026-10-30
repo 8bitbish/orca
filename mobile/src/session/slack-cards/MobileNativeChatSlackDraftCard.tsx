@@ -19,6 +19,7 @@ import {
 } from './MobileNativeChatSlackCardParts'
 import { MobileNativeChatSlackMrkdwn } from './MobileNativeChatSlackMrkdwn'
 import { useMobileNativeChatSlackNames } from './use-mobile-native-chat-slack-names'
+import { nativeChatDraftCardPress } from '../../../../src/shared/native-chat-card-press'
 
 /**
  * A ```slack-draft fence: a reply the assistant drafted, shown as not sent. The UI
@@ -85,6 +86,7 @@ export function MobileNativeChatSlackDraftCard({
         cardKey={cardKey}
         messageId={messageId}
         chat={chat}
+        press={nativeChatDraftCardPress(card)}
       />
     </View>
   )

@@ -16,6 +16,7 @@ import {
 import { NativeChatFencePreviewContext } from './native-chat-fence-preview'
 import { nativeChatProjectCardKey } from './native-chat-project-card-choice'
 import { NativeChatProjectReplyContext } from './native-chat-project-reply-context'
+import { nativeChatDraftCardPress } from '../../../../shared/native-chat-card-press'
 import { NativeChatProjectCardActions } from './NativeChatProjectCardActions'
 import {
   NativeChatSlackConversationChip,
@@ -210,6 +211,7 @@ export function NativeChatSlackDraftCard({
         cardKey={cardKey}
         messageId={messageId}
         channel={channel}
+        press={nativeChatDraftCardPress(card)}
       />
     </figure>
   )

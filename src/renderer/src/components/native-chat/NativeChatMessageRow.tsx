@@ -8,6 +8,7 @@ import type {
   NativeChatToolCallBlock
 } from '../../../../shared/native-chat-types'
 import { deriveNativeChatRowContent } from '../../../../shared/native-chat-row-content'
+import { withoutNativeChatCardPressTag } from '../../../../shared/native-chat-card-press'
 import { NativeChatReasoningRow } from './NativeChatReasoningRow'
 import { isNativeChatThoughtMarker } from '../../../../shared/native-chat-thought-marker'
 import { NativeChatNoticeRow } from './NativeChatNoticeRow'
@@ -85,7 +86,8 @@ export const MessageRow = memo(function MessageRow(
     workRun
   } = props
   const rowRef = useRef<HTMLDivElement | null>(null)
-  const blocks = nativeChatBlocksInOwnWords(message.blocks, nativeChatStoppedBeforeStartLabel())
+  const ownBlocks = nativeChatBlocksInOwnWords(message.blocks, nativeChatStoppedBeforeStartLabel())
+  const blocks = message.role === 'user' ? withoutNativeChatCardPressTag(ownBlocks) : ownBlocks
   // Share content derivation with slot selection so invisible rows cannot reserve transcript gaps.
   const content = deriveNativeChatRowContent(blocks)
   const { markdown, prose } = content

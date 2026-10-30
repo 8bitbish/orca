@@ -3,7 +3,12 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DRAFT_CARD, renderSlackFence, stubSlackApi } from './native-chat-slack-card-test-fixtures'
+import {
+  cardPress,
+  DRAFT_CARD,
+  renderSlackFence,
+  stubSlackApi
+} from './native-chat-slack-card-test-fixtures'
 
 let api: ReturnType<typeof stubSlackApi>
 
@@ -106,10 +111,10 @@ describe('NativeChatSlackDraftCard', () => {
           target: { value: 'Make it shorter' }
         })
         fireEvent.click(screen.getByRole('button', { name: 'Send' }))
-        expect(send).toHaveBeenCalledWith('Make it shorter')
+        expect(send).toHaveBeenCalledWith(cardPress('Make it shorter'))
       } else {
         expect(send).toHaveBeenCalledWith(
-          label === 'Send' ? 'Send the draft to Sam' : 'Cancel the draft to Sam'
+          cardPress(label === 'Send' ? 'Send the draft to Sam' : 'Cancel the draft to Sam')
         )
       }
       expect(send).toHaveBeenCalledTimes(1)

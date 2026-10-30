@@ -7,6 +7,7 @@ import {
   chatMessage,
   MESSAGE_CARD,
   PIXEL_PNG,
+  cardPress,
   REPLY_SCOPE,
   renderSlackFence,
   stubSlackApi
@@ -158,7 +159,7 @@ describe('NativeChatSlackMessageCard', () => {
       messages: []
     })
     fireEvent.click(screen.getByRole('button', { name: /^Overlay/ }))
-    expect(send).toHaveBeenCalledWith('Draft a reply to Sam going with overlay')
+    expect(send).toHaveBeenCalledWith(cardPress('Draft a reply to Sam going with overlay'))
     expect(screen.getByText('Sent “Draft a reply to Sam going with overlay”')).toBeInTheDocument()
     expect(api.openSlack).not.toHaveBeenCalled()
     // After a reload the transcript alone marks it chosen.

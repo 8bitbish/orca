@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
+import { splitNativeChatCardPressTag } from '../../../../shared/native-chat-card-press'
 
 /** One row of the stack: a live queued item, or one the host can no longer send. */
 export type NativeChatQueuedRowItem = {
@@ -146,7 +147,7 @@ export function NativeChatQueuedMessageRow({
                 value0: position
               })}
             </span>
-            {item.text}
+            {splitNativeChatCardPressTag(item.text).shown}
           </p>
           {imageCount > 0 || item.status !== 'queued' ? (
             <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">

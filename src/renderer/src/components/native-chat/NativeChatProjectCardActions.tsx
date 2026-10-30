@@ -4,6 +4,10 @@ import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { NativeChatProjectCardAction } from '../../../../shared/native-chat-project-card-payload'
 import {
+  nativeChatCardPressMessage,
+  type NativeChatCardPress
+} from '../../../../shared/native-chat-card-press'
+import {
   deriveNativeChatProjectCardChoice,
   readNativeChatProjectCardReply,
   recordNativeChatProjectCardReply,
@@ -14,19 +18,21 @@ import type { NativeChatProjectReplyChannel } from './native-chat-project-reply-
 /**
  * A card's actions, styled as the question card's option rows. Each row shows the
  * exact text it sends; nothing sends on its own. One click sends that text as the
- * user's next message and disables every row, and the transcript keeps them
- * disabled across reloads.
+ * user's next message, with the card named in front so a late answer can be
+ * placed, and disables every row; the transcript keeps them disabled across reloads.
  */
 export function NativeChatProjectCardActions({
   actions,
   cardKey,
   messageId,
-  channel
+  channel,
+  press
 }: {
   actions: readonly NativeChatProjectCardAction[]
   cardKey: string | null
   messageId: string | undefined
   channel: NativeChatProjectReplyChannel | null
+  press: NativeChatCardPress | null
 }): React.JSX.Element | null {
   const [sent, setSent] = useState<NativeChatProjectCardChoice | null>(null)
   const [typing, setTyping] = useState(false)
@@ -58,11 +64,12 @@ export function NativeChatProjectCardActions({
   const choice = sent ?? derived
   const locked = choice !== null || !channel?.canSend
 
-  const send = (actionIndex: number, text: string, record: boolean): void => {
-    if (locked || !channel || text.trim() === '' || !channel.send(text)) {
+  const send = (actionIndex: number, text: string, label?: string): void => {
+    const message = press ? nativeChatCardPressMessage(press, text, label) : text
+    if (locked || !channel || text.trim() === '' || !channel.send(message)) {
       return
     }
-    if (record && cardKey) {
+    if (label === undefined && cardKey) {
       recordNativeChatProjectCardReply(cardKey, text)
     }
     setTyping(false)
@@ -84,7 +91,7 @@ export function NativeChatProjectCardActions({
               className="flex items-center gap-3 px-3.5 py-2"
               onSubmit={(event) => {
                 event.preventDefault()
-                send(index, draft.trim(), true)
+                send(index, draft.trim())
               }}
             >
               <span
@@ -129,7 +136,7 @@ export function NativeChatProjectCardActions({
             disabled={locked}
             data-project-action-chosen={chosen ? 'true' : undefined}
             onClick={() =>
-              action.kind === 'reply' ? send(index, action.reply, false) : setTyping(true)
+              action.kind === 'reply' ? send(index, action.reply, action.label) : setTyping(true)
             }
             className={cn(
               'flex w-full items-start gap-3 px-3.5 py-2.5 text-left transition-colors disabled:pointer-events-none',
