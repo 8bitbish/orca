@@ -4,7 +4,7 @@ import {
   currentPanelColorScheme
 } from '@/components/right-sidebar/plugin-panel-design-token-css'
 import { usePluginPanelThemeRevision } from '@/components/right-sidebar/use-plugin-panel-theme-revision'
-import { PANEL_DESIGN_TOKEN_ALLOWLIST } from '../../../../shared/plugins/plugin-panel-shell'
+import { PANEL_DESIGN_TOKEN_ALLOWLIST } from '../../../../shared/plugins/frames/plugin-panel-shell'
 
 /** The plugin panel's curated set, plus the status hues the widget style kit's
  *  positive/warning marks read. */
