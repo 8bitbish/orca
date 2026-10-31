@@ -30,17 +30,18 @@ releases, plus anything left unpublished as a safety net.
 
 ## Requirements
 
-- The self-signed **Orca Personal Build** certificate in the login Keychain, trusted for code
-  signing only. Every build must carry the same signature or the updater refuses it; a new
-  certificate means one manual reinstall.
+- Jake's free Personal Team certificate, **Apple Development: jakesb1996@gmail.com (RW2P4952GD)**
+  (Team `B6A3H43795`), in the login Keychain; builds pick it by SHA-1
+  (`PERSONAL_BUILD_SIGNING_IDENTITY`). Every build must carry the same signature or the updater
+  refuses it; a different certificate means one manual reinstall.
 - `gh` logged in as `8bitbish`.
 - The first switch from the official Orca is manual: install the build's DMG from the fork's
   release once. Updates after that go through the in-app prompt.
 
-## Recreating the signing certificate
+## Renewing the signing certificate
 
-If the Keychain loses **Orca Personal Build**, make a new one: a self-signed certificate with
-`extendedKeyUsage = critical, codeSigning`, imported into the login Keychain with
-`security import <p12> -k ~/Library/Keychains/login.keychain-db -T /usr/bin/codesign`, then in
-Keychain Access set its **Trust → Code Signing** to **Always Trust**. The new signature differs,
-so install the next build from its release DMG once; updates work again after that.
+The Apple Development certificate lasts a year (this one to 31 Oct 2027). Renew it in Xcode ›
+Settings › Accounts › the Personal Team › Manage Certificates › **+** › Apple Development, then put
+the new SHA-1 (`security find-identity -v -p codesigning`) in `build-environment.sh`. The name
+and Team ID stay the same, so the updater and the keychain keep working without a reinstall or
+a prompt. Don't pick the "Apple Development: Team iOS" identity: that's a client's team.

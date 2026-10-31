@@ -86,17 +86,14 @@ git checkout -q -- "$feed_constant"
 [ "$updater_tests_status" -eq 0 ] || stop "Updater tests failed." 11
 
 stage "Build"
-# Capture before grepping: under pipefail, grep -q exiting early fails the whole pipeline.
-identities=$(security find-identity -v -p codesigning)
-command grep -qF "\"$PERSONAL_BUILD_SIGNING_IDENTITY\"" <<<"$identities" ||
-  stop "Signing identity \"$PERSONAL_BUILD_SIGNING_IDENTITY\" is missing or untrusted in the login Keychain." 12
+personal_build_has_signing_identity ||
+  stop "Signing identity $PERSONAL_BUILD_SIGNING_IDENTITY is missing or untrusted in the login Keychain." 12
 rm -rf dist
 CSC_NAME="$PERSONAL_BUILD_SIGNING_IDENTITY" pnpm build:mac || stop "pnpm build:mac failed." 12
 manifest=dist/latest-mac.yml
 [ -f "$manifest" ] || stop "Build produced no $manifest." 12
 app=$(ls -d dist/mac-arm64/*.app | head -1)
-signature=$(codesign -dv --verbose=2 "$app" 2>&1)
-command grep -qxF "Authority=$PERSONAL_BUILD_SIGNING_IDENTITY" <<<"$signature" ||
+[ "$(personal_build_signer_sha1 "$app")" = "$PERSONAL_BUILD_SIGNING_IDENTITY" ] ||
   stop "$app is not signed by $PERSONAL_BUILD_SIGNING_IDENTITY." 12
 codesign --verify --deep --strict "$app" || stop "$app fails signature verification." 12
 

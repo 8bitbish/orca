@@ -31,13 +31,19 @@ the fixes already applied.
 - The 3SC Developer ID (`3 Sided Cube (UK) Ltd (25H7BM6YWK)`, as AppCaptur uses) was the first
   choice. Its `.p12` (`~/Downloads/appcaptur-developer-id.p12`) has a forgotten password, and
   the only copy of it is the AppCaptur repo's GitHub secret, which can't be read back.
-- So builds use a self-signed **Orca Personal Build** certificate (login Keychain, trusted for
-  Code Signing only, valid to 2036). Its designated requirement is
-  `identifier "com.stablyai.orca" and certificate leaf = H"33a37f0f…f451"`, identical for
-  every build. Verified end to end: an isolated build A updated itself to build B through the
-  real updater (`verify-update.cjs`).
-- Switching identity (to the 3SC cert, or a recreated self-signed one) breaks the updater once:
-  install that build from its DMG by hand, then updates work again.
+- Until 2026-10-31 builds used a self-signed **Orca Personal Build** certificate. Its designated
+  requirement was stable, so the updater worked, but with no Team ID the keychain only knows each
+  build by its cdhash: every build asked again for "orca Safe Storage". Emptying the item's
+  partition list doesn't help (an empty list admits no app).
+- So builds use Jake's free Personal Team certificate, **Apple Development:
+  jakesb1996@gmail.com (RW2P4952GD)**, Team `B6A3H43795`, picked by SHA-1. Every build gets the
+  keychain partition `teamid:B6A3H43795` (proved with throwaway items: rebuilt copies read
+  silently, a copy without a Team ID is refused). Designated requirement:
+  `identifier "com.stablyai.orca" and anchor apple generic and certificate leaf[subject.CN] =
+  "Apple Development: jakesb1996@gmail.com (RW2P4952GD)" and certificate 1[…6.2.1] exists`,
+  which survives yearly renewal. No entitlement needs a provisioning profile.
+- Switching identity breaks the updater once: install that build by hand, then updates work
+  again. The first launch asks once for "orca Safe Storage": Always Allow.
 - electron-builder only uses identities listed by `security find-identity -v`, so the
   certificate must be *trusted* for code signing, not just imported.
 
