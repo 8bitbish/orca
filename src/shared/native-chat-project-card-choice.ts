@@ -4,8 +4,8 @@
 // chosen, also when it carries the card's name in front (native-chat-card-press.ts). Free-text replies cannot be matched that way, so each platform keeps
 // their text in a small local record.
 
-import type { NativeChatMessage } from './native-chat-types'
-import { deriveNativeChatRowContent } from './native-chat-row-content'
+import type { NativeChatMessage } from './native-chat/native-chat-types'
+import { deriveNativeChatRowContent } from './native-chat/transcript/native-chat-row-content'
 import type { NativeChatCardAction } from './native-chat-card-actions'
 import { nativeChatCardPressMatches } from './native-chat-card-press'
 

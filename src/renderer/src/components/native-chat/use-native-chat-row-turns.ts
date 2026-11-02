@@ -2,9 +2,10 @@ import { useMemo } from 'react'
 import type {
   AgentJournalRenderItem,
   AgentJournalSubmission
-} from '../../../../shared/agent-session-journal-types'
-import type { AgentSessionLatestTurn } from '../../../../shared/agent-session-wire'
-import type { AgentType, NativeChatMessage } from '../../../../shared/native-chat-types'
+} from '../../../../shared/agent-session/journal/agent-session-journal-types'
+import type { AgentSessionLatestTurn } from '../../../../shared/agent-session/agent-session-wire'
+import type { AgentType } from '../../../../shared/agent-status-types'
+import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import {
   nativeChatHarnessTurns,
   nativeChatRowTurnKeys

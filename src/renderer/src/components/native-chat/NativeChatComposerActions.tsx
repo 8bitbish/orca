@@ -3,7 +3,9 @@ import { ArrowUp, CircleAlert, ListPlus, Mic, Plus, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
+import { getScreenSubmitShortcutLabel } from '@/lib/screen-submit-shortcut'
 import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
+import type { NativeChatFollowUpBehavior } from '../../../../shared/native-chat-follow-up-behavior'
 import type {
   SessionOptionDescriptor,
   SessionOptionsSurface
@@ -27,7 +29,11 @@ export type NativeChatComposerActionsProps = {
   /** Storage refused this draft; it is held in memory only. */
   draftNotSaved?: boolean
   isWorking: boolean
-  /** A draft written while the agent works: queue it, or send it where the main agent is idle. */
+  /** The draft holds text or images: while the agent works, Send takes Stop's place. */
+  hasDraft?: boolean
+  /** While the agent works: what Cmd/Ctrl+Enter would do instead of a plain send, when it differs. */
+  alternateSend?: NativeChatFollowUpBehavior
+  /** A terminal chat's draft while the agent works: `queue` shows Send as the host queue's Queue. */
   workingSend?: NativeChatWorkingSend | null
   /** This client's Stop request is in flight: the Stop control is disabled and says so. */
   isStopping?: boolean
@@ -60,6 +66,8 @@ export const NativeChatComposerActions = memo(function NativeChatComposerActions
   sendBlockedReason,
   draftNotSaved,
   isWorking,
+  hasDraft = false,
+  alternateSend,
   workingSend,
   isStopping = false,
   isDictating,
@@ -79,7 +87,8 @@ export const NativeChatComposerActions = memo(function NativeChatComposerActions
   agent
 }: NativeChatComposerActionsProps): React.JSX.Element {
   useUiLanguageRevision()
-  const stops = isWorking
+  // Like Enter, a typed draft sends while the agent works; Esc still stops.
+  const stops = isWorking && !hasDraft
   const handleCriticalAction = (event: React.MouseEvent<HTMLButtonElement>): void => {
     // Ignore a double-click’s second press after Send becomes Stop so it cannot cancel the newly started turn.
     if (event.detail > 1) {
@@ -91,14 +100,28 @@ export const NativeChatComposerActions = memo(function NativeChatComposerActions
       onSend()
     }
   }
-  const workingSendLabel =
-    workingSend?.kind === 'queue'
-      ? translate('components.native-chat.queue.queueMessage', 'Queue message')
-      : translate('components.native-chat.composer.send', 'Send')
+  const queues = !stops && !editSession && workingSend?.kind === 'queue'
   const dictationLabel = isDictating
     ? translate('components.native-chat.composer.stopDictation', 'Stop dictation')
     : translate('components.native-chat.composer.startDictation', 'Start dictation')
   const sendReason = stops ? null : (sendBlockedReason ?? null)
+  const sendHint =
+    sendReason ??
+    (queues
+      ? translate(
+          'components.native-chat.queue.queueMessageHint',
+          'Queue — sends when the agent finishes'
+        )
+      : null) ??
+    (!stops && alternateSend
+      ? alternateSend === 'steer'
+        ? translate('components.native-chat.composer.alternateSteerHint', '{{shortcut}} to steer', {
+            shortcut: getScreenSubmitShortcutLabel()
+          })
+        : translate('components.native-chat.composer.alternateQueueHint', '{{shortcut}} to queue', {
+            shortcut: getScreenSubmitShortcutLabel()
+          })
+      : null)
   const sendButton = editSession ? (
     <Button
       type="button"
@@ -113,14 +136,18 @@ export const NativeChatComposerActions = memo(function NativeChatComposerActions
     <Button
       type="button"
       data-native-chat-critical-action={stops ? 'stop' : undefined}
+      data-native-chat-working-send={queues ? 'queue' : undefined}
       aria-label={
         stops
           ? isStopping
             ? translate('components.native-chat.status.stopping', 'Stopping…')
             : translate('components.native-chat.stop', 'Stop the agent')
-          : (sendReason ?? translate('components.native-chat.composer.send', 'Send'))
+          : (sendReason ??
+            (queues
+              ? translate('components.native-chat.queue.queueMessage', 'Queue message')
+              : translate('components.native-chat.composer.send', 'Send')))
       }
-      disabled={sendDisabled || (isWorking && isStopping)}
+      disabled={sendDisabled || (stops && isStopping)}
       // A press keeps focus where it was; a focused button drops it to <body> when it disables.
       onMouseDown={(event) => event.preventDefault()}
       onClick={handleCriticalAction}
@@ -128,7 +155,13 @@ export const NativeChatComposerActions = memo(function NativeChatComposerActions
       size="icon"
       className="size-8 rounded-full pointer-coarse:size-10"
     >
-      {stops ? <Square className="size-3.5 fill-current" /> : <ArrowUp className="size-4" />}
+      {stops ? (
+        <Square className="size-3.5 fill-current" />
+      ) : queues ? (
+        <ListPlus className="size-4" />
+      ) : (
+        <ArrowUp className="size-4" />
+      )}
     </Button>
   )
 
@@ -214,54 +247,20 @@ export const NativeChatComposerActions = memo(function NativeChatComposerActions
             {dictationLabel}
           </TooltipContent>
         </Tooltip>
-        {workingSend ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                data-native-chat-working-send={workingSend.kind}
-                aria-label={workingSendLabel}
-                disabled={workingSend.disabled}
-                onClick={(event) => {
-                  if (event.detail <= 1) {
-                    onSend()
-                  }
-                }}
-                variant="default"
-                size="icon"
-                className="size-8 rounded-full pointer-coarse:size-10"
-              >
-                {workingSend.kind === 'queue' ? (
-                  <ListPlus className="size-4" />
-                ) : (
-                  <ArrowUp className="size-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top" sideOffset={4}>
-              {workingSend.kind === 'queue'
-                ? translate(
-                    'components.native-chat.queue.queueMessageHint',
-                    'Queue — sends when the agent finishes'
-                  )
-                : workingSendLabel}
-            </TooltipContent>
-          </Tooltip>
-        ) : null}
         <DraftNotSavedIcon shown={draftNotSaved === true} />
         {editSession ? (
           <Button type="button" variant="ghost" size="sm" onClick={editSession.cancel}>
             {translate('common.cancel', 'Cancel')}
           </Button>
         ) : null}
-        {sendReason ? (
+        {sendHint ? (
           <Tooltip>
             <TooltipTrigger asChild>
               {/* A disabled button gets no pointer events, so the wrapper carries the hover. */}
               <span className="inline-flex">{sendButton}</span>
             </TooltipTrigger>
             <TooltipContent side="top" sideOffset={4}>
-              {sendReason}
+              {sendHint}
             </TooltipContent>
           </Tooltip>
         ) : (

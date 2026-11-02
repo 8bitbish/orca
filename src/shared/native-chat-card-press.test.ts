@@ -14,7 +14,7 @@ import { parseNativeChatProjectCardPayload } from './native-chat-project-card-pa
 import { parseNativeChatProofCard } from './native-chat-proof-card-reader'
 import { parseNativeChatSlackMessageCard } from './native-chat-slack-card-payload'
 import { parseNativeChatSlackDraftCard } from './native-chat-slack-draft-card-payload'
-import type { NativeChatMessage } from './native-chat-types'
+import type { NativeChatMessage } from './native-chat/native-chat-types'
 
 function tagOf(text: string): Record<string, unknown> {
   const tag = splitNativeChatCardPressTag(text).tag

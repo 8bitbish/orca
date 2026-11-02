@@ -1,4 +1,6 @@
 import { classifyPairingOfferRefusal } from '../../../src/shared/mobile-pairing-offer-freshness'
+import type { Translate } from '../i18n/mobile-i18n'
+import { getPairingScanErrorMessage } from './pairing-scan-error-message'
 
 /** What to tell someone whose pairing code was refused, when its Relay invite says why. */
 export function pairingRefusalMessage(input: string, fallback: string, now = Date.now()): string {
@@ -10,4 +12,20 @@ export function pairingRefusalMessage(input: string, fallback: string, now = Dat
     case 'invalid':
       return fallback
   }
+}
+
+/** The pair screen's message for a scanned code it could not use. */
+export function scannedPairingRefusalMessage(data: string, t: Translate): string {
+  return pairingRefusalMessage(data, getPairingScanErrorMessage(data, t))
+}
+
+/** The pair screen's message for a pasted code it could not use. */
+export function pastedPairingRefusalMessage(input: string, t: Translate): string {
+  return pairingRefusalMessage(
+    input,
+    t(
+      'app.pairScan.invalidPairingCode',
+      'Not a valid pairing code — copy it from your computer and paste again'
+    )
+  )
 }

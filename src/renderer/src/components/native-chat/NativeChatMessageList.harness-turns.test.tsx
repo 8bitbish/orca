@@ -10,7 +10,7 @@ import {
   nativeChatHarnessTurns,
   nativeChatRowTurnKeys
 } from '../../../../shared/native-chat/transcript/native-chat-turn-grouping'
-import type { NativeChatMessage } from '../../../../shared/native-chat-types'
+import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { NativeChatMessageList } from './NativeChatMessageList'
 import { installNativeChatMessageListTestViewport } from './native-chat-message-list-test-viewport'

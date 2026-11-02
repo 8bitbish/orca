@@ -13,7 +13,7 @@ export const queueStyles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
     backgroundColor: colors.bgPanel,
-    borderRadius: radii.card,
+    borderRadius: radii.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle
   },
@@ -62,7 +62,7 @@ export const queueStyles = StyleSheet.create({
     paddingLeft: spacing.sm,
     marginBottom: spacing.xs,
     backgroundColor: colors.bgRaised,
-    borderRadius: radii.row,
+    borderRadius: radii.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle
   },
@@ -116,7 +116,7 @@ export const queueStyles = StyleSheet.create({
     height: TOUCH,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.button
+    borderRadius: radii.control
   },
   disabled: {
     opacity: 0.35
@@ -137,7 +137,7 @@ export const queueStyles = StyleSheet.create({
     fontSize: TEXT_INPUT_FONT_SIZE,
     lineHeight: TEXT_INPUT_FONT_SIZE + 6,
     backgroundColor: colors.editorSurface,
-    borderRadius: radii.input,
+    borderRadius: radii.control,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
     textAlignVertical: 'top'
@@ -153,7 +153,7 @@ export const queueStyles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.button,
+    borderRadius: radii.control,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
     backgroundColor: colors.bgRaised

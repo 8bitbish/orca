@@ -134,7 +134,7 @@ export const slackCardStyles = StyleSheet.create({
   card: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
-    borderRadius: radii.card,
+    borderRadius: radii.surface,
     backgroundColor: colors.bgRaised,
     overflow: 'hidden',
     marginVertical: spacing.sm
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     gap: 4,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
-    borderRadius: radii.button,
+    borderRadius: radii.control,
     paddingHorizontal: 10,
     paddingVertical: 4
   },

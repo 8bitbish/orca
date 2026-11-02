@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   frame: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
-    borderRadius: radii.row,
+    borderRadius: radii.surface,
     marginBottom: spacing.sm,
     overflow: 'hidden',
     backgroundColor: colors.bgRaised

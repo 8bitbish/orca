@@ -1,8 +1,8 @@
 import type { RpcClient } from '../transport/rpc-client'
 import type { StructuredAgentSessionHostSupport } from './mobile-structured-agent-session-host-support'
-import type { MobileNativeChatSession } from './use-mobile-native-chat-session'
+import type { MobileNativeChatSession } from './native-chat/use-mobile-native-chat-session'
 import { useMobileNativeChatTerminalQueue } from './use-mobile-native-chat-terminal-queue'
-import type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
+import type { MobileNativeChatController } from './native-chat/mobile-native-chat-controller-contract'
 
 type TerminalQueueArgs = Parameters<typeof useMobileNativeChatTerminalQueue>[0]
 

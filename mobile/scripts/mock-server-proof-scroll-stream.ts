@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import type { NativeChatMessage } from '../../src/shared/native-chat-types'
+import type { NativeChatMessage } from '../../src/shared/native-chat/native-chat-types'
 import { proofScrollStreamRow } from './mock-server-proof-scroll-transcript'
 
 // Why: Jake's jumps show while a reply streams in at the bottom. Writing a new token to

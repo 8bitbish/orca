@@ -5,10 +5,10 @@
 
 import { createContext } from 'react'
 import type { NativeChatReasoningHeadline } from '../../../../shared/native-chat/transcript/native-chat-reasoning-row'
-import { nativeChatRowRendersContent } from '../../../../shared/native-chat-row-content'
+import { nativeChatRowRendersContent } from '../../../../shared/native-chat/transcript/native-chat-row-content'
 import { isNativeChatThoughtMarker } from '../../../../shared/native-chat-thought-marker'
-import { formatNativeChatDuration } from '../../../../shared/native-chat-turn-status'
-import type { NativeChatMessage } from '../../../../shared/native-chat-types'
+import { formatNativeChatDuration } from '../../../../shared/native-chat/transcript/native-chat-turn-status'
+import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 
 export type NativeChatThoughtTiming = {
   /** Fallback whole seconds per reasoning row; a run of markers sums onto its first. */

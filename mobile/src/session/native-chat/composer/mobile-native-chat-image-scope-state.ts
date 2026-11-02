@@ -1,6 +1,7 @@
 import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
-import { createUuidV4 } from '../../../../../src/shared/uuid-v4'
 import {
+  addMobileNativeChatDraftImages,
+  mobileNativeChatDraftDestination,
   updateMobileNativeChatDraftInputs,
   type MobileNativeChatDraftDestination
 } from './mobile-native-chat-draft-inputs'
@@ -39,16 +40,13 @@ export function dropMobileNativeChatDraftImages(
   }))
 }
 
-/** Adds images as chips on one scope's draft (uploads, or a restored queued message's images). */
-export function addMobileNativeChatDraftImages(
-  scope: string | MobileNativeChatDraftDestination | null,
+/** Puts a restored queued message's images back as chips on the active scope. */
+export function restoreMobileNativeChatDraftImages(
+  scopeKey: string | null,
   images: readonly Omit<PendingNativeChatImage, 'id'>[]
 ): void {
-  if (scope && images.length > 0) {
-    updateMobileNativeChatDraftInputs(scope, (current) => ({
-      ...current,
-      images: [...current.images, ...images.map((image) => ({ ...image, id: createUuidV4() }))]
-    }))
+  if (scopeKey && images.length > 0) {
+    addMobileNativeChatDraftImages(mobileNativeChatDraftDestination(scopeKey), [...images])
   }
 }
 

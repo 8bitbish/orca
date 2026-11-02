@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { agentJournalItemSubagentId } from '../../../../shared/agent-session-journal-producer'
-import type { NativeChatMessage } from '../../../../shared/native-chat-types'
+import { agentJournalItemSubagentId } from '../../../../shared/agent-session/journal/agent-session-journal-producer'
+import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import { nativeChatFences, type NativeChatFencePreviewScope } from './native-chat-fence-preview'
 
 /** How a row's fences render: replies preview html/svg fences, every row holds back a fence still

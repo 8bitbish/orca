@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   badge: {
     width: 24,
     height: 24,
-    borderRadius: radii.row,
+    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.bgPanel
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    borderRadius: radii.button,
+    borderRadius: radii.control,
     backgroundColor: colors.surfaceBright,
     paddingHorizontal: spacing.md,
     paddingVertical: 6

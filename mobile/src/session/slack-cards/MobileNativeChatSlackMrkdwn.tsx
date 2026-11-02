@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   pre: {
     backgroundColor: colors.bgPanel,
-    borderRadius: radii.row,
+    borderRadius: radii.surface,
     padding: spacing.sm
   },
   link: { color: colors.accentBlue, textDecorationLine: 'underline' },

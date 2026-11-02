@@ -191,7 +191,9 @@ describe('NativeChatComposerActions', () => {
         dictationDisabled={false}
         sendDisabled
         sendBlockedReason="An image couldn't be brought back. Remove it to send."
-        isWorking={false}
+        hasDraft
+        alternateSend="steer"
+        isWorking
         isDictating={false}
         isDictationHoldMode={false}
         onAttach={vi.fn()}
@@ -208,6 +210,7 @@ describe('NativeChatComposerActions', () => {
       name: "An image couldn't be brought back. Remove it to send."
     })
     expect(send.hasAttribute('disabled')).toBe(true)
+    expect(screen.queryByText('⌘ Enter to steer')).toBeNull()
   })
 
   it('marks a draft that could not be saved only after storage refused it', () => {
@@ -235,7 +238,7 @@ describe('NativeChatComposerActions', () => {
     expect(screen.getByRole('button', { name: 'Send' }).hasAttribute('disabled')).toBe(false)
   })
 
-  it('offers Queue beside Stop for a draft written while the agent works', () => {
+  it('turns Stop into Queue for a draft written while the agent works', () => {
     const onSend = vi.fn()
     const onStop = vi.fn()
     render(
@@ -244,6 +247,7 @@ describe('NativeChatComposerActions', () => {
         dictationDisabled={false}
         sendDisabled={false}
         isWorking
+        hasDraft
         workingSend={{ kind: 'queue', disabled: false }}
         isDictating={false}
         isDictationHoldMode={false}
@@ -260,8 +264,7 @@ describe('NativeChatComposerActions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Queue message' }))
     expect(onSend).toHaveBeenCalledTimes(1)
     expect(onStop).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Stop the agent' }))
-    expect(onStop).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: 'Stop the agent' })).toBeNull()
   })
 
   it('shows only Stop while working with an empty draft', () => {

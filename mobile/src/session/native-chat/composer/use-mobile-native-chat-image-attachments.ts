@@ -1,4 +1,5 @@
 import {
+  addMobileNativeChatDraftImages,
   readMobileNativeChatDraftInputs,
   useMobileNativeChatDraftInputs,
   mobileNativeChatDraftDestination,
@@ -12,7 +13,7 @@ import type { MobileImageSource } from '../../../platform/media-picker-contract'
 import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
 import {
   dropMobileNativeChatDraftImages,
-  addMobileNativeChatDraftImages,
+  restoreMobileNativeChatDraftImages,
   routeMobileNativeChatImageSendToQueue,
   type MobileNativeChatImageQueueSend
 } from './mobile-native-chat-image-scope-state'
@@ -22,6 +23,7 @@ import {
 } from './mobile-native-chat-image-send'
 import {
   openMobileNativeChatSendBudget,
+  type MobileNativeChatSendIntent,
   type MobileNativeChatSendOutcome
 } from '../mobile-native-chat-send'
 import {
@@ -69,7 +71,8 @@ type Args = {
     imagePreviewUris?: string[],
     deadline?: number,
     attachments?: readonly StructuredMobileSendAttachment[],
-    sentAt?: number
+    sentAt?: number,
+    intent?: MobileNativeChatSendIntent
   ) => Promise<MobileNativeChatSendOutcome>
   /** Structured sessions send attachments without the terminal paste path. */
   readonly structuredNativeChat: boolean
@@ -97,7 +100,7 @@ export type MobileNativeChatImageAttachments = {
   readonly removeAttachment: (id: string) => void
   /** Ride any pending images along with `text`, then submit; clears the sent
    *  chips (and only those) once the send is accepted. */
-  readonly sendNativeChat: (text: string) => Promise<boolean>
+  readonly sendNativeChat: (text: string, intent?: MobileNativeChatSendIntent) => Promise<boolean>
   /** Puts images back as chips on the active scope (a queued message restored to the composer). */
   readonly restoreImages?: (images: readonly Omit<PendingNativeChatImage, 'id'>[]) => void
 }
@@ -158,12 +161,12 @@ export function useMobileNativeChatImageAttachments({
 
   const restoreImages = useCallback(
     (images: readonly Omit<PendingNativeChatImage, 'id'>[]) =>
-      addMobileNativeChatDraftImages(scopeKey, images),
+      restoreMobileNativeChatDraftImages(scopeKey, images),
     [scopeKey]
   )
 
   const sendNativeChat = useCallback(
-    async (text: string): Promise<boolean> => {
+    async (text: string, intent?: MobileNativeChatSendIntent): Promise<boolean> => {
       // Serialize clear/paste/submit ownership per terminal while allowing other
       // tabs to send. Shared with the prompt-card writes (answer/permission), so
       // a card tap can't interleave into a mid-flight paste sequence either.
@@ -198,12 +201,11 @@ export function useMobileNativeChatImageAttachments({
             onSendError('Message not sent (disconnected)')
             return false
           }
-          const outcome = await baseSend(
-            text,
-            pendingImages.map((attachment) => attachment.previewUri),
-            deadline,
-            [...pendingImages, ...storedFiles]
-          )
+          const previews = pendingImages.map((attachment) => attachment.previewUri)
+          const sendAttachments = [...pendingImages, ...storedFiles]
+          const outcome = await (intent
+            ? baseSend(text, previews, deadline, sendAttachments, undefined, intent)
+            : baseSend(text, previews, deadline, sendAttachments))
           if (outcome !== 'rejected' && destination.active) {
             dropMobileNativeChatDraftImages(destination, pendingImages)
             onFilesSent?.(
@@ -236,7 +238,10 @@ export function useMobileNativeChatImageAttachments({
               return false
             }
           }
-          return (await baseSend(text, undefined, deadline, undefined, sentAt)) !== 'rejected'
+          const outcome = await (intent
+            ? baseSend(text, undefined, deadline, undefined, sentAt, intent)
+            : baseSend(text, undefined, deadline, undefined, sentAt))
+          return outcome !== 'rejected'
         }
         const handle = activeHandleRef.current
         if (!client || !handle || !enabled || connState !== 'connected') {
@@ -248,7 +253,7 @@ export function useMobileNativeChatImageAttachments({
           // Why first: a held message must not also be pasted into the running turn.
           const queued = await routeMobileNativeChatImageSendToQueue(
             queueSend,
-            { scope, text, images: pendingImages },
+            { scope: destination.scope, text, images: pendingImages },
             onError
           )
           if (queued !== null) {

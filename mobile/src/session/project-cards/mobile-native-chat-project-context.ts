@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { NativeChatMessage } from '../../../../src/shared/native-chat-types'
+import type { NativeChatMessage } from '../../../../src/shared/native-chat/native-chat-types'
 import type { MobileNativeChatProject } from './mobile-native-chat-project'
 
 export type MobileNativeChatProjects = {

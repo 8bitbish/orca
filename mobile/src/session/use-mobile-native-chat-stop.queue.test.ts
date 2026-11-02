@@ -2,7 +2,7 @@ import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RpcClient } from '../transport/rpc-client'
-import { useMobileNativeChatStop } from './use-mobile-native-chat-stop'
+import { useMobileNativeChatStop } from './native-chat/use-mobile-native-chat-stop'
 
 vi.mock('../terminal/worker-terminal-takeover-report', () => ({
   reportWorkerTerminalUserInput: vi.fn()

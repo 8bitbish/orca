@@ -13,7 +13,6 @@ export type MermaidThemeColors = {
 
 export function getMermaidConfig(
   isDark: boolean,
-  htmlLabels = false,
   colors?: MermaidThemeColors,
   /** A caller's full palette on Mermaid's `base` theme; it wins over `colors`. */
   themeVariables?: MermaidConfig['themeVariables']
@@ -26,7 +25,7 @@ export function getMermaidConfig(
       theme: 'base',
       darkMode: isDark,
       themeVariables,
-      htmlLabels
+      htmlLabels: true
     }
   }
   return {
@@ -62,6 +61,7 @@ export function getMermaidConfig(
           }
         }
       : {}),
-    htmlLabels
+    // Strict mode sanitizes label HTML; sanitizeMermaidSvg keeps the foreignObject labels it emits.
+    htmlLabels: true
   }
 }

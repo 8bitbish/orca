@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { NativeChatMessage } from '../../../../src/shared/native-chat-types'
+import type { NativeChatMessage } from '../../../../src/shared/native-chat/native-chat-types'
 import { useOptionalHostProtocolGates } from '../../components/host-protocol-gates-context'
 import { MobileMarkdownRenderersContext } from '../../components/mobile-markdown-renderers'
 import { useRouteHandoff } from '../../navigation/route-handoff'

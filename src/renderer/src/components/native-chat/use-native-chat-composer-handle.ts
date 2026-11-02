@@ -98,7 +98,7 @@ export function useNativeChatComposerHandle(
       if (disabled || text.trim() === '') {
         return false
       }
-      void sendStructured(text, [], { keepDraft: true })
+      void sendStructured(text, [], undefined, { keepDraft: true })
       return true
     },
     [disabled, sendPty, sendStructured, structuredTransport]

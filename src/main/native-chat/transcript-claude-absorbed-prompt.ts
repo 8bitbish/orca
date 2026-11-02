@@ -2,7 +2,7 @@
 // only a `queued_command` attachment for it, never a `type: "user"` record, so
 // without this the prompt has no row and its optimistic echo never reconciles.
 
-import type { NativeChatBlock } from '../../shared/native-chat-types'
+import type { NativeChatBlock } from '../../shared/native-chat/native-chat-types'
 import { isKnownHarnessInjectedUserTurnText } from '../../shared/harness-injected-user-turns'
 import { asRecord } from '../ai-vault/session-scanner-values'
 import { claudeContentBlocks } from './transcript-record-blocks'

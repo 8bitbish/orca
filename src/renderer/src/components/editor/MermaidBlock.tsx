@@ -1,9 +1,9 @@
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Maximize2 } from 'lucide-react'
 import type mermaidNamespace from 'mermaid'
-import DOMPurify from 'dompurify'
 import { readableMermaidFlowchartSvg } from '../../../../shared/mermaid-flowchart-contrast'
 import { getMermaidConfig } from './mermaid-config'
+import { sanitizeMermaidSvg } from './mermaid-sanitize'
 import { readMermaidThemeColors } from './mermaid-theme-colors'
 import { translate } from '@/i18n/i18n'
 
@@ -24,7 +24,6 @@ export type RenderedMermaidDiagram = { svg: string; background?: string }
 type MermaidBlockProps = {
   content: string
   isDark: boolean
-  htmlLabels?: boolean
   /** Palette for Mermaid's `base` theme; keep its identity stable across renders. */
   themeVariables?: Record<string, string | boolean>
   className?: string
@@ -51,7 +50,6 @@ function enqueueRender(fn: () => Promise<void>): void {
 export default function MermaidBlock({
   content,
   isDark,
-  htmlLabels = false,
   themeVariables,
   className,
   pendingContent,
@@ -84,13 +82,11 @@ export default function MermaidBlock({
         }
         // Initialize inside the serialized task because global Mermaid config can otherwise change between initialization and render.
         const colors = readMermaidThemeColors()
-        mermaid.initialize(
-          getMermaidConfig(isDark, htmlLabels, isDark ? colors : undefined, themeVariables)
-        )
+        mermaid.initialize(getMermaidConfig(isDark, isDark ? colors : undefined, themeVariables))
         const { svg } = await mermaid.render(`mermaid-${id}`, content)
         if (!cancelled) {
           // Sanitize explicitly against XSS even if Mermaid’s internal sanitization changes.
-          const sanitized = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } })
+          const sanitized = sanitizeMermaidSvg(svg)
           setRendered({
             content,
             result: {
@@ -129,7 +125,7 @@ export default function MermaidBlock({
     return () => {
       cancelled = true
     }
-  }, [content, htmlLabels, isDark, id, renderEnabled, themeVariables])
+  }, [content, isDark, id, renderEnabled, themeVariables])
 
   useLayoutEffect(() => {
     if (renderEnabled && rendered?.content === content) {
@@ -189,6 +185,7 @@ function ExpandableDiagram({
       <button
         ref={buttonRef}
         type="button"
+        data-orca-export-hide="true"
         aria-label={label}
         title={label}
         onClick={(event) => {

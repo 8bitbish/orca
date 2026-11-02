@@ -1,9 +1,9 @@
 // Share desktop/mobile turn ownership, bar placement and row order.
 
-import type { AgentJournalRenderItem } from '../../agent-session-journal-types'
-import { readAgentJournalTurn } from '../../agent-session-turn-record'
-import type { NativeChatMessage, NativeChatRole } from '../../native-chat-types'
-import { isHarnessTurnOpenerMessage, isNoiseMessage } from '../../native-chat-noise'
+import type { AgentJournalRenderItem } from '../../agent-session/journal/agent-session-journal-types'
+import { readAgentJournalTurn } from '../../agent-session/lifecycle/agent-session-turn-record'
+import type { NativeChatMessage, NativeChatRole } from '../native-chat-types'
+import { isHarnessTurnOpenerMessage, isNoiseMessage } from '../native-chat-noise'
 
 type NativeChatTurnRow = { id: string; role: NativeChatRole }
 

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import type { NativeChatMessage } from '../../src/shared/native-chat-types'
+import type { NativeChatMessage } from '../../src/shared/native-chat/native-chat-types'
 
 // Why: a long chat dense with rich cards (proof media, project and Slack cards) reproduces
 // the scroll flicker Jake sees on Android. Proof bodies are read from real bundles at runtime

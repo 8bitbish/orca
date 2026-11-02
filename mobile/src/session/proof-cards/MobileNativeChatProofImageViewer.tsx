@@ -281,10 +281,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 2,
     padding: 2,
-    borderRadius: radii.button,
+    borderRadius: radii.control,
     backgroundColor: colors.bgPanel
   },
-  side: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.button - 2 },
+  side: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.control - 2 },
   sideOn: { backgroundColor: colors.bgRaised },
   sideText: { color: colors.textPrimary, fontSize: 13, fontWeight: '500' },
   close: { backgroundColor: colors.bgRaised, borderRadius: 999, padding: spacing.sm },

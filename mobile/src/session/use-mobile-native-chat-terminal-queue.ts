@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
+import type { NativeChatMessage } from '../../../src/shared/native-chat/native-chat-types'
 import type { TerminalQueuedMessage } from '../../../src/shared/terminal-message-queue-contract'
 import type { RpcClient } from '../transport/rpc-client'
 import type { MobileNativeChatResolution } from './native-chat/mobile-native-chat-eligibility'

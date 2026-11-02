@@ -8,8 +8,8 @@
 // only to clients that advertise AGENT_SESSION_THOUGHT_MARKER_CAPABILITY (see
 // native-chat-thought-marker-projection.ts); in-process readers always get it.
 
-import type { AgentJournalItemBody } from './agent-session-journal-types'
-import type { NativeChatBlock, NativeChatRole } from './native-chat-types'
+import type { AgentJournalItemBody } from './agent-session/journal/agent-session-journal-types'
+import type { NativeChatBlock, NativeChatRole } from './native-chat/native-chat-types'
 
 /** The body of a thought with no text. A fresh array each call: blocks are mutable. */
 export function nativeChatThoughtMarkerBlocks(): NativeChatBlock[] {

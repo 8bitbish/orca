@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { NativeChatMessage } from '../../native-chat-types'
-import { compareNativeChatTranscriptMessages } from '../../native-chat-transcript-projection'
+import type { NativeChatMessage } from '../native-chat-types'
+import { compareNativeChatTranscriptMessages } from './native-chat-transcript-projection'
 import {
   nativeChatHarnessTurns,
   nativeChatRowTurnKeys,

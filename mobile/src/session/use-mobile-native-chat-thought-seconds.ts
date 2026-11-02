@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
-import type { AgentJournalRenderItem } from '../../../src/shared/agent-session-journal-types'
+import type { AgentJournalRenderItem } from '../../../src/shared/agent-session/journal/agent-session-journal-types'
 import { nativeChatSessionThoughtSeconds } from '../../../src/shared/native-chat-thought-duration'
-import type { AgentType, NativeChatMessage } from '../../../src/shared/native-chat-types'
+import type { AgentType } from '../../../src/shared/agent-status-types'
+import type { NativeChatMessage } from '../../../src/shared/native-chat/native-chat-types'
 
 const NO_THOUGHT_SECONDS: ReadonlyMap<string, number> = new Map()
 

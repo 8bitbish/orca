@@ -1,12 +1,12 @@
+import type { AgentType } from '../../shared/agent-status-types'
 import type {
   NativeChatLinkPreviewRequest,
   NativeChatLinkPreviewResult
 } from '../../shared/native-chat-link-preview-contract'
 import type {
-  AgentType,
   NativeChatMessage,
   NativeChatTurnLifecycle
-} from '../../shared/native-chat-types'
+} from '../../shared/native-chat/native-chat-types'
 import type {
   NativeChatSlackImageRequest,
   NativeChatSlackImageResult
@@ -68,6 +68,8 @@ export type NativeChatSubscribeArgs = {
   transcriptPath?: string
   /** First snapshot size; later readSession calls grow this for pagination. */
   limit?: number
+  /** The user opened this chat: may start its stopped local WSL distro (E9). */
+  wakeWslDistro?: boolean
 }
 
 export type NativeChatApi = {
@@ -76,7 +78,9 @@ export type NativeChatApi = {
     agent: AgentType,
     sessionId: string,
     limit?: number,
-    transcriptPath?: string
+    transcriptPath?: string,
+    /** The user opened or paged this chat: may start its stopped local WSL distro (E9). */
+    options?: { wakeWslDistro?: boolean }
   ) => Promise<NativeChatReadSessionResult>
   /** First frame is a bounded snapshot; later frames contain only appended messages. */
   subscribe: (

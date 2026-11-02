@@ -7,18 +7,18 @@
 // messages and journal items by id, and journal paging runs on page cursors, never
 // on item contiguity.
 
-import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
+import type { AgentJournalRenderItem } from '../../../../shared/agent-session/journal/agent-session-journal-types'
 import type {
   AgentSessionHistoryPage,
   AgentSessionHistoryResult,
   AgentSessionSubscribeEvent
-} from '../../../../shared/agent-session-wire'
-import type { NativeChatMessage } from '../../../../shared/native-chat-types'
+} from '../../../../shared/agent-session/agent-session-wire'
+import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import {
   isAgentJournalThoughtMarkerBody,
   isNativeChatThoughtMarker
 } from '../../../../shared/native-chat-thought-marker'
-import { AGENT_SESSION_THOUGHT_MARKER_CAPABILITY } from '../../../../shared/protocol-version'
+import { AGENT_SESSION_THOUGHT_MARKER_CAPABILITY } from '../../../../shared/agent-session/agent-session-runtime-capabilities'
 import type { RpcContext } from '../core'
 
 type ThoughtMarkerReader = Pick<RpcContext, 'clientKind' | 'clientCapabilities'>

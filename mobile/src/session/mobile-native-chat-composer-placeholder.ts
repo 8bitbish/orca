@@ -1,5 +1,5 @@
-import type { NativeChatLiveTurnIndicator } from '../../../src/shared/native-chat-turn-status'
-import type { MobileNativeChatInputLockReason } from './MobileNativeChatView'
+import type { NativeChatLiveTurnIndicator } from '../../../src/shared/native-chat/transcript/native-chat-turn-status'
+import type { MobileNativeChatInputLockReason } from './native-chat/MobileNativeChatView'
 import type { MobileNativeChatQueueSurface } from './MobileNativeChatTerminalQueuedMessages'
 import { mobileNativeChatComposerPlaceholder as hostComposerPlaceholder } from './native-chat/use-mobile-native-chat-input-lease'
 

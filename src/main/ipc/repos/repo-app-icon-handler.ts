@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import type { Store } from '../../persistence'
+import type { Store } from '../../persistence/loading-store/store'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import { getProjectAppIcon } from '../../project-app-icon'
 

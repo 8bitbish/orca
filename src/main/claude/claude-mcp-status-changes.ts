@@ -1,8 +1,8 @@
 // Claude re-sends `system:init` every request cycle with each MCP server's status. The frame itself
 // draws no row; a server whose settled status changed since the last init earns one muted line.
 
-import type { AgentJournalStatusItem } from '../../shared/agent-session-journal-types'
-import { claudeRecord, claudeText } from './claude-structured-item-translation'
+import type { AgentJournalStatusItem } from '../../shared/agent-session/journal/agent-session-journal-types'
+import { claudeRecord, claudeText } from './structured/journal/claude-structured-item-translation'
 
 export const CLAUDE_INIT_FRAME_KIND = 'message:system:init'
 

@@ -175,7 +175,7 @@ export function ProofSkeleton({
 
 export const proofStyles = StyleSheet.create({
   frame: {
-    borderRadius: radii.row,
+    borderRadius: radii.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderSubtle,
     backgroundColor: colors.bgPanel,
@@ -185,7 +185,7 @@ export const proofStyles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.row,
+    borderRadius: radii.pill,
     backgroundColor: 'rgba(0, 0, 0, 0.55)'
   },
   pill: {
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     height: 80,
-    borderRadius: radii.row,
+    borderRadius: radii.surface,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.borderSubtle,
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   caption: { color: colors.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 4 },
   skeleton: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: radii.row,
+    borderRadius: radii.surface,
     backgroundColor: colors.bgPanel
   },
   progressOverlay: {

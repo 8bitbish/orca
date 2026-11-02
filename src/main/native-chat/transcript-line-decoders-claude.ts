@@ -4,7 +4,7 @@ import {
   type NativeChatEditPatch,
   type NativeChatEditPatchHunk,
   type NativeChatMessage
-} from '../../shared/native-chat-types'
+} from '../../shared/native-chat/native-chat-types'
 import {
   asRecord,
   extractString,
@@ -18,6 +18,8 @@ import { unwrapClaudePastedContentBlock } from '../../shared/claude-pasted-conte
 import { unwrapClaudeBashInputBlock } from '../../shared/claude-bash-input'
 import { claudeInterruptedMessageId } from './transcript-turn-markers'
 import { claudeAbsorbedPromptBlocks } from './transcript-claude-absorbed-prompt'
+import { claudeStopHookFeedbackRow } from '../claude/claude-stop-hook-feedback'
+import { structuredAgentSessionStatusBlock } from '../../shared/agent-session/view/structured-agent-session-status-block'
 
 const MAX_EDIT_PATCH_HUNKS = 40
 const MAX_EDIT_PATCH_HUNK_LINES = 400
@@ -135,6 +137,10 @@ export function decodeClaudeTranscriptLine(
   const isInjectedUserTurn =
     role === 'user' &&
     (record.isMeta === true || record.isSynthetic === true || record.isCompactSummary === true)
+  const stopHookFeedback = isInjectedUserTurn ? claudeStopHookFeedbackMessage(decodedBlocks) : null
+  if (stopHookFeedback) {
+    return { id: recordMessageId, timestamp, source: 'transcript', ...stopHookFeedback, ...parent }
+  }
   // Keep image-source companions despite isMeta: prompt base64 has no path and cannot render attachments.
   // A peer session's hand-back arrives as a meta turn the agent answers. It still draws
   // nothing, but it is the boundary that keeps that answer out of the previous turn.
@@ -206,6 +212,15 @@ function claudeQueuedPromptAsUserRecord(
     return null
   }
   return { ...record, type: 'user', message: { role: 'user', content: prompt } }
+}
+
+function claudeStopHookFeedbackMessage(
+  blocks: NativeChatBlock[]
+): Pick<NativeChatMessage, 'role' | 'blocks'> | null {
+  const [block] = blocks
+  const row =
+    blocks.length === 1 && block?.type === 'text' ? claudeStopHookFeedbackRow(block.text) : null
+  return row ? { role: 'system', blocks: [structuredAgentSessionStatusBlock(row)] } : null
 }
 
 // Mixed prose/markers are injected turns, never image-source companions.

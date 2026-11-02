@@ -2,15 +2,16 @@ import { memo, useRef } from 'react'
 import type { NativeChatRewindSurface } from './use-native-chat-rewind'
 import type { CommentMarkdownLinkClickHandler } from '@/components/sidebar/CommentMarkdown'
 import { NativeChatUserMessageRow } from './NativeChatUserMessageRow'
+import { NativeChatAgentMessageCard } from './NativeChatAgentMessageCard'
 import { NativeChatAssistantMessageRow } from './NativeChatAssistantMessageRow'
 import type {
   NativeChatMessage,
   NativeChatToolCallBlock
-} from '../../../../shared/native-chat-types'
-import { deriveNativeChatRowContent } from '../../../../shared/native-chat-row-content'
+} from '../../../../shared/native-chat/native-chat-types'
 import { withoutNativeChatCardPressTag } from '../../../../shared/native-chat-card-press'
-import { NativeChatReasoningRow } from './NativeChatReasoningRow'
+import { deriveNativeChatRowContent } from '../../../../shared/native-chat/transcript/native-chat-row-content'
 import { isNativeChatThoughtMarker } from '../../../../shared/native-chat-thought-marker'
+import { NativeChatReasoningRow } from './NativeChatReasoningRow'
 import { NativeChatNoticeRow } from './NativeChatNoticeRow'
 import { nativeChatNoticeBlock } from '../../../../shared/native-chat/native-chat-notice'
 import { nativeChatStoppedBeforeStartLabel } from './native-chat-stopped-before-start-row'
@@ -106,8 +107,28 @@ export const MessageRow = memo(function MessageRow(
 
   // Return after all hooks to preserve hook order when content disappears.
   // A thought with no text still draws its one line (`NativeChatReasoningRow`).
-  if (run === undefined && !rowHasContent(content) && !isNativeChatThoughtMarker(message)) {
+  if (
+    run === undefined &&
+    !rowHasContent(content) &&
+    !message.agentStart &&
+    !isNativeChatThoughtMarker(message)
+  ) {
     return null
+  }
+
+  if (message.agentStart && message.from) {
+    return (
+      <div ref={rowRef} data-native-chat-message-id={message.id}>
+        <NativeChatAgentMessageCard
+          message={message}
+          from={message.from}
+          runtimeContext={runtimeContext}
+          onLinkClick={onLinkClick}
+          allowFileUriLinks={allowFileUriLinks}
+          onRefolded={returnToView}
+        />
+      </div>
+    )
   }
 
   const notice = isSystem ? nativeChatNoticeBlock(blocks) : undefined

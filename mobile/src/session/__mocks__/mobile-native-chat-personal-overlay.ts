@@ -1,10 +1,9 @@
 import type { ConnectionState } from '../../transport/types'
-import type { MobileNativeChatController } from '../use-mobile-native-chat-controller'
 
 // The overlay's personal-build props, for the prompt-controller harness.
 export function personalOverlayProps(
   connState: ConnectionState,
-  sendNativeChat: MobileNativeChatController['handleNativeChatSend']
+  sendNativeChat: (text: string) => Promise<boolean>
 ) {
   return {
     client: null,

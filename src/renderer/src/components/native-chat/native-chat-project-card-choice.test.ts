@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { afterEach, describe, expect, it } from 'vitest'
-import type { NativeChatMessage } from '../../../../shared/native-chat-types'
+import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import { parseNativeChatProjectCardPayload } from '../../../../shared/native-chat-project-card-payload'
 import {
   deriveNativeChatProjectCardChoice,

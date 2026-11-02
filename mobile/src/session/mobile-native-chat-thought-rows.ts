@@ -2,13 +2,13 @@
 // read from a terminal transcript, and thoughts with no text (Claude Code 2.1.x journals thinking
 // blocks with an empty string) drawn as one "Thought" line, back-to-back ones merged.
 
-import { agentJournalItemSubagentId } from '../../../src/shared/agent-session-journal-producer'
+import { agentJournalItemSubagentId } from '../../../src/shared/agent-session/journal/agent-session-journal-producer'
 import { isNativeChatThoughtMarker } from '../../../src/shared/native-chat-thought-marker'
 import {
   nativeChatReasoningHeadline,
   nativeChatReasoningHeadlineText
 } from '../../../src/shared/native-chat/transcript/native-chat-reasoning-row'
-import type { NativeChatMessage } from '../../../src/shared/native-chat-types'
+import type { NativeChatMessage } from '../../../src/shared/native-chat/native-chat-types'
 
 /** The end a transcript-read duration implies, for a reasoning row the journal did not time. */
 function withTranscriptThoughtEnd(

@@ -3,7 +3,7 @@
 import type {
   AgentSessionHistoryResult,
   AgentSessionSubscribeEvent
-} from '../../../../shared/agent-session-wire'
+} from '../../../../shared/agent-session/agent-session-wire'
 import type { RpcContext } from '../core'
 import {
   projectBackgroundTaskEvent,

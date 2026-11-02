@@ -9,7 +9,7 @@ import type { NativeChatProjectCardPayload } from './native-chat-project-card-pa
 import type { NativeChatProofCard } from './native-chat-proof-card-payload'
 import type { NativeChatSlackMessageCard } from './native-chat-slack-card-payload'
 import type { NativeChatDraftCard } from './native-chat-slack-draft-card-payload'
-import type { NativeChatBlock } from './native-chat-types'
+import type { NativeChatBlock } from './native-chat/native-chat-types'
 
 export const NATIVE_CHAT_CARD_PRESS_TAG = '[companion-context]'
 

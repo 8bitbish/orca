@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getCachedRepos } from '../../cache/repo-cache'
 import { getCachedWorktrees } from '../../cache/worktree-cache'
-import { hostRepoCatalogRead } from '../../host-screen/host-screen-operations'
+import { hostRepoCatalogSnapshotRead } from '../../host-screen/host-screen-operations'
 import type { RpcClient } from '../../transport/rpc-client'
 import type { ConnectionState } from '../../transport/types'
 import type { Worktree } from '../../worktree/workspace-list-types'
@@ -79,12 +79,15 @@ export function useMobileNativeChatProjectCatalog(args: {
     }
     const refreshRepos = async (): Promise<void> => {
       try {
-        const repoResult = hostRepoCatalogRead.interpret(await hostRepoCatalogRead.request(client))
+        // No snapshot id, so the host always answers with the full catalog.
+        const repoResult = hostRepoCatalogSnapshotRead.interpret(
+          await hostRepoCatalogSnapshotRead.request(client, { afterSnapshotId: null })
+        )
         if (cancelled) {
           return
         }
-        if (repoResult.accepted) {
-          setRepos(repoResult.value)
+        if (repoResult.accepted && repoResult.value.kind === 'catalog') {
+          setRepos(repoResult.value.repos)
         } else {
           console.warn('[project-cards] repo.list refused')
         }

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { isHarnessTurnOpenerMessage } from '../../shared/native-chat-noise'
+import { isHarnessTurnOpenerMessage } from '../../shared/native-chat/native-chat-noise'
 import { decodeClaudeTranscriptLine } from './transcript-line-decoders-claude'
 
 const FIXTURES = join(__dirname, '../../shared/__fixtures__')
