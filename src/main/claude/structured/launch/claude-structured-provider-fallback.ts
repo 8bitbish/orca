@@ -25,7 +25,10 @@ import {
   CLAUDE_INFORMATIONAL_FRAME_KIND,
   claudeInformationalRowBody
 } from '../../claude-informational-row'
-import { CLAUDE_INIT_FRAME_KIND, createClaudeMcpStatusChanges } from '../../claude-mcp-status-changes'
+import {
+  CLAUDE_INIT_FRAME_KIND,
+  createClaudeMcpStatusChanges
+} from '../../claude-mcp-status-changes'
 
 export function claudeProviderFrameKind(message: Record<string, unknown>): string {
   const type = claudeText(message.type) ?? 'unknown'
