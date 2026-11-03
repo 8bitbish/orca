@@ -1,3 +1,5 @@
+import { NativeChatCrewFrame } from '../orchestration-crew/NativeChatCrewPanel'
+import { TerminalChatCrewPanel } from '../orchestration-crew/TerminalChatCrewPanel'
 import { cn } from '@/lib/utils'
 import { NATIVE_CHAT_APPEARANCE_ROOT_CLASS } from './native-chat-appearance-style'
 import { useNativeChatStoreAppearanceStyle } from './use-native-chat-store-appearance-style'
@@ -5,7 +7,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../../store'
 import { useNativeChatLaunchDraftSignal } from './use-native-chat-launch-draft-adoption'
 import { useNativeChatRetainedSession } from './use-native-chat-retained-session'
-import { isNativeChatTranscriptUnsettled } from './native-chat-live-session-contract'
 import { selectNativeChatViewState } from './native-chat-view-state'
 import { NativeChatMessageList } from './NativeChatMessageList'
 import {
@@ -36,7 +37,6 @@ import {
   readCommandMarkerCache,
   type NativeChatCommandMarker
 } from './native-chat-command-marker'
-import { handleNativeChatResolvedViewKeyDown } from './native-chat-resolved-view-key-down'
 import { useNativeChatRootInputRouting } from './use-native-chat-root-input-routing'
 import {
   emptyNativeChatContextMenuActions,
@@ -51,6 +51,7 @@ import { useNativeChatFileLinkContext } from './use-native-chat-file-link-contex
 import { useRecheckNativeChatFileLinksWhenTurnEnds } from './use-native-chat-file-link-existence'
 import { useNativeChatLocalCommandAnswer } from './use-native-chat-local-command-answer'
 import { useNativeChatImageRuntimeContext } from './native-chat-image-runtime-context'
+import { handleNativeChatSplitShortcut } from './native-chat-split-shortcut'
 import { formatShortcutLabel } from '@/hooks/useShortcutLabel'
 import { useNativeChatProjectReplyChannel } from './native-chat-project-reply-context'
 import { NativeChatReplyScope } from './NativeChatReplyScope'
@@ -69,6 +70,7 @@ export function NativeChatResolvedView({
   ownsTabWideLaunchDraft,
   onSwitchToTerminal,
   readTerminalScreen,
+  readTerminalDraft,
   contextMenuActions
 }: NativeChatResolvedViewProps): React.JSX.Element {
   // Route reads/subscriptions through the pane’s runtime owner; null retains local routing.
@@ -88,13 +90,7 @@ export function NativeChatResolvedView({
   const clearNativeChatLaunchPrompt = useAppStore((s) => s.clearNativeChatLaunchPrompt)
   const paneLaunchPrompt = launchPrompt?.agent === agent ? launchPrompt : null
   // Adopt the TUI’s unsent launch context into the GUI composer.
-  const launchDraftSignal = useNativeChatLaunchDraftSignal({
-    terminalTabId,
-    agent,
-    messages: session.messages,
-    // Treat awaiting transcripts as unsettled to avoid re-offering an already-submitted prefill.
-    transcriptLoading: isNativeChatTranscriptUnsettled(session.readPhase)
-  })
+  const launchDraftSignal = useNativeChatLaunchDraftSignal({ terminalTabId, agent, session })
   // Use the live session’s reconciled lifecycle for every working-state consumer.
   const liveWorking = session.status === 'working'
   // Preview the in-progress hook reply before its completed transcript turn arrives.
@@ -213,6 +209,7 @@ export function NativeChatResolvedView({
   })
   const { card: shownPromptCard, collapsedCard } = promptCardPresentation
   const mountedPromptCard = shownPromptCard ?? collapsedCard
+  const composerReady = shownPromptCard === null && targetPtyId !== null && canSend
   const rootInput = useNativeChatRootInputRouting({
     tabId: terminalTabId,
     rootRef,
@@ -220,7 +217,7 @@ export function NativeChatResolvedView({
     questionAnswerInputRef,
     isVisible,
     isFocusedGroup,
-    composerReady: shownPromptCard === null && targetPtyId !== null && canSend
+    composerReady
   })
 
   const sessionWithPending = useNativeChatSessionWithPending(sessionAfterCommandBoundaries, {
@@ -308,11 +305,10 @@ export function NativeChatResolvedView({
       }}
       onKeyDownCapture={(event) => {
         find.onKeyDownCapture(event)
-        handleNativeChatResolvedViewKeyDown(event, {
-          keybindings,
-          splitActions: contextMenuActions,
-          routeToInput: rootInput.onKeyDownCapture
-        })
+        if (handleNativeChatSplitShortcut(event, keybindings, contextMenuActions)) {
+          return
+        }
+        rootInput.onKeyDownCapture(event)
       }}
       onContextMenuCapture={contextMenu.onContextMenuCapture}
       className={cn(
@@ -322,7 +318,14 @@ export function NativeChatResolvedView({
       style={appearanceStyle}
       data-native-chat-scheme={appearanceStyle.colorScheme}
     >
-      <div className="relative flex min-h-0 flex-1 flex-col">
+      <NativeChatCrewFrame
+        panel={
+          <TerminalChatCrewPanel
+            {...{ terminalTabId, paneKey, targetPtyId, isVisible, composerRef }}
+            canMention={composerReady}
+          />
+        }
+      >
         {find.isOpen ? <NativeChatFindBar find={find} isVisible={isVisible} /> : null}
         {viewState.kind === 'loading' ? (
           <NativeChatEmptyState kind="loading" />
@@ -351,7 +354,7 @@ export function NativeChatResolvedView({
             />
           </NativeChatReplyScope>
         )}
-      </div>
+      </NativeChatCrewFrame>
       <NativeChatQueuedMessages {...messageQueue.stackProps} />
       {/* A collapsed card stays mounted but hidden, so a partly answered question survives. */}
       {mountedPromptCard ? (
@@ -392,7 +395,7 @@ export function NativeChatResolvedView({
           answerCommandLocally={answerLocally}
           onSwitchToTerminal={onSwitchToTerminal}
           readTerminalScreen={readTerminalScreen}
-          launchSeed={{ ...launchDraftSignal, ownsTabWideLaunchDraft }}
+          launchSeed={{ ...launchDraftSignal, ownsTabWideLaunchDraft, readTerminalDraft }}
           queue={messageQueue.composerQueue}
           recallSource={{ messages: sessionWithPending.messages, commands: commandMarkers }}
         />

@@ -3,11 +3,16 @@ import {
   type TerminalComposerPrompt
 } from '../../shared/terminal-composer-draft'
 import type { HeadlessEmulator } from '../daemon/headless-emulator'
-import type { RuntimeTerminalProjection } from './orca-runtime-core'
 import type { HeadlessTerminalRow } from '../daemon/headless-terminal-rows'
 import type { RuntimeTerminalRowMetadata } from '../../shared/runtime-terminal-contracts'
 
-type ProjectedTerminalRows = RuntimeTerminalProjection & { tailRows: RuntimeTerminalRowMetadata[] }
+// Why local: importing orca-runtime-core would pull the main process into the CLI's type graph.
+type ComposerProjectionFields = { draft?: string; suggestion?: string }
+
+type ProjectedTerminalRows = ComposerProjectionFields & {
+  lines: string[]
+  tailRows: RuntimeTerminalRowMetadata[]
+}
 
 type TerminalProjectionEmulator = Pick<
   HeadlessEmulator,
@@ -66,9 +71,7 @@ function maskComposerRows(visible: HeadlessTerminalRow[], prompt: TerminalCompos
 
 /** `draft` is only what was typed; a dim suggestion Claude paints into an empty prompt is
  *  reported as `suggestion`, and neither one reaches `lines`. */
-function composerFields(
-  prompt: TerminalComposerPrompt | null
-): Pick<RuntimeTerminalProjection, 'draft' | 'suggestion'> {
+function composerFields(prompt: TerminalComposerPrompt | null): ComposerProjectionFields {
   if (!prompt) {
     return {}
   }

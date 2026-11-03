@@ -20,7 +20,7 @@ import { isLaunchPromptMessageId } from './native-chat-pending'
 import {
   isPendingMessageId,
   isQueuedPendingMessageId
-} from '../../../../shared/native-chat-pending-sends'
+} from '../../../../shared/native-chat/transcript/native-chat-pending-sends'
 
 /** For the same turn, prefer transcript over hook over scrape. */
 export type NativeChatSources = {

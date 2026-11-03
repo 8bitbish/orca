@@ -20,7 +20,7 @@ import type {
   NativeChatToolCallBlock
 } from '../../../../../src/shared/native-chat/native-chat-types'
 import { MobileSourceCopyButton } from '../../../components/MobileSourceCopyButton'
-import { nativeChatMessageCopyText } from '../../../../../src/shared/native-chat-message-copy-text'
+import { nativeChatMessageCopyText } from '../../../../../src/shared/native-chat/transcript/native-chat-message-copy-text'
 import { MobileNativeChatMessageIdContext } from '../../project-cards/mobile-native-chat-project-context'
 import { deriveNativeChatRowContent } from '../../../../../src/shared/native-chat/transcript/native-chat-row-content'
 import {

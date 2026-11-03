@@ -8,7 +8,7 @@ import {
   isQueuedPendingMessageId,
   pendingSendsAsMessages,
   type NativeChatPendingSend
-} from '../../../../shared/native-chat-pending-sends'
+} from '../../../../shared/native-chat/transcript/native-chat-pending-sends'
 import {
   commandMarkersAsMessages,
   type NativeChatCommandMarker

@@ -35,8 +35,7 @@ import { registerWslHostHandlers } from '../wsl-host-handlers'
 import { registerEphemeralVmHandlers } from '../ephemeral-vm'
 import { registerAiVaultHandlers } from '../ai-vault'
 import { registerAiVaultSearchHandlers } from '../ai-vault-search'
-import { registerNativeChatHandlers } from '../native-chat'
-import { registerNativeChatCardHandlers } from '../native-chat-card-handlers'
+import { registerNativeChatWithCardHandlers } from '../native-chat-card-handlers'
 import { registerNotificationHandlers } from '../notifications'
 import { registerNotebookHandlers } from '../notebook'
 import { registerOnboardingHandlers } from '../onboarding'
@@ -66,6 +65,7 @@ import { registerUIHandlers, setTrustedUIRendererWebContentsId } from '../ui'
 import { registerEmulatorFrameStreamHandlers } from '../emulator-frame-stream'
 import { registerEmulatorVideoStreamHandlers } from '../emulator-video-stream'
 import { registerEmulatorScrcpyTouchHandler } from '../emulator-scrcpy-touch'
+import { registerEmulatorScrcpyKeyboardHandler } from '../emulator-scrcpy-keyboard'
 import { registerSpeechHandlers } from '../speech'
 import { registerTerminalRenderDesyncEvidenceHandler } from '../terminal-render-desync-evidence'
 import { registerOrcaProfileHandlers } from '../orca-profiles'
@@ -253,6 +253,7 @@ export function registerCoreHandlers(
   registerEmulatorFrameStreamHandlers()
   registerEmulatorVideoStreamHandlers()
   registerEmulatorScrcpyTouchHandler()
+  registerEmulatorScrcpyKeyboardHandler()
   registerWorkspaceSpaceHandlers(store)
   registerWorkspacePortHandlers(store)
   registerLinkPreviewHandlers()
@@ -295,8 +296,7 @@ export function registerCoreHandlers(
   configureRuntimeAiVaultSessionDelete((environmentId, args) =>
     deleteRuntimeAiVaultSession(getRuntimeEnvironmentRegistryRoot(), environmentId, args)
   )
-  registerNativeChatHandlers()
-  registerNativeChatCardHandlers()
+  registerNativeChatWithCardHandlers()
   registerClipboardHandlers(store, {
     localChatAttachmentStore: async () => {
       await ensureStructuredAgentSessionHostUnlessRefused(() =>

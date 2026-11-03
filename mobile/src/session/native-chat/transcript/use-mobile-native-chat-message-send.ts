@@ -26,7 +26,7 @@ import {
   AGENT_TUI_CLEAR_INPUT_LINE,
   buildAgentTuiClearInputForText
 } from '../../../../../src/shared/agent-tui-input-clear'
-import { buildNativeChatPasteBytes } from '../../../../../src/shared/native-chat-paste-bytes'
+import { buildNativeChatPasteBytes } from '../../../../../src/shared/native-chat/input/native-chat-paste-bytes'
 import { offerMobileNativeChatSendToQueue } from '../../mobile-native-chat-queue-send'
 import type { MobileNativeChatQueueSubmit } from '../../mobile-native-chat-queue-send'
 

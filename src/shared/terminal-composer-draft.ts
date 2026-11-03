@@ -1,3 +1,5 @@
+import { isStockPlaceholder } from './terminal-composer-stock-placeholder'
+
 export type TerminalCursorContext = {
   rows: string[]
   typedRows: string[]
@@ -12,6 +14,9 @@ export type TerminalCursorContext = {
   rawAfterCursor: string
   cursorHidden: boolean
   cursorViewportRow: number
+  /** Read only while the native cursor is hidden; absent means unknown. */
+  activeBuffer?: 'normal' | 'alternate'
+  cursorInverse?: boolean
 }
 
 export type TerminalComposerDraft = {
@@ -36,13 +41,16 @@ export type TerminalComposerPrompt = TerminalComposerDraft & {
 /** One composer row: `text` is its typed cells, `raw` every cell, `legacy` typed-else-raw. */
 type ComposerLine = { text: string; raw: string; legacy: string; wrapped: boolean }
 
+const COMPOSER_PROMPT_PREFIX = /^\s*[\u276F\u203A\u00BB]\s?/
 const COMPOSER_FRAME_LINE = /^[\u2500\u2501-]{8,}\s*$/
+const COMPOSER_TOP_FRAME_PREFIX = /^[\u2500\u2501-]{8,}/
 const CODEX_FOOTER_LINE = /^\s*(?:gpt-\S+|o\d\S*)\s+[\u00B7\u2022]\s+\S.*$/i
 
 function composerContinuationRows(
   context: TerminalCursorContext,
   afterCursor: string,
-  codexFooterIndex: number
+  codexFooterIndex: number,
+  typedOnly: boolean
 ): ComposerLine[] {
   if (!afterCursor.trim() && !context.typedRowsBelow.some((row) => row.trim())) {
     return []
@@ -66,15 +74,15 @@ function composerContinuationRows(
     if (COMPOSER_FRAME_LINE.test(raw) || index === codexFooterIndex) {
       break
     }
-    if (!raw.trim() && !hasTypedContinuationAfter[index]) {
+    const typed = context.typedRowsBelow[index] ?? ''
+    if (!(typedOnly ? typed : raw).trim() && !hasTypedContinuationAfter[index]) {
       break
     }
     // A dim-only row still belongs to the prompt box (it extends `endRow`), but none of it was typed.
-    const typed = context.typedRowsBelow[index] ?? ''
     continuation.push({
       text: typed,
       raw,
-      legacy: typed.trim() ? typed : raw,
+      legacy: typed.trim() || typedOnly ? typed : raw,
       wrapped: context.rowsBelowWrapped?.[index] ?? false
     })
   }
@@ -114,59 +122,75 @@ function findCodexFooterIndex(context: TerminalCursorContext): number {
   return isCodexFooterRow(context, status) ? status : -1
 }
 
-// Codex before 0.152 rotated these (codex-rs/tui/src/chatwidget.rs PLACEHOLDERS, SIDE_PLACEHOLDERS).
-const STOCK_PLACEHOLDERS: ReadonlySet<string> = new Set([
-  'Ask Codex to do anything',
-  'Ask a follow-up question',
-  'Explain this codebase',
-  'Summarize recent commits',
-  'Implement {feature}',
-  'Find and fix a bug in @filename',
-  'Write tests for @filename',
-  'Improve documentation in @filename',
-  'Run /review on my current changes',
-  'Use /skills to list available skills',
-  'Check recently modified functions for compatibility',
-  'How many files have been modified?',
-  'Will this algorithm scale well?'
-])
-
-function isStockPlaceholder(afterCursor: string, continuationRows: ComposerLine[]): boolean {
-  const text = [afterCursor, ...continuationRows.map((row) => row.raw)]
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-  return /^Try\s+["\u201C]/.test(text) || STOCK_PLACEHOLDERS.has(text)
-}
-
-function joinComposerLines(lines: { text: string; wrapped: boolean }[]): string {
+function joinComposerLines(
+  lines: { text: string; wrapped: boolean }[],
+  layoutPadding: number | null
+): string {
   return lines
     .map((line, lineIndex) => {
       const continuesPrevious = lineIndex > 0 && line.wrapped
       const continuesNext = lines[lineIndex + 1]?.wrapped ?? false
       const start = continuesPrevious ? '' : lineIndex > 0 ? '\n' : ''
-      const content = continuesPrevious ? line.text : line.text.trimStart()
+      const content = continuesPrevious
+        ? line.text
+        : layoutPadding !== null && lineIndex > 0
+          ? line.text.slice(Math.min(layoutPadding, line.text.search(/\S|$/)))
+          : line.text.trimStart()
       return `${start}${continuesNext ? content : content.trimEnd()}`
     })
     .join('')
     .trim()
 }
 
-const PROMPT_GLYPH_PREFIX = /^\s*[\u276F\u203A\u00BB]\s?/
+// Why: Claude's default caret hides the native cursor and parks it at a painted caret cell. That paint
+// drops on focus-out, so it is required only where another program's alternate-screen frame could
+// mimic the box; a complete frame with the cursor inside is always required.
+function isHiddenComposerCaret(
+  context: TerminalCursorContext,
+  cursorOnPromptRow: boolean,
+  closedByFrame: boolean
+): boolean {
+  return (
+    closedByFrame &&
+    (!cursorOnPromptRow || /^\s*❯/.test(context.beforeCursor)) &&
+    (context.activeBuffer === 'normal' || context.cursorInverse === true)
+  )
+}
 
 /** The prompt box at the cursor, if one is on screen. `text` holds only what was typed. */
 export function detectTerminalComposerPrompt(
-  context: TerminalCursorContext | null | undefined
+  context: TerminalCursorContext | null | undefined,
+  typedOnly = false
 ): TerminalComposerPrompt | null {
-  if (!context || context.cursorHidden || context.rows.length === 0) {
+  if (!context || context.rows.length === 0) {
     return null
   }
   const cursorIndex = context.rows.length - 1
   const codexFooterIndex = findCodexFooterIndex(context)
-  let rawAfterCursor = context.afterCursor || context.rawAfterCursor
+  let rawAfterCursor = typedOnly
+    ? context.afterCursor
+    : context.afterCursor || context.rawAfterCursor
   let afterCursor = context.afterCursor
-  let continuationRows = composerContinuationRows(context, rawAfterCursor, codexFooterIndex)
-  const stockPlaceholder = isStockPlaceholder(rawAfterCursor, continuationRows)
+  let continuationRows = composerContinuationRows(
+    context,
+    rawAfterCursor,
+    codexFooterIndex,
+    typedOnly
+  )
+  // Why: the continuation walk stops at the row that would close the frame; typed-only walks also
+  // stop at dim suggestion rows, which still sit inside the frame.
+  let frameIndex = continuationRows.length
+  while (
+    typedOnly &&
+    (context.rowsBelow[frameIndex] ?? '').trim() &&
+    !(context.typedRowsBelow[frameIndex] ?? '').trim() &&
+    !COMPOSER_FRAME_LINE.test(context.rowsBelow[frameIndex] ?? '')
+  ) {
+    frameIndex += 1
+  }
+  const closedByFrame = COMPOSER_FRAME_LINE.test(context.rowsBelow[frameIndex] ?? '')
+  // Typed-only reads already drop dim placeholders; undimmed text that matches one is the user's.
+  const stockPlaceholder = !typedOnly && isStockPlaceholder(rawAfterCursor, continuationRows)
   if (stockPlaceholder) {
     rawAfterCursor = ''
     afterCursor = ''
@@ -174,15 +198,23 @@ export function detectTerminalComposerPrompt(
   }
   for (let index = cursorIndex; index >= 0; index -= 1) {
     const row = context.rows[index] ?? ''
-    const matched = row.match(/^\s*([\u276F\u203A\u00BB])/)?.[1]
+    const matched = row.match(/^\s*([❯›»])/)?.[1]
     const glyph = (['❯', '›', '»'] as const).find((candidate) => candidate === matched)
     if (glyph) {
-      if (glyph === '❯' && !COMPOSER_FRAME_LINE.test(context.rows[index - 1] ?? '')) {
-        return null
-      }
-      if (
-        (glyph === '›' || glyph === '»') &&
-        (context.promptGlyphBoldRows[index] !== true || codexFooterIndex === -1)
+      if (glyph === '❯') {
+        const top = context.rows[index - 1] ?? ''
+        if (
+          (!COMPOSER_FRAME_LINE.test(top) &&
+            (!COMPOSER_TOP_FRAME_PREFIX.test(top.trimStart()) || !closedByFrame)) ||
+          (context.cursorHidden &&
+            !isHiddenComposerCaret(context, index === cursorIndex, closedByFrame))
+        ) {
+          return null
+        }
+      } else if (
+        context.cursorHidden ||
+        context.promptGlyphBoldRows[index] !== true ||
+        codexFooterIndex === -1
       ) {
         return null
       }
@@ -193,10 +225,10 @@ export function detectTerminalComposerPrompt(
         const below = continuationRows.map((line) => ({ text: line[pick], wrapped: line.wrapped }))
         const rowsAbove = pick === 'raw' ? context.rows : context.typedRows
         return index === cursorIndex
-          ? [{ text: cursorText.replace(PROMPT_GLYPH_PREFIX, ''), wrapped: false }, ...below]
+          ? [{ text: cursorText.replace(COMPOSER_PROMPT_PREFIX, ''), wrapped: false }, ...below]
           : [
               {
-                text: (rowsAbove[index] ?? row).replace(PROMPT_GLYPH_PREFIX, ''),
+                text: (rowsAbove[index] ?? row).replace(COMPOSER_PROMPT_PREFIX, ''),
                 wrapped: false
               },
               ...rowsAbove.slice(index + 1, cursorIndex).map((text, offset) => ({
@@ -207,12 +239,16 @@ export function detectTerminalComposerPrompt(
               ...below
             ]
       }
+      // The agent pads continuation rows to the width of its prompt; deeper indentation is the user's.
+      const layoutPadding = typedOnly ? (row.match(COMPOSER_PROMPT_PREFIX)?.[0].length ?? 0) : null
       // Only Claude's composer is known to paint suggestions dim; Codex keeps its own reading.
       const separatesDim = glyph === '❯'
-      const text = joinComposerLines(composerLines(separatesDim ? 'text' : 'legacy'))
+      const text = joinComposerLines(composerLines(separatesDim ? 'text' : 'legacy'), layoutPadding)
       const suggestion =
-        text || stockPlaceholder || !separatesDim ? '' : joinComposerLines(composerLines('raw'))
-      if (!text && !stockPlaceholder && !suggestion) {
+        text || stockPlaceholder || !separatesDim || typedOnly
+          ? ''
+          : joinComposerLines(composerLines('raw'), null)
+      if (!text && !stockPlaceholder && !suggestion && !typedOnly) {
         return null
       }
       return {
@@ -276,6 +312,14 @@ export function detectTerminalComposerDraft(
     endRow: match.endRow,
     promptGlyph: match.promptGlyph
   }
+}
+
+/** The user's own text in the composer, '' when it holds only a placeholder or a dim suggestion, null when no composer is visible. */
+export function readTerminalComposerTypedText(
+  context: TerminalCursorContext | null | undefined
+): string | null {
+  const boxed = context ? detectBoxedComposerDraft(context) : null
+  return boxed ? boxed.text : (detectTerminalComposerPrompt(context, true)?.text ?? null)
 }
 
 export function hasTerminalComposerPlaceholder(
