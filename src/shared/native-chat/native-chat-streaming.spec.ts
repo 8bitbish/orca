@@ -47,40 +47,49 @@ describe('deriveNativeChatStreamingText', () => {
     ).toBe('Working on it')
   })
 
-  it('treats an open idle-send echo as the active streaming-turn boundary', () => {
+  it('treats an optimistic user echo as the active streaming-turn boundary', () => {
+    const optimistic = {
+      ...user('new prompt'),
+      id: 'pending:send-1',
+      timestamp: 20,
+      source: 'scrape' as const
+    }
     expect(
       deriveNativeChatStreamingText({
-        messages: [assistant('A much longer answer from the completed prior turn')],
+        messages: [assistant('A much longer answer from the completed prior turn'), optimistic],
         previewText: 'New reply',
-        working: true,
-        hasOpenIdleSend: true
+        working: true
       })
     ).toBe('New reply')
   })
 
   // A short reply that repeats earlier wording ("Done.") would otherwise be read as
   // already-landed and suppressed, leaving the turn with no visible bubble at all.
-  it('keeps an idle-send preview that repeats text from the previous turn', () => {
+  it('keeps an active-send preview that repeats text from the previous turn', () => {
     expect(
       deriveNativeChatStreamingText({
-        messages: [user('first prompt'), assistant('Done.')],
+        messages: [
+          user('first prompt'),
+          assistant('Done.'),
+          { ...user('next prompt'), id: 'pending:send-2', pendingSend: 'active' }
+        ],
         previewText: 'Done',
-        working: true,
-        hasOpenIdleSend: true
+        working: true
       })
     ).toBe('Done')
   })
 
-  // The echo used to be threaded in as a tail message, which hid the landed reply
-  // behind a user bubble — so a preview of an already-flushed turn kept rendering
-  // as a duplicate assistant bubble for as long as the echo stayed open.
+  // A queued echo is not this turn's prompt, so the landed reply still suppresses a duplicate preview.
   it('drops a preview the transcript already contains when the echo is queued', () => {
     expect(
       deriveNativeChatStreamingText({
-        messages: [user('do the thing'), assistant('Working on it, here is the full answer.')],
+        messages: [
+          user('do the thing'),
+          assistant('Working on it, here is the full answer.'),
+          { ...user('later'), id: 'pending:send-3', pendingSend: 'queued' }
+        ],
         previewText: 'Working on it',
-        working: true,
-        hasOpenIdleSend: false
+        working: true
       })
     ).toBeNull()
   })

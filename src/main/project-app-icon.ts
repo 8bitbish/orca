@@ -1,7 +1,7 @@
 import { readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { MAX_REPO_ICON_UPLOAD_BYTES } from '../shared/repo-icon'
-import { detectRepoFileIcon, readLocalImageIcon } from './repo-icon-file-detection'
+import { detectRepoFileIcon, readLocalImageIcon } from './repository-icons/repo-icon-file-detection'
 import { resolveFilesystemRouteForHost } from './providers/execution-host-provider-dispatch'
 
 // App-icon locations a chat project card looks in first, before the repo icon

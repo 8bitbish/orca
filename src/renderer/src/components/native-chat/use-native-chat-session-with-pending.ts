@@ -5,7 +5,6 @@ import {
   nativeChatStreamingMessage
 } from '../../../../shared/native-chat/native-chat-streaming'
 import {
-  isQueuedPendingMessageId,
   pendingSendsAsMessages,
   type NativeChatPendingSend
 } from '../../../../shared/native-chat/transcript/native-chat-pending-sends'
@@ -15,8 +14,7 @@ import {
 } from './native-chat-command-marker'
 
 /** The session as the pane draws it: the transcript, then local command lines, the streaming
- *  preview and the sends not yet in the transcript. The list sorts the streaming bubble below
- *  idle-send echoes and above queued ones. */
+ *  preview and the sends not yet in the transcript, each placed against the current working epoch. */
 export function useNativeChatSessionWithPending<S extends { messages: NativeChatMessage[] }>(
   session: S,
   args: {
@@ -25,23 +23,29 @@ export function useNativeChatSessionWithPending<S extends { messages: NativeChat
     previewText: string | null | undefined
     working: boolean
     previewIsToolOutput: boolean | undefined
+    workingEpoch: number | null | undefined
   }
 ): S {
-  const { pending, commandMarkers, previewText, working, previewIsToolOutput } = args
+  const { pending, commandMarkers, previewText, working, previewIsToolOutput, workingEpoch } = args
   const pendingMessages = useMemo(
-    () => pendingSendsAsMessages(pending, session.messages),
-    [pending, session.messages]
+    () => pendingSendsAsMessages(pending, session.messages, workingEpoch),
+    [pending, session.messages, workingEpoch]
+  )
+  // Stable across preview ticks so a long history is not re-spread on every streamed chunk.
+  const messagesWithPending = useMemo(
+    () =>
+      pendingMessages.length === 0 ? session.messages : [...session.messages, ...pendingMessages],
+    [session.messages, pendingMessages]
   )
   const streamingText = useMemo(
     () =>
       deriveNativeChatStreamingText({
-        messages: session.messages,
+        messages: messagesWithPending,
         previewText,
         working,
-        previewIsToolOutput,
-        hasOpenIdleSend: pendingMessages.some((message) => !isQueuedPendingMessageId(message.id))
+        previewIsToolOutput
       }),
-    [session.messages, pendingMessages, previewText, working, previewIsToolOutput]
+    [messagesWithPending, previewText, working, previewIsToolOutput]
   )
   return useMemo<S>(() => {
     if (pending.length === 0 && commandMarkers.length === 0 && !streamingText) {

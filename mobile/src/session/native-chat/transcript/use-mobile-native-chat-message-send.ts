@@ -3,6 +3,7 @@ import type { RpcClient } from '../../../transport/rpc-client'
 import {
   clearMobileNativeChatInput,
   openMobileNativeChatSendBudget,
+  readMobileNativeChatInputClear,
   sendMobileNativeChatMessageWithOutcome,
   typeMobileNativeChatCommandWithOutcome,
   type MobileNativeChatSendOutcome
@@ -22,10 +23,6 @@ import type {
 } from '../mobile-native-chat-pending-echo'
 import { UNCONFIRMED_SEND_MESSAGE } from '../use-mobile-native-chat-unconfirmed-sends'
 import type { MobileNativeChatLaunchDraftSeed } from '../composer/use-mobile-native-chat-launch-draft-seed'
-import {
-  AGENT_TUI_CLEAR_INPUT_LINE,
-  buildAgentTuiClearInputForText
-} from '../../../../../src/shared/agent-tui-input-clear'
 import { buildNativeChatPasteBytes } from '../../../../../src/shared/native-chat/input/native-chat-paste-bytes'
 import { offerMobileNativeChatSendToQueue } from '../../mobile-native-chat-queue-send'
 import type { MobileNativeChatQueueSubmit } from '../../mobile-native-chat-queue-send'
@@ -55,13 +52,14 @@ export function useMobileNativeChatMessageSend(args: {
   agentRef: MutableRefObject<string | null>
   // Capture control-send scope before await so later tab switches cannot record options on the wrong tab.
   commandSendRef: MutableRefObject<(command: string) => void>
-  /** Whether the agent was already replying, read at send time so the optimistic
-   *  echo can be tiered against the streaming bubble. */
-  agentWorkingRef: MutableRefObject<boolean>
   captureSendOrigin: (text: string, sentAt?: number) => MobileNativeChatSendOrigin | null
   readSeededLaunchDraftSeed: () => MobileNativeChatLaunchDraftSeed | null
   clearDraftForSend: (origin: MobileNativeChatSendOrigin, text: string) => void
-  restoreRejectedDraft: (origin: MobileNativeChatSendOrigin, text: string) => void
+  restoreRejectedDraft: (
+    origin: MobileNativeChatSendOrigin,
+    text: string,
+    options?: { preserveConversationCommands?: boolean }
+  ) => void
   acceptSend: MobileNativeChatAcceptSend
   holdUnconfirmedSend: (
     origin: MobileNativeChatSendOrigin,
@@ -79,7 +77,6 @@ export function useMobileNativeChatMessageSend(args: {
     deviceTokenRef,
     agentRef,
     commandSendRef,
-    agentWorkingRef,
     captureSendOrigin,
     readSeededLaunchDraftSeed,
     clearDraftForSend,
@@ -103,10 +100,6 @@ export function useMobileNativeChatMessageSend(args: {
       const text = draftText.trimEnd()
       const handle = handleRef.current
       const origin = captureSendOrigin(text, sentAt)
-      // Snapshot here, not at acceptSend: the send itself flips the agent to
-      // working, so reading it after the RPC settles would tag every idle send as
-      // queued and push the reply above the prompt that caused it.
-      const queuedWhileWorking = agentWorkingRef.current
       const agent = agentRef.current
       const recordCommand = commandSendRef.current
       // Connection drops precede lease collapse by one render; gate immediately to avoid waiting the whole send budget.
@@ -159,13 +152,17 @@ export function useMobileNativeChatMessageSend(args: {
         classification !== 'chat' &&
         isSlashCommandDraft(text) &&
         !images?.length
-      if (!images?.length && (seededLaunchDraft || !typesCodexCommand)) {
+      if (!images?.length) {
+        const clearInput = await readMobileNativeChatInputClear({
+          client,
+          terminal: handle,
+          deadline,
+          ...(seededLaunchDraft ? { seededText: seededLaunchDraft.text } : {})
+        })
         const cleared = await clearMobileNativeChatInput({
           client,
           terminal: handle,
-          clearInput: seededLaunchDraft
-            ? buildAgentTuiClearInputForText(seededLaunchDraft.text)
-            : AGENT_TUI_CLEAR_INPUT_LINE,
+          clearInput,
           deadline,
           ...(deviceTokenRef.current
             ? { mobileClient: { id: deviceTokenRef.current, type: 'mobile' } }
@@ -203,11 +200,15 @@ export function useMobileNativeChatMessageSend(args: {
             deadline,
             ...(mobileClient ? { mobileClient } : {})
           })
-      // TUI commands cannot reconcile user echoes, so neither optimistic bubbles nor unconfirmed transcript holds apply.
       if (outcome === 'unknown') {
         if (classification === 'chat') {
           // Lost acknowledgement proves no failure; verify delivery by transcript rather than reporting not sent.
           holdUnconfirmedSend(origin, text, () => onSendError(UNCONFIRMED_SEND_MESSAGE))
+        } else {
+          if (syncComposer) {
+            restoreRejectedDraft(origin, draftText, { preserveConversationCommands: true })
+          }
+          onSendError(UNCONFIRMED_SEND_MESSAGE)
         }
         return 'unknown'
       }
@@ -219,7 +220,7 @@ export function useMobileNativeChatMessageSend(args: {
         return 'rejected'
       }
       if (classification === 'chat') {
-        acceptSend(origin, text, images, queuedWhileWorking)
+        acceptSend(origin, text, images)
       } else if (recordControlSend) {
         // The session-option catalog can recognize controls omitted from the
         // autocomplete catalog (for example Claude `/model` and `/fast`).
@@ -230,7 +231,6 @@ export function useMobileNativeChatMessageSend(args: {
     [
       acceptSend,
       agentRef,
-      agentWorkingRef,
       captureSendOrigin,
       clearDraftForSend,
       client,

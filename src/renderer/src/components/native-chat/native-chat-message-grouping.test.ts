@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import { orderNativeChatMessages } from './native-chat-message-grouping'
 import { NATIVE_CHAT_STREAMING_ID } from '../../../../shared/native-chat/native-chat-streaming'
+import { sortForImageNormalization } from './native-chat-session-assembler'
 
 function msg(
   overrides: Partial<NativeChatMessage> & Pick<NativeChatMessage, 'id'>
@@ -16,38 +17,21 @@ function msg(
 }
 
 describe('orderNativeChatMessages', () => {
-  // The reply currently streaming is the answer to the prompt the user just sent,
-  // so it has to render BELOW that prompt's echo. Ranking the echo last put the
-  // reply above it: the sent message looked stuck at the bottom of the transcript
-  // and the user had to scroll up to read the response.
-  it('sorts the streaming preview after real content and after an idle send echo', () => {
-    const ordered = orderNativeChatMessages([
-      msg({ id: NATIVE_CHAT_STREAMING_ID, timestamp: null }),
+  it('sorts the streaming preview after the prompt that caused it', () => {
+    const normalized = sortForImageNormalization([
       msg({ id: 'pending:abc', role: 'user', timestamp: 20, source: 'scrape' }),
-      msg({ id: 'real-user', role: 'user', timestamp: 10 })
-    ])
-    expect(ordered.map((m) => m.id)).toEqual(['real-user', 'pending:abc', 'streaming'])
-  })
-
-  it('keeps an echo queued mid-reply below the streaming preview', () => {
-    const ordered = orderNativeChatMessages([
-      msg({ id: 'pending-queued:abc', role: 'user', timestamp: 20, source: 'scrape' }),
       msg({ id: NATIVE_CHAT_STREAMING_ID, timestamp: null }),
-      msg({ id: 'real-user', role: 'user', timestamp: 10 })
+      msg({ id: 'real-user', role: 'user', timestamp: 10, transcriptOrder: 1 }),
+      msg({ id: 'pending:first-queued', role: 'user', timestamp: 30, pendingSend: 'queued' }),
+      msg({ id: 'pending:next-queued', role: 'user', timestamp: 2, pendingSend: 'queued' })
     ])
-    expect(ordered.map((m) => m.id)).toEqual(['real-user', 'streaming', 'pending-queued:abc'])
-  })
-
-  it('orders an idle echo, the reply to it, then a prompt queued during that reply', () => {
-    const ordered = orderNativeChatMessages([
-      msg({ id: 'pending-queued:second', role: 'user', timestamp: 30, source: 'scrape' }),
-      msg({ id: NATIVE_CHAT_STREAMING_ID, timestamp: null }),
-      msg({ id: 'pending:first', role: 'user', timestamp: 20, source: 'scrape' })
-    ])
+    const ordered = orderNativeChatMessages([...normalized])
     expect(ordered.map((m) => m.id)).toEqual([
-      'pending:first',
+      'real-user',
+      'pending:abc',
       'streaming',
-      'pending-queued:second'
+      'pending:first-queued',
+      'pending:next-queued'
     ])
   })
 })

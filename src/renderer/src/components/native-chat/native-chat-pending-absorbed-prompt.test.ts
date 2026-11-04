@@ -50,7 +50,7 @@ function listAfterSend(
       sentAt,
       afterMessageId: boundary.id,
       afterMessageTimestamp: boundary.timestamp,
-      queuedWhileWorking: true
+      queuedDuringWorkingEpoch: 1
     }
   ]
   const messages = assembled(now)

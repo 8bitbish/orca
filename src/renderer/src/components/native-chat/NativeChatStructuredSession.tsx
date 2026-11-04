@@ -67,9 +67,7 @@ import { useStructuredAgentSessionStartFailureFacts } from './use-structured-age
 import { pendingPromptsAllUnanswerableHere } from '../../../../shared/agent-session/agent-session-approval-subject'
 import { isClaudeSignInFailureKind, useNativeChatClaudeSignIn } from './native-chat-claude-sign-in'
 
-export function NativeChatStructuredSession(
-  props: Omit<NativeChatStructuredViewProps, 'mode'>
-): React.JSX.Element {
+export function NativeChatStructuredSession(props: Omit<NativeChatStructuredViewProps, 'mode'>) {
   const ownerWorktreeId = useNativeChatTabOwnerWorktreeId(props.tabId)
   const fileLinkContext = useNativeChatFileLinkContext(props.tabId)
   const provisionalLaunch = useNativeChatProvisionalLaunch(ownerWorktreeId, props.sessionId)
@@ -163,6 +161,7 @@ export function NativeChatStructuredSession(
   const paneCommands = useStructuredNativeChatPaneCommands({
     pane: props,
     handOff,
+    sessionContext: controller,
     ownerWorktreeId,
     rootRef,
     composerRef,
@@ -321,7 +320,7 @@ export function NativeChatStructuredSession(
                 awaitingInput={prompt === null ? null : 'shown'}
                 turnActivity={controller.turnActivity}
                 stopping={stopControls.stopping}
-                {...fileLinkProps}
+                {...{ ...fileLinkProps, structuredAttachments: true }}
                 runtimeContext={imageRuntimeContext}
                 deliveryNotices={deliveryNotices}
               />
@@ -351,6 +350,7 @@ export function NativeChatStructuredSession(
           {prompt ? null : (
             <NativeChatStructuredComposerTabStrips
               tabId={props.tabId}
+              runtimeContext={imageRuntimeContext}
               threadGoal={controller.threadGoal}
               transport={transport}
               isWorking={controller.isWorking}

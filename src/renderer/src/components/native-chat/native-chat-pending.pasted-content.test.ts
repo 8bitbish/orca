@@ -59,15 +59,15 @@ describe('pendingSendsAsMessages for pasted and queued sends', () => {
     expect(pendingSendsAsMessages(pending, [userMessage('u1', wrapped)])).toEqual([])
   })
 
-  // The id prefix is what the sort reads to decide whether the streaming reply
-  // belongs above this echo (it answers it) or below it (the echo is queued).
-  it('marks a send issued while the agent was already replying as queued', () => {
+  // The placement is what the sort reads to decide whether the streaming reply
+  // belongs below this echo (it answers it) or above it (the echo is queued).
+  it('places a send issued during the current working turn as queued', () => {
     const idle = pendingOf('p1', 'first')
-    const queued = { ...pendingOf('p2', 'second'), queuedWhileWorking: true }
+    const queued = { ...pendingOf('p2', 'second'), queuedDuringWorkingEpoch: 7 }
 
-    expect(pendingSendsAsMessages([idle, queued], []).map((m) => m.id)).toEqual([
-      'pending:p1',
-      'pending-queued:p2'
+    expect(pendingSendsAsMessages([idle, queued], [], 7).map((m) => m.pendingSend)).toEqual([
+      'active',
+      'queued'
     ])
   })
 })

@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
 import {
   addMobileNativeChatDraftImages,
@@ -48,6 +49,13 @@ export function restoreMobileNativeChatDraftImages(
   if (scopeKey && images.length > 0) {
     addMobileNativeChatDraftImages(mobileNativeChatDraftDestination(scopeKey), [...images])
   }
+}
+
+/** Puts a restored queued message's images back as chips on the active scope. */
+export function useMobileNativeChatRestoreImages(
+  scopeKey: string | null
+): (images: readonly Omit<PendingNativeChatImage, 'id'>[]) => void {
+  return useCallback((images) => restoreMobileNativeChatDraftImages(scopeKey, images), [scopeKey])
 }
 
 /** Offers an image send to the host queue before any paste: true/false once the queue took or

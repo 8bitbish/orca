@@ -4,6 +4,7 @@ import { admitNativeChatPastedText } from './native-chat-composer-pasted-text-re
 import { useCallback, type Dispatch, type SetStateAction } from 'react'
 import type { AgentType } from '../../../../shared/agent-status-types'
 import type { NativeChatLaunchDraft } from '@/lib/native-chat-launch-prompt'
+import { translate } from '@/i18n/i18n'
 import { useAppStore } from '../../store'
 import { emitNativeChatMessageSent } from '@/lib/native-chat-telemetry'
 import {
@@ -111,7 +112,10 @@ export function useNativeChatPtyComposerSend(
         finishSend(args, reply)
         return true
       }
-      sendNow(args, target, text, imagePaths, classification)
+      // An unreadable input line leaves the draft in place to retry.
+      if (!sendNow(args, target, text, imagePaths, classification)) {
+        return false
+      }
       finishSend(args, reply)
       return true
     },
@@ -125,13 +129,17 @@ function sendNow(
   text: string,
   imagePaths: string[],
   classification: ReturnType<NativeChatPickerState['classifySend']>
-): void {
+): boolean {
   const { sendOptions: launchSendOptions } = resolveNativeChatLaunchDraftSend({
     launchDraft: args.launchDraft,
     launchDraftResolved: args.launchDraftResolved,
     agent: args.agent,
     readInputLine: () => args.readTerminalDraft?.()
   })
+  if (launchSendOptions.clearInput === null) {
+    args.setNotice(translate('components.native-chat.messageNotSent', 'Message not sent'))
+    return false
+  }
   let pendingId: string | undefined
   const sendOptions =
     args.agent === 'claude' && classification === 'chat'
@@ -189,6 +197,7 @@ function sendNow(
   })
   // The launch draft's TUI line was consumed by this write either way.
   useAppStore.getState().clearNativeChatLaunchDraft(args.terminalTabId)
+  return true
 }
 
 function finishSend(args: PtyComposerSendArgs, reply: string | undefined): void {

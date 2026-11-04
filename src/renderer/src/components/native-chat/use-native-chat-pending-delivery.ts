@@ -4,7 +4,6 @@ import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
 import type { AgentType } from '../../../../shared/agent-status-types'
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import {
-  nativeChatPendingMessageId,
   pendingSendsAsMessages,
   prunePendingSends,
   releaseEmptyTranscriptClaims,
@@ -28,17 +27,16 @@ const NO_NOTICES: ReadonlyMap<string, NativeChatDeliveryNotice> = new Map()
 export function useNativeChatPendingDelivery(args: {
   paneKey: string
   agent: AgentType
+  workingEpoch?: number | null
   /** `readPhase` 'ready' with a `sessionId` means an empty `messages` was a real read. */
   session: {
     messages: NativeChatMessage[]
     readPhase?: ReadState['phase']
     sessionId?: string | null
   }
-  /** A send into a working agent queues behind the in-flight reply instead of being answered by it. */
-  liveWorking?: boolean
 }) {
   const languageRevision = useUiLanguageRevision()
-  const { paneKey, agent, liveWorking = false } = args
+  const { paneKey, agent, workingEpoch } = args
   const { messages } = args.session
   const sessionId = args.session.sessionId ?? null
   // Without a sessionId, ready is an unread placeholder.
@@ -66,18 +64,18 @@ export function useNativeChatPendingDelivery(args: {
     save((entries) => prunePendingSends(releaseEmptyTranscriptClaims(entries, sessionId), messages))
   }, [messages, save, sessionId])
   const append = useCallback(
-    (text: string, imagePaths: string[] | undefined, queuedWhileWorking: boolean) => {
+    (text: string, imagePaths: string[] | undefined, epoch: number | null | undefined) => {
       const sentAt = Date.now()
       const boundary = messages.at(-1)
       const entry: NativeChatPendingSend = {
         id: nextNativeChatPendingSendId(sentAt),
         text,
         sentAt,
+        ...(epoch !== undefined ? { queuedDuringWorkingEpoch: epoch } : {}),
         afterMessageId: boundary?.id ?? null,
         afterMessageTimestamp: boundary?.timestamp ?? null,
         ...(readEmptySessionId ? { afterEmptyTranscriptSessionId: readEmptySessionId } : {}),
-        ...(imagePaths ? { imagePaths } : {}),
-        ...(queuedWhileWorking ? { queuedWhileWorking: true } : {})
+        ...(imagePaths ? { imagePaths } : {})
       }
       setPending(appendPendingSendCache(scope, entry))
       return entry.id
@@ -85,13 +83,13 @@ export function useNativeChatPendingDelivery(args: {
     [messages, readEmptySessionId, scope]
   )
   const record = useCallback(
-    (text: string, imagePaths?: string[]) => append(text, imagePaths, liveWorking),
-    [append, liveWorking]
+    (text: string, imagePaths?: string[]) => append(text, imagePaths, workingEpoch),
+    [append, workingEpoch]
   )
-  // A message the terminal host queue just typed in opens the next turn, so it is never queued-tier.
+  // A message the terminal host queue just typed in opens the next turn, so it is never placed as queued.
   const appendDeliveredEcho = useCallback(
     (text: string, imagePaths: string[]) => {
-      append(text, imagePaths.length > 0 ? imagePaths : undefined, false)
+      append(text, imagePaths.length > 0 ? imagePaths : undefined, undefined)
     },
     [append]
   )
@@ -158,8 +156,7 @@ export function useNativeChatPendingDelivery(args: {
             return entries
           }
           return entries.map((entry) =>
-            due.includes(entry) &&
-            unmatched.has(nativeChatPendingMessageId(entry.id, entry.queuedWhileWorking))
+            due.includes(entry) && unmatched.has(`pending:${entry.id}`)
               ? { ...entry, delivery: 'unconfirmed' as const }
               : entry
           )
@@ -179,7 +176,7 @@ export function useNativeChatPendingDelivery(args: {
       if (!entry.delivery) {
         continue
       }
-      result.set(nativeChatPendingMessageId(entry.id, entry.queuedWhileWorking), {
+      result.set(`pending:${entry.id}`, {
         text:
           entry.delivery === 'rejected'
             ? translate('components.native-chat.messageNotSent', 'Message not sent')

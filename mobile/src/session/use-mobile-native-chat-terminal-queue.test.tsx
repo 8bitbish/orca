@@ -8,6 +8,7 @@ import type {
 } from '../../../src/shared/terminal-message-queue-contract'
 import type { RpcClient } from '../transport/rpc-client'
 import type { MobileNativeChatSendOrigin } from './native-chat/mobile-native-chat-pending-echo'
+import { mobileNativeChatDraftDestination } from './native-chat/composer/mobile-native-chat-draft-inputs'
 import { clearMobileQueueOrphansForTests } from './mobile-terminal-message-queue-orphans'
 import { clearQueuedImagePreviewsForTests } from './mobile-terminal-message-queue-previews'
 import { useMobileNativeChatTerminalQueue } from './use-mobile-native-chat-terminal-queue'
@@ -23,6 +24,7 @@ function snap(revision: number, items: TerminalQueuedMessage[]): TerminalMessage
 function sendOrigin(text: string, baselineTailMessageId: string): MobileNativeChatSendOrigin {
   return {
     draftKey: 'draft',
+    draftDestination: mobileNativeChatDraftDestination('draft'),
     draftEditGeneration: 0,
     pendingKey: null,
     normalizedText: text,
@@ -142,12 +144,7 @@ describe('useMobileNativeChatTerminalQueue', () => {
     tail = 'm1'
     await emit({ type: 'delivered', item: item('a', 'queued one') })
     expect(acceptSend).toHaveBeenCalledTimes(1)
-    expect(acceptSend).toHaveBeenCalledWith(
-      sendOrigin('queued one', 'm0'),
-      'queued one',
-      undefined,
-      false
-    )
+    expect(acceptSend).toHaveBeenCalledWith(sendOrigin('queued one', 'm0'), 'queued one', undefined)
   })
 
   it('shows the stack only while the host holds something', async () => {
@@ -234,11 +231,6 @@ describe('useMobileNativeChatTerminalQueue', () => {
     expect(routed).toBe('queued')
     expect(clearDraftForSend).toHaveBeenCalledTimes(1)
     await emit({ type: 'delivered', item: item('img', 'look', { imagePaths: ['/host/a.png'] }) })
-    expect(acceptSend).toHaveBeenCalledWith(
-      expect.anything(),
-      'look',
-      ['file:///phone/a.png'],
-      false
-    )
+    expect(acceptSend).toHaveBeenCalledWith(expect.anything(), 'look', ['file:///phone/a.png'])
   })
 })

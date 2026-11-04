@@ -78,6 +78,13 @@ function build(
 }
 
 describe('buildMobileNativeChatTransientData', () => {
+  it('places an idle send before the streaming reply it caused', () => {
+    const data = build([assistant('a1', 'Earlier answer')], 'Starting the tests', [
+      { id: 'p1', text: 'Run the tests', sentAt: 100 }
+    ])
+    expect(data.map((message) => message.id)).toEqual(['a1', 'p1', 'streaming'])
+  })
+
   it('appends pending optimistic messages at the tail as user turns', () => {
     const data = build([assistant('a1', 'hello')], null, [{ id: 'p1', text: 'queued' }])
     const last = data[data.length - 1]
@@ -86,27 +93,10 @@ describe('buildMobileNativeChatTransientData', () => {
     expect(last.blocks).toEqual([{ type: 'text', text: 'queued' }])
   })
 
-  // The streaming reply answers a prompt that was sent while the agent was idle,
-  // so it must render BELOW that prompt's echo. Emitting all echoes after the
-  // bubble put the reply above the message that caused it.
-  it('puts the streaming bubble after an echo sent while the agent was idle', () => {
+  it('splits active and queued echoes around the streaming bubble', () => {
     const data = build([assistant('a1', 'hello')], 'Sure, working on it', [
-      { id: 'p1', text: 'do the thing' }
-    ])
-    expect(data.map((message) => message.id)).toEqual(['a1', 'p1', 'streaming'])
-  })
-
-  it('keeps an echo queued mid-reply after the streaming bubble', () => {
-    const data = build([assistant('a1', 'hello')], 'Sure, working on it', [
-      { id: 'p1', text: 'and this too', queuedWhileWorking: true }
-    ])
-    expect(data.map((message) => message.id)).toEqual(['a1', 'streaming', 'p1'])
-  })
-
-  it('splits idle and queued echoes around the streaming bubble', () => {
-    const data = build([assistant('a1', 'hello')], 'Sure, working on it', [
-      { id: 'p1', text: 'first' },
-      { id: 'p2', text: 'second', queuedWhileWorking: true }
+      { id: 'p1', text: 'first', pendingSend: 'active' },
+      { id: 'p2', text: 'second', pendingSend: 'queued' }
     ])
     expect(data.map((message) => message.id)).toEqual(['a1', 'p1', 'streaming', 'p2'])
   })
@@ -265,10 +255,9 @@ describe('buildMobileNativeChatTransientData', () => {
     expect(result.data[0]?.blocks).toEqual([{ type: 'image-ref', url: 'file:///phone-photo.jpg' }])
   })
 
-  it('appends a synthetic bubble for gated streaming text, between transcript and pending', () => {
-    // Flagged queued so it sorts after the bubble; an unflagged (idle) send sorts above the reply it prompts.
+  it('keeps a queued follow-up after the current streaming reply', () => {
     const data = build([user('u1', 'hi')], 'thinking out loud', [
-      { id: 'p1', text: 'queued', queuedWhileWorking: true }
+      { id: 'p1', text: 'queued', pendingSend: 'queued' }
     ])
     expect(data.map((message) => message.id)).toEqual(['u1', 'streaming', 'p1'])
     expect(data[1].blocks).toEqual([{ type: 'text', text: 'thinking out loud' }])

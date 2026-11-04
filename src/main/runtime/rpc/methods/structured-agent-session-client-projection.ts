@@ -15,11 +15,18 @@ import {
   projectThoughtMarkerHistory
 } from './native-chat-thought-marker-projection'
 import {
+  projectReceiptDeviceEvent,
+  projectReceiptDeviceHistory
+} from './structured-agent-session-receipt-devices'
+import {
   projectTurnItemEvent,
   projectTurnItemHistory
 } from './structured-agent-session-turn-item-capability'
 
-type ProjectionReader = Pick<RpcContext, 'clientKind' | 'clientCapabilities'>
+type ProjectionReader = Pick<
+  RpcContext,
+  'clientKind' | 'clientCapabilities' | 'runtime' | 'caller' | 'clientId'
+>
 
 export function projectStructuredHistoryForClient(
   result: AgentSessionHistoryResult,
@@ -31,7 +38,7 @@ export function projectStructuredHistoryForClient(
     ctx,
     sessionAgent
   )
-  return projectThoughtMarkerHistory(withTurns, ctx)
+  return projectReceiptDeviceHistory(projectThoughtMarkerHistory(withTurns, ctx), ctx)
 }
 
 export function projectStructuredEventForClient(
@@ -40,5 +47,5 @@ export function projectStructuredEventForClient(
   sessionAgent: string | null
 ): AgentSessionSubscribeEvent {
   const withTurns = projectTurnItemEvent(projectBackgroundTaskEvent(event, ctx), ctx, sessionAgent)
-  return projectThoughtMarkerEvent(withTurns, ctx)
+  return projectReceiptDeviceEvent(projectThoughtMarkerEvent(withTurns, ctx), ctx)
 }

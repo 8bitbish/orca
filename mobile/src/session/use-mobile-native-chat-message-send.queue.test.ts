@@ -6,6 +6,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RpcClient } from '../transport/rpc-client'
 import type { MobileNativeChatSendOrigin } from './native-chat/mobile-native-chat-pending-echo'
+import { mobileNativeChatDraftDestination } from './native-chat/composer/mobile-native-chat-draft-inputs'
 import type { MobileQueueSubmitOutcome } from './use-mobile-native-chat-message-queue'
 
 const sendWithOutcome = vi.fn()
@@ -15,6 +16,7 @@ vi.mock('./native-chat/mobile-native-chat-send', () => ({
   sendMobileNativeChatMessageWithOutcome: (...args: unknown[]) => sendWithOutcome(...args),
   typeMobileNativeChatCommandWithOutcome: vi.fn(),
   clearMobileNativeChatInput: (...args: unknown[]) => clearInputWrite(...args),
+  readMobileNativeChatInputClear: async () => '\u0015',
   openMobileNativeChatSendBudget: () => Date.now() + 15_000,
   MOBILE_NATIVE_CHAT_SEND_TIMEOUT_MS: 15_000,
   MOBILE_NATIVE_CHAT_MIN_WRITE_TIMEOUT_MS: 2_000
@@ -32,6 +34,7 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
   let api: Send | null = null
   const origin: MobileNativeChatSendOrigin = {
     draftKey: 'k',
+    draftDestination: mobileNativeChatDraftDestination('k'),
     draftEditGeneration: 0,
     pendingKey: 'p',
     normalizedText: '',
@@ -66,7 +69,6 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
         deviceTokenRef: { current: 'device' },
         agentRef: { current: 'claude' },
         commandSendRef: { current: vi.fn() },
-        agentWorkingRef: { current: true },
         captureSendOrigin,
         readSeededLaunchDraftSeed: () => null,
         clearDraftForSend,
@@ -134,7 +136,7 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
     expect(queueSubmit).toHaveBeenCalledTimes(1)
     expect(sendWithOutcome).toHaveBeenCalledTimes(1)
     expect(sendWithOutcome.mock.calls[0]![0]).toMatchObject({ terminal: 'term', text: 'hello' })
-    expect(acceptSend).toHaveBeenCalledWith(origin, 'hello', undefined, true)
+    expect(acceptSend).toHaveBeenCalledWith(origin, 'hello', undefined)
     expect(restoreRejectedDraft).not.toHaveBeenCalled()
   })
 
@@ -184,6 +186,6 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
     expect(queueSubmit).not.toHaveBeenCalled()
     expect(clearDraftForSend).toHaveBeenCalledTimes(1)
     expect(sendWithOutcome).toHaveBeenCalledTimes(1)
-    expect(acceptSend).toHaveBeenCalledWith(origin, 'hello', undefined, true)
+    expect(acceptSend).toHaveBeenCalledWith(origin, 'hello', undefined)
   })
 })

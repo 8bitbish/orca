@@ -23,6 +23,9 @@ export function latestNativeChatReplyText(
 ): string {
   for (let index = messages.length - 1; index > after; index -= 1) {
     const message = messages[index]!
+    if (message.queued || message.pendingSend === 'queued') {
+      continue
+    }
     if (message.role === 'user') {
       return ''
     }
@@ -35,19 +38,13 @@ export function latestNativeChatReplyText(
 }
 
 // Show only working previews ahead of transcript text; always suppress tool stdout/errors because transcript catch-up cannot retire them.
-// Pass only authoritative turns in `messages`; optimistic echoes are described by `hasOpenIdleSend`.
 export function deriveNativeChatStreamingText(args: {
   messages: readonly NativeChatMessage[]
   previewText: string | null | undefined
   working: boolean
   previewIsToolOutput?: boolean
-  /** True while an echo sent to an *idle* agent is still open: the reply now
-   *  streaming answers that un-transcribed prompt, so the landed rows are an earlier turn.
-   *  A queued echo does not count — there the streaming reply belongs to a prompt
-   *  already in the transcript, so the landed rows can be that same turn. */
-  hasOpenIdleSend?: boolean
 }): string | null {
-  const { messages, previewText, working, previewIsToolOutput, hasOpenIdleSend = false } = args
+  const { previewText, working, previewIsToolOutput } = args
   if (!working || previewIsToolOutput) {
     return null
   }
@@ -55,12 +52,10 @@ export function deriveNativeChatStreamingText(args: {
   if (!text) {
     return null
   }
-  // The landed rows are an earlier turn, so no check below can speak for this one —
-  // a short reply repeating earlier text would suppress a valid preview.
-  if (hasOpenIdleSend) {
-    return text
-  }
-  const lastText = assistantText(messages.at(-1))
+  const messages = args.messages
+  const lastText = assistantText(
+    messages.findLast((message) => !message.queued && message.pendingSend !== 'queued')
+  )
   if (lastText.includes(text) || text.length <= lastText.length) {
     return null
   }

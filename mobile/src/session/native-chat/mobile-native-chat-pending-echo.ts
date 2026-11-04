@@ -27,15 +27,13 @@ export type MobileNativeChatSendOrigin = {
     'afterMessageId' | 'afterMessageTimestamp' | 'afterEmptyTranscriptSessionId'
   >
   sentAt: number
+  queuedDuringWorkingEpoch?: number | null
 }
 
-/** `queuedWhileWorking`: the agent was already replying, so the echo renders after
- *  the streaming bubble instead of above it. */
 export type MobileNativeChatAcceptSend = (
   origin: MobileNativeChatSendOrigin,
   text: string,
-  images?: string[],
-  queuedWhileWorking?: boolean
+  images?: string[]
 ) => void
 
 type PendingByKey = Record<string, MobileNativeChatPendingMessage[]>
@@ -57,17 +55,16 @@ export function appendMobileNativeChatPending(
   id: string,
   origin: MobileNativeChatSendOrigin,
   text: string,
-  images?: string[],
-  queuedWhileWorking?: boolean
+  images?: string[]
 ): PendingByKey {
   const current = previous[key] ?? []
   const entry = assignNativeChatPendingOccurrence<MobileNativeChatPendingMessage>(current, {
     id,
     text,
     sentAt: origin.sentAt,
+    queuedDuringWorkingEpoch: origin.queuedDuringWorkingEpoch,
     ...origin.boundary,
-    ...(images?.length ? { images } : {}),
-    ...(queuedWhileWorking ? { queuedWhileWorking: true } : {})
+    ...(images?.length ? { images } : {})
   })
   return { ...previous, [key]: [...current, entry].slice(-NATIVE_CHAT_PENDING_SEND_LIMIT) }
 }

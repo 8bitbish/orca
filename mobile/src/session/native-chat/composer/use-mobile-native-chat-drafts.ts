@@ -71,7 +71,11 @@ export function useMobileNativeChatDrafts(args: {
   readSeededLaunchDraft: () => string | null
   readSeededLaunchDraftSeed: () => MobileNativeChatLaunchDraftSeed | null
   clearDraftForSend: (origin: MobileNativeChatSendOrigin, text: string) => void
-  restoreRejectedDraft: (origin: MobileNativeChatSendOrigin, text: string) => void
+  restoreRejectedDraft: (
+    origin: MobileNativeChatSendOrigin,
+    text: string,
+    options?: { preserveConversationCommands?: boolean }
+  ) => void
   acceptSend: MobileNativeChatAcceptSend
   holdUnconfirmedSend: (
     origin: MobileNativeChatSendOrigin,
@@ -172,29 +176,31 @@ export function useMobileNativeChatDrafts(args: {
     clearMobileNativeChatDraftForSend(origin.draftDestination, origin.draftEditGeneration, text)
   }, [])
 
-  const restoreRejectedDraft = useCallback((origin: MobileNativeChatSendOrigin, text: string) => {
-    setMobileNativeChatDraftText(origin.draftDestination, (current) =>
-      appendReturnedDraftText(current, text)
-    )
-  }, [])
-
-  const acceptSend = useCallback<MobileNativeChatAcceptSend>(
-    (origin, text, images, queuedWhileWorking) => {
-      if (!origin.pendingKey && !images?.length) {
-        return
-      }
-      pendingCounterRef.current += 1
-      const id = `pending-${pendingCounterRef.current}`
-      // A send with no session yet parks under the draft key and migrates on the
-      // first authoritative read; both queues hold the same shape.
-      const setQueue = origin.pendingKey ? setPendingBySession : setPendingWaitingForSession
-      const key = origin.pendingKey ?? origin.draftKey
-      setQueue((previous) =>
-        appendMobileNativeChatPending(previous, key, id, origin, text, images, queuedWhileWorking)
+  const restoreRejectedDraft = useCallback(
+    (
+      origin: MobileNativeChatSendOrigin,
+      text: string,
+      options?: { preserveConversationCommands?: boolean }
+    ) => {
+      setMobileNativeChatDraftText(origin.draftDestination, (current) =>
+        appendReturnedDraftText(current, text, options)
       )
     },
     []
   )
+
+  const acceptSend = useCallback<MobileNativeChatAcceptSend>((origin, text, images) => {
+    if (!origin.pendingKey && !images?.length) {
+      return
+    }
+    pendingCounterRef.current += 1
+    const id = `pending-${pendingCounterRef.current}`
+    // A send with no session yet parks under the draft key and migrates on the
+    // first authoritative read; both queues hold the same shape.
+    const setQueue = origin.pendingKey ? setPendingBySession : setPendingWaitingForSession
+    const key = origin.pendingKey ?? origin.draftKey
+    setQueue((previous) => appendMobileNativeChatPending(previous, key, id, origin, text, images))
+  }, [])
 
   const { holdUnconfirmedSend } = useMobileNativeChatUnconfirmedSends({
     draftKey,

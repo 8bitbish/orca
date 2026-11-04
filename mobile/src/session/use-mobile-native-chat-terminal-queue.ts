@@ -85,7 +85,7 @@ export function useMobileNativeChatTerminalQueue(args: {
       return
     }
     // It opens the next turn, so the reply below answers it: never the queued-while-working tier.
-    latest.current.acceptSend(origin, item.text, previews.length > 0 ? previews : undefined, false)
+    latest.current.acceptSend(origin, item.text, previews.length > 0 ? previews : undefined)
   }, [])
 
   const queue = useMobileNativeChatMessageQueue({
