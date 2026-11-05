@@ -98,7 +98,7 @@ export function useNativeChatPtyComposerSend(
         classification === 'command' &&
         answerNativeChatCommandInComposer(args)
       ) {
-        return true
+        return false
       }
       if (reply === undefined) {
         if (!admitNativeChatPastedText(args.draftScopeKey, text, args.setNotice)) {

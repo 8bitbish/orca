@@ -61,7 +61,7 @@ describe('PTY composer send with a host message queue', () => {
     const { send, onOptimisticSend } = harness('hello', null)
     expect(send()).toBe(true)
     expect(sendNativeChatMessage).toHaveBeenCalledTimes(1)
-    expect(onOptimisticSend).toHaveBeenCalledWith('hello', [])
+    expect(onOptimisticSend).toHaveBeenCalledWith('hello', [], false)
   })
 
   it('sends straight away when the host says the main agent is idle', () => {
