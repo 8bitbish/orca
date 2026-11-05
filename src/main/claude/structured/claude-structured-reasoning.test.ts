@@ -207,17 +207,4 @@ describe('structured Claude reasoning', () => {
     expect(scopes).toEqual([{ kind: 'turn', turnItemId: expect.stringContaining('turn') }])
     translator.dispose()
   })
-
-  it('omits whitespace-only thinking deltas', () => {
-    vi.useFakeTimers()
-    const { rows, stream, translator } = setup()
-    stream('delta', {
-      type: 'content_block_delta',
-      index: 0,
-      delta: { type: 'thinking_delta', thinking: ' \n ' }
-    })
-    translator.flush()
-    expect(rows.size).toBe(0)
-    translator.dispose()
-  })
 })

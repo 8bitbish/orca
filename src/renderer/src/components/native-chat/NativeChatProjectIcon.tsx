@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { RepoIconGlyph } from '@/components/repo/repo-icon'
-import { resolveRepoHeaderColor } from '@/components/sidebar/project-header-color'
+import { resolveRepoHeaderColor } from '@/components/sidebar/worktree-list/rows/project-header-color'
 import type { NativeChatProjectIconSource } from './native-chat-project-icon'
 
 /** A project's icon at chip (`sm`, a 14px disc concentric with the pill's end) or

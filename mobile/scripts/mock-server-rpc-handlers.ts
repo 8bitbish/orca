@@ -7,9 +7,9 @@ import {
 import {
   applyTerminalQuickCommandMutation,
   type TerminalQuickCommandMutation
-} from '../../src/shared/terminal-quick-commands'
+} from '../../src/shared/terminal/quick-commands/terminal-quick-commands'
 import type { RuntimeWorktreePsSummary } from '../../src/shared/runtime-types'
-import type { TerminalQuickCommand } from '../../src/shared/terminal-quick-command-types'
+import type { TerminalQuickCommand } from '../../src/shared/terminal/quick-commands/terminal-quick-command-types'
 import { handleMockFilePreviewRequest } from './mock-server-file-preview-data'
 import { handleMockGitRequest } from './mock-server-git-state'
 import { handleMockAccountRequest } from './mock-server-account-rpc'

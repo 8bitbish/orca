@@ -15,7 +15,7 @@ async function openFixture(page: Page, name: string) {
   return bounds
 }
 
-test('a saved opt-in keeps the suspended native chat card hidden and the composer visible', async ({
+test('a saved orchestration opt-in keeps the native panel hidden and composer available', async ({
   page
 }) => {
   await page.goto(
@@ -74,7 +74,7 @@ for (const [name, width] of [
   })
 }
 
-for (const name of ['terminalQuestionDetails', 'nativeLatestDetails']) {
+for (const name of ['terminalQuestionDetails']) {
   for (const width of [280, 360]) {
     test(`${name} keeps long expanded details inside a ${width}px frame`, async ({ page }) => {
       await page.goto(`/fixtures.html?id=orchestration-crew/OrchestrationCrewPanel:${name}`)

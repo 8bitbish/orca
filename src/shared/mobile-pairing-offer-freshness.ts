@@ -4,7 +4,10 @@
 // refresh the QR before it dies and the phone say what is actually wrong.
 // atob, not Buffer: this runs in the renderer and in Hermes too.
 
-import { INVITE_EXPIRY_CLOCK_SKEW_MS, MAX_INVITE_TTL_MS } from './mobile-relay-pairing-offer'
+import {
+  INVITE_EXPIRY_CLOCK_SKEW_MS,
+  MAX_INVITE_TTL_MS
+} from './remote-runtime/pairing/mobile-relay-pairing-offer'
 
 function pairingCodeOf(input: string): string | null {
   const trimmed = input.trim()

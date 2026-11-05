@@ -4,11 +4,12 @@ import {
   NATIVE_CHAT_TRANSCRIPT_COLUMN_CLASS
 } from './native-chat-appearance-style'
 import { NativeChatJumpToLatest } from './NativeChatJumpToLatest'
-import { NativeChatNewRowsAnnouncement } from './NativeChatNewRowsMarker'
 import { useNativeChatRowTypography } from './use-native-chat-row-typography'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { CommentMarkdownLinkClickHandler } from '@/components/sidebar/CommentMarkdown'
 import { translate } from '@/i18n/i18n'
+import { useAppStore } from '@/store'
+import { nativeChatScrollsToLatestOnSend } from '../../../../shared/native-chat/native-chat-appearance-settings'
 import type { NativeChatLiveSession } from './use-native-chat-live-session'
 import { useNativeChatTranscriptProjection } from './use-native-chat-transcript-projection'
 import { desktopStructuredTranscript } from './structured-agent-session-message-projection'
@@ -41,7 +42,6 @@ import { toggleNativeChatExpandedKey } from './native-chat-expanded-keys'
 import { useNativeChatRowTurns } from './use-native-chat-row-turns'
 import { NativeChatThoughtTimingContext } from './native-chat-thought-markers'
 import { useNativeChatTranscriptScroll } from './use-native-chat-transcript-scroll'
-import { useNativeChatNewRowsMarker } from './native-chat-new-rows-marker'
 import { useNativeChatOlderHistoryAutoload } from './use-native-chat-older-history-autoload'
 import { NativeChatOlderHistoryRow } from './NativeChatOlderHistoryRow'
 import { useNativeChatMessageRail } from './use-native-chat-message-rail'
@@ -229,18 +229,12 @@ export function NativeChatMessageList({
       ),
     [allSlots, journalItems, stopping, journalSubmissions, latestTurn, hostWork]
   )
-  const { marker: newRowsMarker, dismiss } = useNativeChatNewRowsMarker(
-    slots,
-    waitingSlots,
-    isVisible && session.readCurrent === true
-  )
   const transcriptWindow = useNativeChatTranscriptWindow({
     scrollRef,
     slots,
     isVisible,
     // Rail jumps and diff reveals share one mutually exclusive pin.
     revealIndex: nativeChatSlotIndexOf(slots, railJump?.messageId ?? revealedDiff?.messageId),
-    newRowsMarkerIndex: nativeChatSlotIndexOf(slots, newRowsMarker?.key),
     typography
   })
   const transcriptScroll = useNativeChatTranscriptScroll({
@@ -257,7 +251,7 @@ export function NativeChatMessageList({
     consumeProgrammaticScroll: transcriptWindow.consumeProgrammaticScroll,
     reconcileReaderScroll: transcriptWindow.reconcileReaderScroll
   })
-  const { showJump, onScroll, scrollToBottom, scrollMessageToTop, readerLeavesEnd } =
+  const { showJump, onScroll, scrollToBottom, readerAtEnd, scrollMessageToTop, readerLeavesEnd } =
     transcriptScroll
   const olderHistory = useNativeChatOlderHistoryAutoload({
     scrollRef,
@@ -323,7 +317,23 @@ export function NativeChatMessageList({
     onLeaveEnd: readerLeavesEnd,
     onScrollGesture: transcriptScroll.forwardedGesture
   })
-  useNativeChatMessageListHandle(ref, jumpToLatest, readerInput.revealFindMatch, dismiss, allSlots)
+  // Off keeps a reader who scrolled up in place; one at the end still follows the reply.
+  const revealSent = useCallback(
+    (readerWasAtEnd = readerAtEnd()) => {
+      if (!nativeChatScrollsToLatestOnSend(useAppStore.getState().settings) && !readerWasAtEnd) {
+        return
+      }
+      jumpToLatest()
+    },
+    [jumpToLatest, readerAtEnd]
+  )
+  useNativeChatMessageListHandle(
+    ref,
+    revealSent,
+    readerInput.revealFindMatch,
+    allSlots,
+    readerAtEnd
+  )
   useNativeChatRailJumpLanding({
     railJump,
     slots,
@@ -385,7 +395,6 @@ export function NativeChatMessageList({
                     loadedMessageIds={loadedMessageIds}
                     context={rowContext}
                     window={transcriptWindow}
-                    newRowsMarker={newRowsMarker}
                     forwardGesture={readerInput.forwardedGesture}
                   />
                   {liveLine ? (
@@ -409,7 +418,6 @@ export function NativeChatMessageList({
               onReaderScroll={readerInput.railWheel}
               pendingId={railHistoryJump.pendingId}
             />
-            <NativeChatNewRowsAnnouncement marked={newRowsMarker !== undefined} />
           </div>
           <NativeChatDockedTaskList key={session.sessionId} messages={messages} />
         </div>

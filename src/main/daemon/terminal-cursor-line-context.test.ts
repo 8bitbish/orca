@@ -5,9 +5,9 @@ import {
   detectTerminalComposerPrompt,
   hasTerminalComposerPlaceholder,
   readTerminalComposerTypedText
-} from '../../shared/terminal-composer-draft'
+} from '../../shared/terminal/input/terminal-composer-draft'
 import { HeadlessEmulator } from './headless-emulator'
-import { readTerminalCursorLineContext } from '../../shared/terminal-cursor-line-context'
+import { readTerminalCursorLineContext } from '../../shared/terminal/input/terminal-cursor-line-context'
 import { readRuntimeFixture } from '../runtime/agent-transcript-replay-test-harness'
 
 function writeSync(terminal: Terminal, data: string): void {

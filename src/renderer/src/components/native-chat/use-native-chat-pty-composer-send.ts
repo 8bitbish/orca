@@ -1,22 +1,27 @@
 import { readNativeChatComposerDraft } from './native-chat-composer-draft-store'
 import { serializeNativeChatAgentReferences } from './native-chat-agent-reference-send'
-import { admitNativeChatPastedText } from './native-chat-composer-pasted-text-references'
+import {
+  admitNativeChatPastedText,
+  resolveNativeChatPastedText
+} from './native-chat-composer-pasted-text-references'
 import { useCallback, type Dispatch, type SetStateAction } from 'react'
-import type { AgentType } from '../../../../shared/agent-status-types'
+import type { AgentType } from '../../../../shared/agent-status/contracts/agent-status-types'
 import type { NativeChatLaunchDraft } from '@/lib/native-chat-launch-prompt'
 import { translate } from '@/i18n/i18n'
-import { useAppStore } from '../../store'
+import { useAppStore } from '../../store/index'
 import { emitNativeChatMessageSent } from '@/lib/native-chat-telemetry'
 import {
   sendNativeChatMessage,
   sendNativeChatTypedCommand,
-  submitNativeChatPrompt
+  submitNativeChatPrompt,
+  type NativeChatSendHandle
 } from './native-chat-runtime-send'
-import type { NativeChatSendHandle } from './native-chat-runtime-send'
 import { sendNativeChatMessageWithImageAttachments } from './native-chat-runtime-image-send'
 import { resolveNativeChatLaunchDraftSend } from './native-chat-launch-draft-send'
-import { nativeChatComposerTargetIsRemote } from './native-chat-composer-target'
-import type { NativeChatResolvedTarget } from './native-chat-composer-target'
+import {
+  nativeChatComposerTargetIsRemote,
+  type NativeChatResolvedTarget
+} from './native-chat-composer-target'
 import { isSlashCommandDraft } from '../../../../shared/native-chat/input/native-chat-slash-commands'
 import type { NativeChatPickerState } from './use-native-chat-picker-state'
 import type { NativeChatSendLifecycle } from './use-native-chat-send-lifecycle'
@@ -42,7 +47,7 @@ type PtyComposerSendArgs = {
   readTerminalDraft?: () => string | null
   resolveTarget: () => NativeChatResolvedTarget | null
   classifySend: NativeChatPickerState['classifySend']
-  onOptimisticSend?: (text: string, imagePaths?: string[]) => string | undefined
+  onOptimisticSend?: (text: string, imagePaths?: string[], recovery?: boolean) => string | undefined
   optimisticSendOutcome?: NativeChatOptimisticSendOutcome
   onSlashCommand?: (command: string, output?: string) => void
   answerCommandLocally?: NativeChatLocalCommandAnswer
@@ -59,15 +64,22 @@ type PtyComposerSendArgs = {
   queue?: NativeChatComposerQueue | null
 }
 
+/** A failed chat message sent again as-is; the draft is left alone. */
+export type NativeChatPtyRetry = { text: string; imagePaths?: string[] }
+
 export function useNativeChatPtyComposerSend(
   args: PtyComposerSendArgs
-): (reply?: string) => boolean {
-  // A `reply` (a project card's action) is sent as typed text and leaves the draft alone.
+): (send?: string | NativeChatPtyRetry) => boolean {
+  // A string `reply` (a project card's action) is sent as typed text and leaves the draft alone.
   return useCallback(
-    (reply?: string): boolean => {
-      let text = reply ?? args.draft
+    (send?: string | NativeChatPtyRetry): boolean => {
+      const reply = typeof send === 'string' ? send : undefined
+      const retry = typeof send === 'object' ? send : undefined
+      const keepDraft = send !== undefined
+      let text = reply ?? retry?.text ?? args.draft
       const imagePaths =
-        reply === undefined ? args.imageAttachments.map((attachment) => attachment.path) : []
+        retry?.imagePaths ??
+        (keepDraft ? [] : args.imageAttachments.map((attachment) => attachment.path))
       if ((text.trim() === '' && imagePaths.length === 0) || args.disabled) {
         return false
       }
@@ -79,7 +91,7 @@ export function useNativeChatPtyComposerSend(
       if (!target) {
         return false
       }
-      const classification = args.classifySend(text)
+      const classification = retry ? 'chat' : args.classifySend(text)
       // A card reply is never a composer-answered command; only the typed draft can be.
       if (
         reply === undefined &&
@@ -93,11 +105,9 @@ export function useNativeChatPtyComposerSend(
           return false
         }
         const submitted = readNativeChatComposerDraft(args.draftScopeKey)
-        text = serializeNativeChatAgentReferences(
-          text,
-          submitted.document,
-          submitted.pastedTextFiles
-        )
+        text = retry
+          ? resolveNativeChatPastedText(args.draftScopeKey, text)
+          : serializeNativeChatAgentReferences(text, submitted.document, submitted.pastedTextFiles)
       }
       const queue = args.queue
       if (classification === 'chat' && queue?.willQueue) {
@@ -106,17 +116,17 @@ export function useNativeChatPtyComposerSend(
         // the prompt goes out the way it always did.
         void queue.enqueue(text, imagePaths).then((outcome) => {
           if (outcome !== 'queued') {
-            sendNow(args, target, text, imagePaths, classification)
+            sendNow(args, target, text, imagePaths, classification, retry !== undefined)
           }
         })
-        finishSend(args, reply)
+        finishSend(args, keepDraft)
         return true
       }
       // An unreadable input line leaves the draft in place to retry.
-      if (!sendNow(args, target, text, imagePaths, classification)) {
+      if (!sendNow(args, target, text, imagePaths, classification, retry !== undefined)) {
         return false
       }
-      finishSend(args, reply)
+      finishSend(args, keepDraft)
       return true
     },
     [args]
@@ -128,7 +138,8 @@ function sendNow(
   target: NativeChatResolvedTarget,
   text: string,
   imagePaths: string[],
-  classification: ReturnType<NativeChatPickerState['classifySend']>
+  classification: ReturnType<NativeChatPickerState['classifySend']>,
+  retry: boolean
 ): boolean {
   const { sendOptions: launchSendOptions } = resolveNativeChatLaunchDraftSend({
     launchDraft: args.launchDraft,
@@ -158,7 +169,7 @@ function sendNow(
         }
       : launchSendOptions
   let pendingHandle: NativeChatSendHandle | null = null
-  // Slash-like drafts with images must retain their attachments.
+  // Why: slash-like text must not silently drop its attached images.
   if (classification !== 'chat' && imagePaths.length === 0) {
     pendingHandle =
       args.agent === 'codex' && isSlashCommandDraft(text)
@@ -186,9 +197,19 @@ function sendNow(
       args.sessionOptionsSurface?.recordOutgoingCommand(text.trim())
     }
   } else {
-    pendingId = args.onOptimisticSend?.(text, imagePaths)
+    pendingId = args.onOptimisticSend?.(text, imagePaths, retry)
     if (pendingHandle) {
       args.trackPendingSend(pendingHandle, pendingId)
+      if (retry && pendingId) {
+        const id = pendingId
+        void pendingHandle.outcome?.then((outcome) => {
+          if (outcome === 'not-submitted') {
+            args.optimisticSendOutcome?.reject(id)
+          } else if (outcome === 'uncertain') {
+            args.optimisticSendOutcome?.holdUnconfirmed(id)
+          }
+        })
+      }
     }
   }
   emitNativeChatMessageSent({
@@ -200,9 +221,9 @@ function sendNow(
   return true
 }
 
-function finishSend(args: PtyComposerSendArgs, reply: string | undefined): void {
+function finishSend(args: PtyComposerSendArgs, keepDraft: boolean): void {
   args.onSubmitted?.()
-  if (reply !== undefined) {
+  if (keepDraft) {
     return
   }
   args.setDraft('')

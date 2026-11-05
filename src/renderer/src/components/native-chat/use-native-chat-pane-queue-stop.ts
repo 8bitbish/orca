@@ -1,5 +1,5 @@
 import { useCallback, type RefObject } from 'react'
-import type { AgentType } from '../../../../shared/agent-status-types'
+import type { AgentType } from '../../../../shared/agent-status/contracts/agent-status-types'
 import type { NativeChatComposerHandle } from './native-chat-composer-types'
 import type { NativeChatInteractiveSend } from './use-native-chat-interactive-send'
 import { useNativeChatPaneMessageQueue } from './use-native-chat-pane-message-queue'

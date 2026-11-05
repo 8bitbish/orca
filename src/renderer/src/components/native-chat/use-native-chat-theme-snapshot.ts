@@ -2,8 +2,8 @@ import { useMemo } from 'react'
 import {
   buildPanelDesignTokenCss,
   currentPanelColorScheme
-} from '@/components/right-sidebar/plugin-panel-design-token-css'
-import { usePluginPanelThemeRevision } from '@/components/right-sidebar/use-plugin-panel-theme-revision'
+} from '@/components/plugins/frames/plugin-panel-design-token-css'
+import { usePluginPanelThemeRevision } from '@/components/plugins/frames/use-plugin-panel-theme-revision'
 import { PANEL_DESIGN_TOKEN_ALLOWLIST } from '../../../../shared/plugins/frames/plugin-panel-design-tokens'
 
 /** The plugin panel's curated set, plus the status hues the widget style kit's

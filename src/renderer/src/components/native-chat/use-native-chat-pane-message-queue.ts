@@ -1,5 +1,5 @@
 import { useCallback, useMemo, type RefObject } from 'react'
-import type { AgentType } from '../../../../shared/agent-status-types'
+import type { AgentType } from '../../../../shared/agent-status/contracts/agent-status-types'
 import type { TerminalQueuedMessage } from '../../../../shared/terminal-message-queue-contract'
 import type {
   NativeChatComposerHandle,

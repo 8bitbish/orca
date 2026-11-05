@@ -1,4 +1,8 @@
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
+import type {
+  NativeChatTranscriptFrame,
+  NativeChatTranscriptPage
+} from '../../../../shared/native-chat/native-chat-transcript-frames'
 import { resolveNativeChatTranscriptAgent } from '../../../../shared/native-chat/native-chat-agent-support'
 import {
   readNativeChatTranscriptTail,
@@ -62,7 +66,7 @@ function pageForClient(
   client: NativeChatClient,
   limit = MOBILE_NATIVE_CHAT_DEFAULT_WINDOW,
   agent?: string
-): { messages: NativeChatMessage[]; hasMore: boolean; beforeOffset: number } {
+): NativeChatTranscriptPage {
   const isOpenCode = resolveNativeChatTranscriptAgent(agent) === 'opencode'
   const sanitized = projectThoughtMarkerMessages(
     (isOpenCode ? messages : windowTranscript(messages, limit)).map((message) =>
@@ -138,9 +142,10 @@ export const NATIVE_CHAT_METHODS = [
     handler: async (
       params,
       { runtime, connectionId, clientKind, clientCapabilities, signal },
-      emit
+      emitAny
     ) => {
       const client = { clientKind, clientCapabilities }
+      const emit = (frame: NativeChatTranscriptFrame): void => emitAny(frame)
       if (signal?.aborted) {
         return
       }

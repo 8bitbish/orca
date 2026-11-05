@@ -6,13 +6,10 @@ import {
   STRUCTURED_AGENT_SESSION_CURRENT_REQUESTS_METHODS
 } from './structured-agent-session-current-requests'
 import { clientSupportsSnapshotCatchUp } from './structured-agent-session-history-capability'
-// Require structured.v1 from remote callers before exposing journals/mutations; legacy mobile may receive session-tab metadata placeholders.
-
 import {
   projectStructuredEventForClient,
   projectStructuredHistoryForClient
 } from './structured-agent-session-client-projection'
-import { projectQueuedImageCardPublication } from './structured-agent-session-queued-image-capability'
 import { defineMethod, defineStreamingMethod } from '../core'
 import {
   ensureStructuredHostInstalled as ensureHostInstalled,
@@ -65,6 +62,7 @@ import { getStructuredAgentSessionHost } from '../../../native-chat/agent-sessio
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../shared/layout-owner-switch'
 import { refusingStructuredAgentSessionCreatesClosedFirst } from './structured-agent-session-close-before-create'
+import * as queuedImages from './structured-agent-session-queued-image-capability'
 
 export const STRUCTURED_AGENT_SESSION_METHODS = [
   defineMethod({
@@ -202,6 +200,7 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
       const history = await host.history(
         params,
         undefined,
+        queuedImages.queuedImageHistoryReader(ctx),
         clientSupportsSnapshotCatchUp(ctx) && clientReadsCurrentRequests(ctx)
       )
       return projectStructuredHistoryForClient(history, ctx, host.sessionAgent(params.sessionId))
@@ -226,8 +225,9 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
         readsCurrentRequests: clientReadsCurrentRequests(ctx),
         id: subscriptionId,
         sessionId: params.sessionId,
+        ...queuedImages.queuedImageSubscriber(ctx),
         projectQueuePublication: (publication) =>
-          projectQueuedImageCardPublication(publication, ctx),
+          queuedImages.projectQueuedImageCardPublication(publication, ctx),
         emit: (event) =>
           emit(projectStructuredEventForClient(event, ctx, host.sessionAgent(params.sessionId))),
         ...(params.cursor ? { cursor: params.cursor } : {}),

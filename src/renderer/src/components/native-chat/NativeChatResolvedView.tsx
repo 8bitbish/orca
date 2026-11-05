@@ -30,7 +30,10 @@ import { resolveNativeChatTerminalTurn } from '../../../../shared/native-chat/na
 import { useNativeChatTerminalTurnTiming } from './use-native-chat-terminal-turn-timing'
 import { launchPromptAsMessage, shouldPruneLaunchPrompt } from './native-chat-pending'
 import { useNativeChatSessionWithPending } from './use-native-chat-session-with-pending'
-import { useNativeChatPendingDelivery } from './use-native-chat-pending-delivery'
+import {
+  useNativeChatPendingDelivery,
+  useNativeChatOptimisticSend
+} from './use-native-chat-pending-delivery'
 import {
   appendCommandMarkerCache,
   applyCommandMarkerBoundaries,
@@ -126,6 +129,7 @@ export function NativeChatResolvedView({
     paneKey,
     agent,
     session,
+    composerRef,
     workingEpoch: sendWorkingEpoch
   })
   const { pending, record, clear, appendDeliveredEcho } = delivery
@@ -143,13 +147,7 @@ export function NativeChatResolvedView({
     }
     clearNativeChatLaunchPrompt(terminalTabId)
   }, [clearNativeChatLaunchPrompt, paneLaunchPrompt, session.messages, terminalTabId])
-  const onOptimisticSend = useCallback(
-    (text: string, imagePaths?: string[]) => {
-      setWorkingInterrupted(false)
-      return record(text, imagePaths)
-    },
-    [record]
-  )
+  const onOptimisticSend = useNativeChatOptimisticSend(record, setWorkingInterrupted)
   const { messageQueue, stopAgent } = useNativeChatPaneQueueStop({
     paneKey,
     agent,
@@ -377,7 +375,7 @@ export function NativeChatResolvedView({
             onDismiss={promptCardPresentation.dismiss}
             onCollapse={promptCardPresentation.collapse}
             shouldFocus={shownPromptCard !== null && isVisible && isFocusedGroup}
-            answerInputRef={questionAnswerInputRef}
+            {...{ answerInputRef: questionAnswerInputRef, onLinkClick }}
           />
         </div>
       ) : null}

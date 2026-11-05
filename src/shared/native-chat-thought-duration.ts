@@ -13,7 +13,7 @@
 import type { AgentJournalRenderItem } from './agent-session/journal/agent-session-journal-types'
 import { isRootAgentJournalItem } from './agent-session/journal/agent-session-journal-producer'
 import { readAgentJournalTurn } from './agent-session/lifecycle/agent-session-turn-record'
-import type { AgentType } from './agent-status-types'
+import type { AgentType } from './agent-status/contracts/agent-status-types'
 import type { NativeChatMessage } from './native-chat/native-chat-types'
 
 /** Agents whose reasoning rows are stamped when the thought completes. */

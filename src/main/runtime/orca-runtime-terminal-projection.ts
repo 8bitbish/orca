@@ -1,7 +1,7 @@
 import {
   detectTerminalComposerPrompt,
   type TerminalComposerPrompt
-} from '../../shared/terminal-composer-draft'
+} from '../../shared/terminal/input/terminal-composer-draft'
 import type { HeadlessEmulator } from '../daemon/headless-emulator'
 import type { HeadlessTerminalRow } from '../daemon/headless-terminal-rows'
 import type { RuntimeTerminalRowMetadata } from '../../shared/runtime-terminal-contracts'

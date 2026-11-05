@@ -2,7 +2,7 @@ import { useContext, useMemo, useState } from 'react'
 import { Code2, Play, RotateCcw, Square } from 'lucide-react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { getCodeBlockLanguageLabel } from '@/components/editor/rich-markdown-code-block-languages'
+import { getCodeBlockLanguageLabel } from '@/components/editor/rich-markdown/code-blocks/rich-markdown-code-block-languages'
 import {
   nativeChatShellRunBlock,
   type NativeChatShellRunBlock as ShellRunBlock

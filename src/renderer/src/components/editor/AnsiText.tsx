@@ -1,10 +1,10 @@
 import type { ITheme } from '@xterm/xterm'
+import { getBuiltinTheme } from '@/lib/terminal-theme'
 import {
   DEFAULT_TERMINAL_THEME_DARK,
-  DEFAULT_TERMINAL_THEME_LIGHT,
-  getBuiltinTheme
-} from '@/lib/terminal-theme'
-import { parseAnsiSegments, type AnsiColor } from './ipynb-ansi'
+  DEFAULT_TERMINAL_THEME_LIGHT
+} from '../../../../shared/terminal-themes/terminal-theme-selection'
+import { parseAnsiSegments, type AnsiColor } from './notebook/outputs/ipynb-ansi'
 import { useDocumentDarkTheme } from '@/hooks/use-document-dark-theme'
 
 const ANSI_PALETTE_KEYS = [
