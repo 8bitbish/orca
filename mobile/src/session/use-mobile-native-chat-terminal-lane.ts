@@ -8,10 +8,15 @@ type TerminalQueueArgs = Parameters<typeof useMobileNativeChatTerminalQueue>[0]
 
 /** What only a terminal-backed chat has: the host's message queue. `resolution` is null otherwise. */
 export function useMobileNativeChatTerminalLane(
-  args: Omit<TerminalQueueArgs, 'supported' | 'unsubscribeSupported' | 'messages'> & {
-    hostSupport: StructuredAgentSessionHostSupport | null | undefined
-    session: MobileNativeChatSession
-    client: RpcClient | null
+  args: Pick<TerminalQueueArgs, 'resolution' | 'terminal' | 'scopeKey'> & {
+    drafts: Pick<TerminalQueueArgs, 'captureSendOrigin' | 'acceptSend' | 'clearDraftForSend'> & {
+      setText: TerminalQueueArgs['setComposerText']
+    }
+    chat: Pick<TerminalQueueArgs, 'onSendError'> & {
+      client: RpcClient | null
+      session: MobileNativeChatSession
+      hostSupport: StructuredAgentSessionHostSupport | null | undefined
+    }
   }
 ): {
   terminalQueue: ReturnType<typeof useMobileNativeChatTerminalQueue> & {
@@ -22,9 +27,14 @@ export function useMobileNativeChatTerminalLane(
     >
   }
 } {
-  const { session, hostSupport, ...queueArgs } = args
+  const { drafts, chat, ...target } = args
+  const { session, hostSupport, ...chatArgs } = chat
+  const { setText, ...draftArgs } = drafts
   const terminalQueue = useMobileNativeChatTerminalQueue({
-    ...queueArgs,
+    ...target,
+    ...chatArgs,
+    ...draftArgs,
+    setComposerText: setText,
     supported: hostSupport?.terminalMessageQueue === true,
     unsubscribeSupported: hostSupport?.terminalMessageQueueUnsubscribe === true,
     messages: session.messages

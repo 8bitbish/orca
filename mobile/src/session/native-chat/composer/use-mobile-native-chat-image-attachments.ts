@@ -10,6 +10,7 @@ import type { RpcClient } from '../../../transport/rpc-client'
 import type { ConnectionState } from '../../../transport/types'
 import type { MobileImageSource } from '../../../platform/media-picker-contract'
 import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
+import type { MobilePastedImages } from './mobile-native-chat-composer-paste'
 import {
   dropMobileNativeChatDraftImages,
   useMobileNativeChatRestoreImages,
@@ -95,7 +96,7 @@ export type MobileNativeChatImageAttachments = {
   /** Pending chips for the active scope (tab) only. */
   readonly attachments: PendingNativeChatImage[]
   readonly isAttaching: boolean
-  readonly attachImage: (source: MobileImageSource) => Promise<void>
+  readonly attachImage: (source: MobileImageSource | MobilePastedImages) => Promise<void>
   readonly removeAttachment: (id: string) => void
   /** Ride any pending images along with `text`, then submit; clears the sent
    *  chips (and only those) once the send is accepted. */
@@ -149,11 +150,9 @@ export function useMobileNativeChatImageAttachments({
 
   const removeAttachment = useCallback(
     (id: string): void => {
-      const scope = scopeKey
-      if (!scope) {
-        return
+      if (scopeKey) {
+        dropMobileNativeChatDraftImages(scopeKey, [{ id }])
       }
-      dropMobileNativeChatDraftImages(scope, [{ id }])
     },
     [scopeKey]
   )

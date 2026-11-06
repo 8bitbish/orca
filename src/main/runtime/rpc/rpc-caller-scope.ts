@@ -1,5 +1,5 @@
 /** Transport stamps proven scope; unstamped calls are local desktop/owner CLI. Non-owner methods require an explicitly granted permission. */
-import { isMobileRpcMethodAllowed } from '../runtime-rpc/runtime-rpc-mobile-method-access'
+import { isMobileRpcMethodAllowed } from './server/runtime-rpc-mobile-method-access'
 import type { RpcMethodPermission, RuntimeDeviceGrant } from './rpc-method-permission'
 
 export type { RuntimeDeviceGrant }

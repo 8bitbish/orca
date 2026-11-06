@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RpcDispatcher } from '../dispatcher'
 import type { RpcRequest } from '../core'
 import type { OrcaRuntimeService } from '../../orca-runtime'
-import { isMobileRpcMethodAllowed } from '../../runtime-rpc/runtime-rpc-mobile-method-access'
+import { isMobileRpcMethodAllowed } from '../server/runtime-rpc-mobile-method-access'
 import { ALL_RPC_METHODS } from './index'
 import { NATIVE_CHAT_SLACK_METHODS } from './native-chat-slack'
 

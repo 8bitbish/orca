@@ -27,6 +27,7 @@ import {
 import type { MobileMarkdownFenceRenderer } from './mobile-markdown-renderers'
 import { MermaidDiagram } from './pr-sidebar/MermaidDiagram'
 import { MobileMarkdownCodeBlock } from './MobileMarkdownCodeBlock'
+import { MobileMarkdownDetails } from './MobileMarkdownDetails'
 import { translate } from '../i18n/mobile-i18n'
 import { pressedStyle } from '../theme/mobile-theme'
 
@@ -83,6 +84,7 @@ function renderCode(node: Code, key: number, ctx: MarkdownBlockContext): ReactNo
       code={node.value}
       language={node.lang ?? undefined}
       textScale={ctx.textScale}
+      sourceLine={node.position?.start.line}
     />
   )
   const rendered = ctx.markupPreviews
@@ -265,7 +267,7 @@ function renderBlock(
           <Pressable
             key={key}
             style={({ pressed }) => [styles.imageFrame, pressed && pressedStyle]}
-            onPress={() => openMarkdownHref(only.url, ctx.onOpenFile)}
+            onPress={() => openMarkdownHref(only.url, ctx)}
             onLongPress={ctx.rowLongPress}
           >
             <NativeText style={styles.link}>
@@ -327,6 +329,21 @@ function renderBlock(
       return renderTable(node, key, ctx)
     case 'thematicBreak':
       return <View key={key} style={styles.rule} />
+    case 'details':
+      return (
+        <MobileMarkdownDetails
+          key={key}
+          open={node.open}
+          summaryStyle={text.style}
+          summary={
+            node.summary.length > 0
+              ? renderInline(node.summary, ctx)
+              : translate('pullRequest.markdownBlocks.details', 'Details')
+          }
+        >
+          {renderBlocks(node.children, ctx, text, depth + 1)}
+        </MobileMarkdownDetails>
+      )
     case 'footnoteDefinition':
       return (
         <View key={key} style={styles.listItem}>

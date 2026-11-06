@@ -19,7 +19,7 @@ import { RUNTIME_CAPABILITIES } from '../../../../shared/protocol-version'
 import { RpcDispatcher } from '../dispatcher'
 import type { RpcRequest } from '../core'
 import type { OrcaRuntimeService } from '../../orca-runtime'
-import { isMobileRpcMethodAllowed } from '../../runtime-rpc/runtime-rpc-mobile-method-access'
+import { isMobileRpcMethodAllowed } from '../server/runtime-rpc-mobile-method-access'
 import { clearProofImageBitmaps } from '../../../native-chat/proof-image-region'
 import {
   setSlackCacheImageCodec,

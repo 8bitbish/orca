@@ -157,7 +157,9 @@ function Harness(props: HarnessProps) {
   return createElement(MobileNativeChatOverlay, {
     controller: current,
     ...personalOverlayProps(connState, (text: string) => controller.handleNativeChatSend(text)),
+    worktreePath: null,
     onOpenFile: vi.fn(),
+    onRunInTerminal: vi.fn(),
     onMicPress: vi.fn(),
     onMicPressOut: vi.fn(),
     onMicPressIn: vi.fn(),

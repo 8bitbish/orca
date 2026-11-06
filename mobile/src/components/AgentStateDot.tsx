@@ -23,6 +23,8 @@ const dotColors = (): Record<
   idle: 'rgba(115,115,115,0.4)'
 })
 export const AGENT_WORKING_COLOR = '#eab308'
+/** The dot's box, so rows can line text up past it. */
+export const AGENT_STATE_DOT_SIZE = 10
 
 /** The dot's colour, for places that draw it as a text glyph (inline in prose). */
 export function agentStateDotColor(state: AgentDotState): string {
@@ -89,7 +91,12 @@ export function AgentStateDot({ state }: { state: AgentDotState | 'unverifiable'
 }
 
 const styles = themedStyleSheet(() => ({
-  wrapper: { width: 10, height: 10, alignItems: 'center', justifyContent: 'center' },
+  wrapper: {
+    width: AGENT_STATE_DOT_SIZE,
+    height: AGENT_STATE_DOT_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   dot: { width: 6, height: 6, borderRadius: radii.pill },
   dashedRing: {
     width: 8,

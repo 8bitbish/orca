@@ -4,14 +4,15 @@ import {
   nativeChatTextAttachmentPaths,
   chatTextAttachmentName
 } from '../../../../../src/shared/native-chat-text-attachment-references'
+import { useMobileNativeChatOpenFile } from '../mobile-native-chat-open-file-context'
 import { styles } from './mobile-native-chat-message-styles'
 
 export const TextAttachmentActions = memo(function TextAttachmentActions(props: {
   text: string
   pastedText: string
-  onOpenFile?: (path: string) => void
 }) {
-  const { text, pastedText, onOpenFile } = props
+  const { text, pastedText } = props
+  const onOpenFile = useMobileNativeChatOpenFile()
   const paths = useMemo(() => nativeChatTextAttachmentPaths(text), [text])
   return paths.map((path) => (
     <Text

@@ -43,8 +43,6 @@ export function NativeChatAssistantMessageRow({
     activeTurnIsWorking,
     trailingRun,
     continuesTurn = false,
-    onLinkClick,
-    allowFileUriLinks = false,
     inSubagentSection = false,
     runtimeContext
   } = props
@@ -84,9 +82,7 @@ export function NativeChatAssistantMessageRow({
             renderCodeBlock={isSystem ? NativeChatPlainCodeBlock : NativeChatCodeBlock}
             // Project and Slack chips belong to replies; system asides keep plain links.
             renderChatLink={message.role === 'assistant' ? renderNativeChatLink : undefined}
-            onLinkClick={onLinkClick}
-            allowFileUriLinks={allowFileUriLinks}
-            linkifyFilePaths={onLinkClick !== undefined}
+            linkifyFilePaths
             {...(isSystem ? {} : NATIVE_CHAT_QUOTE_SOURCE_PROPS)}
             visualMessageId={message.role === 'assistant' ? message.id : undefined}
             // Only the live turn’s prose frontier can be mid-sentence; structured rows have no per-row streaming flag.
@@ -130,7 +126,6 @@ function toolRunProps(
     previousUpdatePlan: props.previousUpdatePlan,
     revealedDiff: run ? run.revealedDiff : props.revealedDiff,
     onRevealDiff: props.onScrollMessageToTop,
-    onLinkClick: props.onLinkClick,
     subagentGroups: content.subagentGroups,
     subagentRoster: props.subagentRoster,
     subagentDisclosure: props.subagentDisclosure,

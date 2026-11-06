@@ -175,6 +175,9 @@ vi.mock('./MobileAgentWorkingIndicator', () => ({
   MobileAgentWorkingIndicator: 'WorkingIndicator'
 }))
 vi.mock('../components/ActionSheetModal', () => ({ ActionSheetModal: 'ActionSheetModal' }))
+vi.mock('./native-chat/transcript/MobileNativeChatRewindDialog', () => ({
+  MobileNativeChatRewindDialog: () => null
+}))
 vi.mock('./native-chat/input/MobileNativeChatAsk', () => ({ MobileNativeChatAsk: 'ChatAsk' }))
 vi.mock('./native-chat/input/MobileNativeChatPermission', () => ({
   MobileNativeChatPermission: 'ChatPermission'
@@ -191,6 +194,9 @@ vi.mock('./native-chat/input/MobileNativeChatBackgroundTasks', () => ({
 }))
 vi.mock('./native-chat/visual/MobileNativeChatImageViewer', () => ({
   MobileNativeChatImageViewer: 'ImageViewer'
+}))
+vi.mock('./native-chat/visual/MobileImageViewerActions', () => ({
+  MobileImageViewerActions: 'ImageViewerActions'
 }))
 vi.mock('./native-chat/transcript/MobileNativeChatMessageActionsSheet', () => ({
   MobileNativeChatMessageActionsSheet: 'ActionsSheet'
@@ -250,6 +256,8 @@ function Harness({
   } as unknown as MobileNativeChatController
   return createElement(MobileNativeChatOverlay, {
     controller,
+    worktreePath: null,
+    connState: 'connected',
     onOpenFile: stable.onComposerTextChange,
     images: {
       attachments: [],
@@ -272,7 +280,8 @@ function Harness({
     sessionId: source?.sessionId ?? 'session',
     getSendCompletionGeneration: stable.getSendCompletionGeneration,
     keyboardInset: 0,
-    hostName: null
+    hostName: null,
+    onRunInTerminal: vi.fn()
   })
 }
 

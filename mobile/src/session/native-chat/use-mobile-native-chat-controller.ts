@@ -117,17 +117,11 @@ export function useMobileNativeChatController(args: {
 
   // Only a terminal-backed chat has a host queue.
   const { terminalQueue } = useMobileNativeChatTerminalLane({
-    client,
-    hostSupport: agentSessionHostSupport,
+    drafts: { captureSendOrigin, acceptSend, clearDraftForSend, setText: setChatComposerText },
+    chat: { client, session: nativeChatSession, hostSupport: agentSessionHostSupport, onSendError },
     resolution: activeChatStructured ? null : activeChatResolution,
     terminal: args.activeHandle ?? null,
-    scopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId),
-    session: nativeChatSession,
-    captureSendOrigin,
-    acceptSend,
-    clearDraftForSend,
-    setComposerText: setChatComposerText,
-    onSendError
+    scopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId)
   })
 
   // Require both input lease and live connection; remembered-only agents may now be shells and must never receive chat writes.
@@ -306,6 +300,12 @@ export function useMobileNativeChatController(args: {
     handleNativeChatStop: activeChatStructured ? structuredNativeChat.cancel : terminalTurn.stop,
     nativeChatQueued: structuredNativeChat.queued,
     nativeChatBackgroundTasks: activeChatStructured ? structuredNativeChat.backgroundTasks : null,
+    nativeChatContextUsage: activeChatStructured ? structuredNativeChat.contextUsage : null,
+    nativeChatInterruptedContinue: activeChatStructured
+      ? structuredNativeChat.interruptedContinue
+      : null,
+    nativeChatThreadGoal: activeChatStructured ? structuredNativeChat.threadGoal : null,
+    nativeChatRewind: activeChatStructured ? structuredNativeChat.rewind : undefined,
     ...workspaceCatalog,
     handleNativeChatSend: activeChatStructured
       ? structuredNativeChatSend.send
