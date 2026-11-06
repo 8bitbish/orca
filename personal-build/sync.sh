@@ -71,6 +71,11 @@ stage "Install dependencies"
 pnpm install:release || stop "pnpm install:release failed." 11
 
 stage "Verify"
+# A merge (v1.4.248) once put upstream's updater back on hardcoded stablyai/orca URLs; the app
+# then downloads upstream's Developer ID build, which Squirrel refuses to install.
+if git grep -nE 'stablyai(\\)?/orca' -- src/main/updater ':!*.test.ts' ':!*.spec.ts' ':!src/main/updater/testing'; then
+  stop "Updater code points at stablyai/orca instead of src/main/updater-release-repository.ts." 11
+fi
 pnpm typecheck || stop "Type check failed." 11
 npx vitest run --config config/vitest.config.ts \
   src/renderer/src/components/native-chat src/shared/native-chat ||
@@ -96,6 +101,8 @@ app=$(ls -d dist/mac-arm64/*.app | head -1)
 [ "$(personal_build_signer_sha1 "$app")" = "$PERSONAL_BUILD_SIGNING_IDENTITY" ] ||
   stop "$app is not signed by $PERSONAL_BUILD_SIGNING_IDENTITY." 12
 codesign --verify --deep --strict "$app" || stop "$app fails signature verification." 12
+personal_build_check_update_zips "$manifest" ||
+  stop "An update zip would fail Squirrel's signature check on the installed Orca." 12
 
 stage "Publish"
 version=$(awk '/^version:/ { print $2; exit }' "$manifest")

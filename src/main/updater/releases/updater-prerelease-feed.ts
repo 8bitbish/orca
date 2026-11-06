@@ -11,13 +11,19 @@ import {
   type DatedReleaseTag,
   type ReleaseDelayResult
 } from './updater-release-delay'
+import {
+  UPDATER_FEED_IS_FORK,
+  UPDATER_RELEASES_URL,
+  UPDATER_RELEASES_URL_PATTERN
+} from '../../updater-release-repository'
 
-const ATOM_FEED_URL = 'https://github.com/stablyai/orca/releases.atom'
+const ATOM_FEED_URL = `${UPDATER_RELEASES_URL}.atom`
 const MAX_MANIFEST_PROBE_CANDIDATES = 6
 
 // Atom includes stable and prerelease tags without channel filtering.
 const ENTRY_RE = /<entry>([\s\S]*?)<\/entry>/g
-const TAG_HREF_RE = /href="https:\/\/github\.com\/stablyai\/orca\/releases\/tag\/([^"]+)"/
+const TAG_HREF_RE = new RegExp(`href="${UPDATER_RELEASES_URL_PATTERN}\\/tag\\/([^"]+)"`)
+const LATEST_TAG_URL_RE = new RegExp(`^${UPDATER_RELEASES_URL_PATTERN}\\/tag\\/([^/]+)$`)
 const ENTRY_UPDATED_RE = /<updated>([^<]+)<\/updated>/
 
 export function normalizeTagToVersion(tag: string): string {
@@ -69,19 +75,19 @@ async function fetchReleaseFeedTags(): Promise<ReleaseFeedTag[] | null> {
 export async function fetchLatestStableReleaseTag(): Promise<string | null> {
   try {
     // Resolve only the release-page redirect; installer redirects continue on to signed storage URLs.
-    const latestUrl = 'https://github.com/stablyai/orca/releases/latest'
+    const latestUrl = `${UPDATER_RELEASES_URL}/latest`
     const response = await requestGitHubReleaseHead(latestUrl)
     if (!response?.redirectUrl || response.statusCode < 300 || response.statusCode >= 400) {
       return null
     }
     const target = new URL(response.redirectUrl, latestUrl)
-    const match = target.pathname.match(/^\/stablyai\/orca\/releases\/tag\/([^/]+)$/)
-    if (target.origin !== 'https://github.com' || !match) {
+    const match = `${target.origin}${target.pathname}`.match(LATEST_TAG_URL_RE)
+    if (!match) {
       return null
     }
     const tag = decodeURIComponent(match[1])
     const version = normalizeTagToVersion(tag)
-    if (!isValidVersion(version) || isPrereleaseVersion(version)) {
+    if (!isValidVersion(version) || (isPrereleaseVersion(version) && !UPDATER_FEED_IS_FORK)) {
       return null
     }
     return (await getPlatformManifestReadiness(tag)) === 'ready' ? tag : null

@@ -3,6 +3,7 @@ import {
   findInstallerAssetName,
   getReleaseRepoForChannel,
   getVersionChannel,
+  hasDedicatedReleaseRepo,
   hasInstallableArtifactForPlatform,
   normalizeTagToVersion,
   sortReleaseBuildsNewestFirst,
@@ -17,6 +18,7 @@ import {
 import { isValidVersion } from './updater-fallback'
 import { rejectReleaseApiToken, resolveReleaseApiToken } from './updater-release-api-token'
 import { UpdaterCodedError } from '../lifecycle/updater-coded-error'
+import { UPDATER_RELEASE_REPO } from '../../updater-release-repository'
 
 const FETCH_TIMEOUT_MS = 8000
 const MAX_LISTED_BUILDS = 100
@@ -94,6 +96,11 @@ function releaseListError(
   return new UpdaterCodedError('releaseListFailed', { channel, status: res.status })
 }
 
+// Stable and RC builds come from the updater's own feed repo (the fork on personal builds).
+function getUpdaterRepoForChannel(channel: ReleaseChannel): string {
+  return hasDedicatedReleaseRepo(channel) ? getReleaseRepoForChannel(channel) : UPDATER_RELEASE_REPO
+}
+
 export function getReleaseDownloadUrlForRepo(repo: string, tag: string): string {
   return `https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}`
 }
@@ -158,7 +165,7 @@ export async function listReleaseBuilds(
   channel: ReleaseChannel,
   platform: NodeJS.Platform = process.platform
 ): Promise<ReleaseBuild[]> {
-  const repo = getReleaseRepoForChannel(channel)
+  const repo = getUpdaterRepoForChannel(channel)
   // Skip a known-exhausted token bucket and try the separate per-IP quota.
   const credential = await resolveReleaseApiToken()
   const tokenBucketBlocked =
@@ -205,6 +212,6 @@ export function resolveTargetBuild(channel: ReleaseChannel, tag: string): Resolv
   if (!isValidVersion(version)) {
     throw new UpdaterCodedError('invalidReleaseTag', { tag })
   }
-  const repo = getReleaseRepoForChannel(channel)
+  const repo = getUpdaterRepoForChannel(channel)
   return { tag, version, feedUrl: getReleaseDownloadUrlForRepo(repo, tag) }
 }

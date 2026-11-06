@@ -1,7 +1,11 @@
 import { net } from 'electron'
 import { parse } from 'yaml'
+import {
+  UPDATER_RELEASES_URL,
+  UPDATER_RELEASES_URL_PATTERN
+} from '../../updater-release-repository'
 
-const RELEASES_DOWNLOAD_BASE = 'https://github.com/stablyai/orca/releases/download'
+const RELEASES_DOWNLOAD_BASE = `${UPDATER_RELEASES_URL}/download`
 export const FETCH_TIMEOUT_MS = 5000
 
 export function getReleaseDownloadUrl(tag: string): string {
@@ -107,7 +111,7 @@ async function getReleaseAssetReadiness(tag: string, assetName: string): Promise
   const isGitHubReleaseAsset =
     process.platform === 'win32' &&
     (isRelativeAsset ||
-      /^https:\/\/github\.com\/stablyai\/orca\/releases\/download\//i.test(assetName))
+      new RegExp(`^${UPDATER_RELEASES_URL_PATTERN}\\/download\\/`, 'i').test(assetName))
   const assetUrl = isRelativeAsset
     ? getReleaseAssetUrl(tag, assetName.split('/').findLast(Boolean) ?? assetName)
     : assetName
