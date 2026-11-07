@@ -30,17 +30,15 @@ import {
   type FileLinkExists
 } from '../../../../shared/native-chat/native-chat-file-link-tree'
 import { CommentMarkdownBlockLineContext } from './comment-markdown-code-renderers'
-import { remarkUnknownHtmlAsText } from './comment-markdown-unknown-html-as-text'
+import { htmlRendersAsText, remarkUnknownHtmlAsText } from './comment-markdown-unknown-html-as-text'
 import { CommentMarkdownWords } from './CommentMarkdownWords'
 import {
   MemoizedMarkdown,
   useMarkdownBlocks,
   markdownBlockContent
 } from './comment-markdown-block-pipeline'
-import {
-  GITHUB_CALLOUT_SANITIZE_ATTRIBUTE,
-  remarkGitHubCallouts
-} from '@/lib/remark-github-callouts'
+import { GITHUB_CALLOUT_SANITIZE_ATTRIBUTE } from '../../../../shared/github/github-callouts'
+import { remarkGitHubCallouts } from '@/lib/remark-github-callouts'
 import { remarkAutolinkLiteralProseBoundary } from '@/lib/remark-autolink-literal-prose-boundary'
 import { NATIVE_CHAT_SLACK_LINK_PROTOCOLS } from '../../../../shared/native-chat-slack-href'
 import {
@@ -139,13 +137,12 @@ const commentMarkdownSanitizeSchema: SanitizeSchema = {
   }
 }
 
+const allowedTagNames: ReadonlySet<string> = new Set(
+  (commentMarkdownSanitizeSchema.tagNames ?? []).map((name) => name.toLowerCase())
+)
 // Escape HTML before remark-breaks so newlines inside it still break.
-const unknownHtmlAsTextRemarkPlugins = [
-  remarkUnknownHtmlAsText(
-    new Set((commentMarkdownSanitizeSchema.tagNames ?? []).map((name) => name.toLowerCase()))
-  ),
-  ...remarkPlugins
-]
+const unknownHtmlAsTextRemarkPlugins = [remarkUnknownHtmlAsText(allowedTagNames), ...remarkPlugins]
+const unknownHtmlRendersAsText = (html: string): boolean => htmlRendersAsText(html, allowedTagNames)
 
 // GitHub comments use raw HTML; parse it then sanitize before rendering.
 const rehypePlugins: MarkdownPlugins = [rehypeRaw, [rehypeSanitize, commentMarkdownSanitizeSchema]]
@@ -261,7 +258,14 @@ const CommentMarkdown = React.memo(
       const withExtension = extension ? [...withMath, ...extension.remarkPlugins] : withMath
       return githubRepo ? [...withExtension, remarkGitHubReferences(githubRepo)] : withExtension
     }, [extension, fileLinkExists, githubRepo, math, unknownHtmlAsText])
-    const blocks = useMarkdownBlocks(content, growing, math, activeRemarkPlugins, extension)
+    const blocks = useMarkdownBlocks(
+      content,
+      growing,
+      math,
+      activeRemarkPlugins,
+      extension,
+      unknownHtmlAsText ? unknownHtmlRendersAsText : undefined
+    )
     const [hadWordFade, setHadWordFade] = React.useState(fadeWords)
     if (fadeWords && !hadWordFade) {
       setHadWordFade(true)

@@ -3,19 +3,29 @@ import type { StructuredAgentSessionHostSupport } from './mobile-structured-agen
 import type { MobileNativeChatSession } from './native-chat/use-mobile-native-chat-session'
 import { useMobileNativeChatTerminalQueue } from './use-mobile-native-chat-terminal-queue'
 import type { MobileNativeChatController } from './native-chat/mobile-native-chat-controller-contract'
+import { mobileNativeChatScopeKey } from './native-chat/mobile-native-chat-scope-key'
 
 type TerminalQueueArgs = Parameters<typeof useMobileNativeChatTerminalQueue>[0]
 
+/** The chat controller's args the terminal lane reads. */
+export type MobileNativeChatTerminalLaneHostArgs = {
+  client: RpcClient | null
+  hostId: string
+  worktreeId: string
+  activeSessionTabId: string | null
+  /** The active tab's terminal handle; the host queue is addressed by it. */
+  activeHandle?: string | null
+  agentSessionHostSupport?: StructuredAgentSessionHostSupport | null
+  onSendError: TerminalQueueArgs['onSendError']
+}
+
 /** What only a terminal-backed chat has: the host's message queue. `resolution` is null otherwise. */
 export function useMobileNativeChatTerminalLane(
-  args: Pick<TerminalQueueArgs, 'resolution' | 'terminal' | 'scopeKey'> & {
+  host: MobileNativeChatTerminalLaneHostArgs,
+  session: MobileNativeChatSession,
+  chat: Pick<TerminalQueueArgs, 'resolution'> & {
     drafts: Pick<TerminalQueueArgs, 'captureSendOrigin' | 'acceptSend' | 'clearDraftForSend'> & {
       setText: TerminalQueueArgs['setComposerText']
-    }
-    chat: Pick<TerminalQueueArgs, 'onSendError'> & {
-      client: RpcClient | null
-      session: MobileNativeChatSession
-      hostSupport: StructuredAgentSessionHostSupport | null | undefined
     }
   }
 ): {
@@ -27,12 +37,14 @@ export function useMobileNativeChatTerminalLane(
     >
   }
 } {
-  const { drafts, chat, ...target } = args
-  const { session, hostSupport, ...chatArgs } = chat
-  const { setText, ...draftArgs } = drafts
+  const { setText, ...draftArgs } = chat.drafts
+  const hostSupport = host.agentSessionHostSupport
   const terminalQueue = useMobileNativeChatTerminalQueue({
-    ...target,
-    ...chatArgs,
+    resolution: chat.resolution,
+    terminal: host.activeHandle ?? null,
+    scopeKey: mobileNativeChatScopeKey(host.hostId, host.worktreeId, host.activeSessionTabId),
+    client: host.client,
+    onSendError: host.onSendError,
     ...draftArgs,
     setComposerText: setText,
     supported: hostSupport?.terminalMessageQueue === true,

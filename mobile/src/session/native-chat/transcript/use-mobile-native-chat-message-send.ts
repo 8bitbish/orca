@@ -21,11 +21,13 @@ import type {
   MobileNativeChatAcceptSend,
   MobileNativeChatSendOrigin
 } from '../mobile-native-chat-pending-echo'
-import { UNCONFIRMED_SEND_MESSAGE } from '../use-mobile-native-chat-unconfirmed-sends'
+import {
+  UNCONFIRMED_SEND_MESSAGE,
+  UNCONFIRMED_SEND_RESTORED_MESSAGE
+} from '../use-mobile-native-chat-unconfirmed-sends'
 import type { MobileNativeChatLaunchDraftSeed } from '../composer/use-mobile-native-chat-launch-draft-seed'
 import { buildNativeChatPasteBytes } from '../../../../../src/shared/native-chat/input/native-chat-paste-bytes'
-import { offerMobileNativeChatSendToQueue } from '../../mobile-native-chat-queue-send'
-import type { MobileNativeChatQueueSubmit } from '../../mobile-native-chat-queue-send'
+import { mobileNativeChatQueueOffer } from '../../mobile-native-chat-queue-send'
 
 export type MobileNativeChatMessageSend = {
   send: (text: string, images?: string[]) => Promise<boolean>
@@ -68,7 +70,7 @@ export function useMobileNativeChatMessageSend(args: {
   ) => void
   onSendError: (message: string) => void
   /** The host's queue for this terminal; null on a host without one, or before it is live. */
-  queueSubmit?: MobileNativeChatQueueSubmit | null
+  queueSubmit?: Parameters<typeof mobileNativeChatQueueOffer>[0]['submit']
 }): MobileNativeChatMessageSend {
   const {
     client,
@@ -112,18 +114,17 @@ export function useMobileNativeChatMessageSend(args: {
       const classification = classifyMobileNativeChatSend(agent, text, skillOrigin)
       // Why: typed into a mid-turn TUI the prompt is absorbed by the running turn; the host holds
       // it instead and its echo appears on delivery. An idle agent answers 'direct'.
-      const queued =
-        queueSubmit && syncComposer && !images?.length && classification === 'chat' && text
-          ? await offerMobileNativeChatSendToQueue({
-              submit: queueSubmit,
-              text,
-              draftText,
-              origin,
-              clearDraft: clearDraftForSend,
-              restoreDraft: restoreRejectedDraft,
-              onSendError
-            })
-          : null
+      const queueOffer = mobileNativeChatQueueOffer({
+        submit: queueSubmit,
+        eligible: syncComposer && !images?.length && classification === 'chat',
+        text,
+        draftText,
+        origin,
+        clearDraft: clearDraftForSend,
+        restoreDraft: restoreRejectedDraft,
+        onSendError
+      })
+      const queued = queueOffer ? await queueOffer : null
       if (queued === 'queued' || queued === 'rejected') {
         return queued === 'queued' ? 'accepted' : 'rejected'
       }
@@ -202,8 +203,16 @@ export function useMobileNativeChatMessageSend(args: {
           })
       if (outcome === 'unknown') {
         if (classification === 'chat') {
-          // Lost acknowledgement proves no failure; verify delivery by transcript rather than reporting not sent.
-          holdUnconfirmedSend(origin, text, () => onSendError(UNCONFIRMED_SEND_MESSAGE))
+          // Lost acknowledgement proves no failure; wait for the transcript, then hand back text it never showed.
+          holdUnconfirmedSend(origin, text, () => {
+            // A TUI holds a mid-turn send with no transcript row until the turn ends, so its absence proves nothing.
+            if (!syncComposer || origin.queuedDuringWorkingEpoch !== undefined) {
+              onSendError(UNCONFIRMED_SEND_MESSAGE)
+              return
+            }
+            restoreRejectedDraft(origin, draftText)
+            onSendError(UNCONFIRMED_SEND_RESTORED_MESSAGE)
+          })
         } else {
           if (syncComposer) {
             restoreRejectedDraft(origin, draftText, { preserveConversationCommands: true })

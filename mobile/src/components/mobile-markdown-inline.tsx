@@ -10,7 +10,8 @@ import {
 import { routeMarkdownHref } from './markdown-href-routing'
 import { styles, type MarkdownTone } from './mobile-markdown-styles'
 import { MarkdownText } from './mobile-markdown-text'
-import { plainText } from './mobile-markdown-tree'
+import { plainText } from './mobile-markdown-plain-text'
+import { MobileMarkdownMath } from './MobileMarkdownMath'
 import { MobileInlineCode } from './MobileInlineCode'
 import type { MobileMarkdownLinkRenderer } from './mobile-markdown-renderers'
 
@@ -25,6 +26,8 @@ export type MarkdownInlineContext = {
   textScale: number
   /** A link's own renderer (project and Slack chips); null keeps the default link. */
   renderLink?: MobileMarkdownLinkRenderer
+  /** Chat text: desktop chat's math delimiters and sizes; otherwise GitHub's. */
+  chatMath: boolean
 }
 
 type SpanStyle = TextProps['style']
@@ -159,12 +162,49 @@ function renderPhrasing(
       const label = plainText(node)
       return ctx.renderLink?.(node.url, label, key) ?? renderLink(key, label, node.url, ctx, outer)
     }
+    case 'htmlSpan': {
+      const tagStyle =
+        node.tag === 'kbd'
+          ? [styles.inlineCode, styles.kbd, ctx.tone.inlineCode]
+          : node.tag === 'sup' || node.tag === 'sub'
+            ? [styles[node.tag], ctx.textScale !== 1 ? { fontSize: 10 * ctx.textScale } : null]
+            : node.tag === 'ins'
+              ? styles.ins
+              : null
+      const spanStyle = [outer, tagStyle]
+      return (
+        <MarkdownText key={key} style={spanStyle}>
+          {renderInline(node.children, ctx, spanStyle, `${key}.`)}
+        </MarkdownText>
+      )
+    }
+    case 'inlineMath':
+      return (
+        <MobileMarkdownMath
+          key={key}
+          value={node.value}
+          source={node.source}
+          display={false}
+          githubSizes={!ctx.chatMath}
+          style={outer}
+        />
+      )
     case 'image':
       return renderLink(key, node.alt || 'image', node.url, ctx, outer)
     case 'footnoteReference':
       return (
-        <MarkdownText key={key} style={[outer, styles.footnoteReference, ctx.tone.secondary]}>
-          {`[${node.label ?? node.identifier}]`}
+        // GitHub's raised note number.
+        <MarkdownText
+          key={key}
+          style={[
+            outer,
+            styles.sup,
+            ctx.textScale !== 1 ? { fontSize: 10 * ctx.textScale } : null,
+            styles.footnoteReference,
+            ctx.tone.link
+          ]}
+        >
+          {node.label ?? node.identifier}
         </MarkdownText>
       )
     case 'html':

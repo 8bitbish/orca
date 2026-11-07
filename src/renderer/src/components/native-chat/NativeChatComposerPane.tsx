@@ -8,18 +8,20 @@ import { useNativeChatDraft } from './use-native-chat-draft'
 import { useNativeChatDraftEvents } from './use-native-chat-draft-events'
 import { useNativeChatComposerRecall } from './use-native-chat-composer-recall'
 import { useNativeChatLaunchDraftAdoption } from './use-native-chat-launch-draft-adoption'
+import { NativeChatComposerWorkspace } from './NativeChatComposerWorkspace'
 import { NativeChatComposerField } from './NativeChatComposerField'
 import { useNativeChatComposerAttachments } from './use-native-chat-composer-attachments'
 import { nativeChatComposerSendState } from './native-chat-composer-send-state'
+import { useNativeChatSteerChordPreview } from './use-native-chat-steer-chord-preview'
 import { useNativeChatComposerHandle } from './use-native-chat-composer-handle'
 import { useNativeChatFileDrops } from './use-native-chat-file-drops'
 import { useNativeChatComposerKeyDown } from './use-native-chat-composer-keydown'
 import { useNativeChatSendLifecycle } from './use-native-chat-send-lifecycle'
+import { useNativeChatContextUsageSummary } from './use-native-chat-context-usage-summary'
 import { useNativeChatComposerSessionOptions } from './use-native-chat-composer-session-options'
 import { useNativeChatDictation } from './use-native-chat-dictation'
 import { useNativeChatPtyComposerSend } from './use-native-chat-pty-composer-send'
 import { useNativeChatStructuredComposerSend } from './use-native-chat-structured-composer-send'
-import { useNativeChatComposerWorkingSend } from './use-native-chat-composer-queue-affordances'
 import { useImeEnterGestureOwnership } from '@/lib/ime-composition-keyboard-event'
 import { useNativeChatComposerAppMenuSelection } from './use-native-chat-composer-app-menu-selection'
 import { useNativeChatComposerSubmit } from './use-native-chat-composer-submit'
@@ -55,7 +57,6 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
       launchSeed,
       structuredTransport,
       steerHead,
-      queue: hostQueue,
       recallSource,
       inputOwnedByCard = false,
       notices: chatNotices,
@@ -66,10 +67,8 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
   ): React.JSX.Element {
     // Own drafts and attachments by pane/conversation so reconnect PTY replacement and UI mode changes cannot discard unsent input.
     const imeEnterGesture = useImeEnterGestureOwnership()
-    const { draft, setDraft, flushDraftAppends } = useNativeChatDraft(
-      draftScopeKey,
-      imeEnterGesture.isComposing
-    )
+    const draftState = useNativeChatDraft(draftScopeKey, imeEnterGesture.isComposing)
+    const { draft, setDraft, flushDraftAppends } = draftState
     const [caret, setCaret] = useState(draft.length)
     useNativeChatLaunchDraftAdoption({
       terminalTabId,
@@ -171,18 +170,20 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
     })
 
     const dictation = useNativeChatDictation(textareaRef, disabled)
-    const sessionOptions = useNativeChatComposerSessionOptions(
-      { agent, disabled, onSlashCommand, onSubmitted, resolveTarget },
-      {
-        agent,
-        terminalTabId,
-        targetPtyId,
-        onAgentPicker: onSwitchToTerminal,
-        readTerminalScreen,
-        paneKey
-      },
+    const sessionOptions = useNativeChatComposerSessionOptions({
+      agent,
+      disabled,
+      onSlashCommand,
+      onSubmitted,
+      resolveTarget,
+      terminalTabId,
+      targetPtyId,
+      onSwitchToTerminal,
+      readTerminalScreen,
+      paneKey,
       structuredTransport
-    )
+    })
+    const contextUsageSummary = useNativeChatContextUsageSummary(structuredTransport)
 
     const sendStructured = useNativeChatStructuredComposerSend({
       agent,
@@ -198,12 +199,12 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
     const ptyCommandRouting = {
       agent,
       disabled,
-      isDispatchingSessionOption: sessionOptions.isDispatchingSessionOption,
+      isDispatchingSessionOption: sessionOptions.isDispatching,
       resolveTarget,
       onSlashCommand,
       onSubmitted,
       answerCommandLocally,
-      sessionOptionsSurface: sessionOptions.ptySessionOptionsSurface,
+      sessionOptionsSurface: sessionOptions.pty.surface,
       trackPendingSend,
       setDraft,
       setCaret,
@@ -222,8 +223,7 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
       classifySend,
       onOptimisticSend,
       optimisticSendOutcome,
-      terminalTabId,
-      queue: structuredTransport ? null : hostQueue
+      terminalTabId
     })
     const localHandle = useRef<C.NativeChatComposerHandle>(null)
     const root = useRef<HTMLDivElement>(null)
@@ -258,6 +258,8 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
       structuredTransport
     })
     const submission = useNativeChatComposerSubmit({
+      agent,
+      textareaRef,
       structuredTransport,
       draftScopeKey,
       draft,
@@ -275,6 +277,7 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
 
     const { goalMode } = submission
     const { sendHeld, ...sendButton } = nativeChatComposerSendState({
+      agent,
       draft,
       messageDelivery: submission.messageDelivery,
       imageAttachments,
@@ -286,13 +289,6 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
       canStop: hasPty && onStop !== undefined,
       orcaCommand: !pending && !launchPrompt && resume.matchesDraft(draft),
       goalMode: goalMode.active
-    })
-    const workingSend = useNativeChatComposerWorkingSend({
-      draftEmpty: !sendButton.hasDraft,
-      isWorking,
-      sendHeld,
-      structured: Boolean(structuredTransport),
-      queue: hostQueue
     })
 
     const { send, chooseEditItem, fieldOverrides, dispatchPickerCommand } =
@@ -338,11 +334,14 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
       send,
       hasAttachments: imageAttachments.length > 0,
       ...(!editSession && steerHead ? { steerHead } : {}),
-      alternateSteers: sendButton.alternateSend === 'steer',
+      chordSteersHead: sendButton.chordSteersHead,
       setActiveSuggestion,
       setDraft,
       setCaret
     })
+
+    const pickerOpen = autocomplete.mode !== 'none'
+    const steerChord = useNativeChatSteerChordPreview(root, sendButton, steerHead, send, pickerOpen)
 
     const draftEvents = useNativeChatDraftEvents({
       draft,
@@ -374,7 +373,6 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
           attachmentEnvironmentId={structuredTransport?.runtimeEnvironmentId ?? undefined}
           {...sendButton}
           isWorking={isWorking}
-          workingSend={workingSend}
           isStopping={isStopping}
           afterStop={afterStop}
           attachDisabled={attachDisabled}
@@ -396,13 +394,23 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
           onDictationHoldStart={dictation.startHoldDictation}
           onDictationHoldEnd={dictation.stopHoldDictation}
           onSend={send}
+          steerPreview={steerChord.preview}
+          onSteerPreview={steerChord.runPreview}
           onStop={interrupt}
-          sessionOptionsSurface={sessionOptions.sessionOptionsSurface}
-          sessionOptionsSnapshot={sessionOptions.sessionOptionsSnapshot}
-          contextUsage={sessionOptions.contextUsageSummary}
+          sessionOptionsSurface={sessionOptions.surface}
+          sessionOptionsSnapshot={sessionOptions.snapshot}
+          contextUsage={contextUsageSummary}
           sessionOptionsPickerRequest={structuredTransport?.optionPickerRequest ?? null}
           agent={agent}
           launchPrompt={launchPrompt}
+          workspaceFooter={
+            !editSession && !launchPrompt ? (
+              <NativeChatComposerWorkspace
+                terminalTabId={terminalTabId}
+                structuredTransport={structuredTransport}
+              />
+            ) : undefined
+          }
           {...fieldOverrides}
         />
       </div>

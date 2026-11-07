@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { NATIVE_CHAT_APPEARANCE_ROOT_CLASS } from './native-chat-appearance-style'
 import { useNativeChatStoreAppearanceStyle } from './use-native-chat-store-appearance-style'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { NativeChatComposerHostQueueContext } from './native-chat-composer-host-queue-context'
 import { useAppStore } from '../../store'
 import { useNativeChatLaunchDraftSignal } from './use-native-chat-launch-draft-adoption'
 import { useNativeChatRetainedSession } from './use-native-chat-retained-session'
@@ -55,7 +56,7 @@ import { useNativeChatFileLinkContext } from './use-native-chat-file-link-contex
 import { useRecheckNativeChatFileLinksWhenTurnEnds } from './use-native-chat-file-link-existence'
 import { useNativeChatLocalCommandAnswer } from './use-native-chat-local-command-answer'
 import { useNativeChatImageRuntimeContext } from './native-chat-image-runtime-context'
-import { handleNativeChatSplitShortcut } from './native-chat-split-shortcut'
+import { handleNativeChatPaneShortcut } from './native-chat-pane-shortcut'
 import { formatShortcutLabel } from '@/hooks/useShortcutLabel'
 import { useNativeChatProjectReplyChannel } from './native-chat-project-reply-context'
 import { NativeChatReplyScope } from './NativeChatReplyScope'
@@ -138,10 +139,12 @@ export function NativeChatResolvedView({
   const [commandMarkers, setCommandMarkers] = useState<NativeChatCommandMarker[]>(() =>
     readCommandMarkerCache(commandMarkerScope)
   )
-  useEffect(() => {
+  const [prevCommandMarkerScope, setPrevCommandMarkerScope] = useState(commandMarkerScope)
+  if (prevCommandMarkerScope !== commandMarkerScope) {
+    setPrevCommandMarkerScope(commandMarkerScope)
     setCommandMarkers(readCommandMarkerCache(commandMarkerScope))
     setWorkingInterrupted(false)
-  }, [commandMarkerScope])
+  }
   useEffect(() => {
     if (!paneLaunchPrompt || !shouldPruneLaunchPrompt(paneLaunchPrompt, session.messages)) {
       return
@@ -313,7 +316,7 @@ export function NativeChatResolvedView({
       }}
       onKeyDownCapture={(event) => {
         find.onKeyDownCapture(event)
-        if (handleNativeChatSplitShortcut(event, keybindings, contextMenuActions)) {
+        if (handleNativeChatPaneShortcut(event, keybindings, contextMenuActions)) {
           return
         }
         rootInput.onKeyDownCapture(event)
@@ -383,28 +386,29 @@ export function NativeChatResolvedView({
       ) : null}
       {/* Honor mobile PTY ownership; retain the hidden composer’s state but detach its ref from typing, paste and focus routes. */}
       <div hidden={shownPromptCard !== null} className="contents">
-        <NativeChatComposer
-          ref={shownPromptCard ? undefined : composerRef}
-          inputOwnedByCard={shownPromptCard !== null}
-          terminalTabId={terminalTabId}
-          paneKey={paneKey}
-          targetPtyId={targetPtyId}
-          agent={agent}
-          canSend={canSend}
-          isWorking={isWorking}
-          onStop={stopAgent}
-          onOptimisticSend={onOptimisticSend}
-          onOptimisticSendCanceled={delivery.cancel}
-          optimisticSendOutcome={delivery}
-          onSlashCommand={onSlashCommand}
-          onSubmitted={revealLatest}
-          answerCommandLocally={answerLocally}
-          onSwitchToTerminal={onSwitchToTerminal}
-          readTerminalScreen={readTerminalScreen}
-          launchSeed={{ ...launchDraftSignal, ownsTabWideLaunchDraft, readTerminalDraft }}
-          queue={messageQueue.composerQueue}
-          recallSource={{ messages: sessionWithPending.messages, commands: commandMarkers }}
-        />
+        <NativeChatComposerHostQueueContext value={messageQueue.composerQueue}>
+          <NativeChatComposer
+            ref={shownPromptCard ? undefined : composerRef}
+            inputOwnedByCard={shownPromptCard !== null}
+            terminalTabId={terminalTabId}
+            paneKey={paneKey}
+            targetPtyId={targetPtyId}
+            agent={agent}
+            canSend={canSend}
+            isWorking={isWorking}
+            onStop={stopAgent}
+            onOptimisticSend={onOptimisticSend}
+            onOptimisticSendCanceled={delivery.cancel}
+            optimisticSendOutcome={delivery}
+            onSlashCommand={onSlashCommand}
+            onSubmitted={revealLatest}
+            answerCommandLocally={answerLocally}
+            onSwitchToTerminal={onSwitchToTerminal}
+            readTerminalScreen={readTerminalScreen}
+            launchSeed={{ ...launchDraftSignal, ownsTabWideLaunchDraft, readTerminalDraft }}
+            recallSource={{ messages: sessionWithPending.messages, commands: commandMarkers }}
+          />
+        </NativeChatComposerHostQueueContext>
       </div>
       {contextMenu.menu}
       <LinkActionPopover request={linkActionRequest} onClose={closeLinkActions} />

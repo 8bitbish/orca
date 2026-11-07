@@ -11,7 +11,7 @@ import {
   deliverQueuedMessage,
   QUEUE_INTERRUPT_KEY
 } from '../terminal-message-queue/terminal-message-queue-delivery'
-import { sendAgentTurn } from './orchestration/send-agent-turn'
+import { sendAgentTurn } from './orchestration/turn-delivery/send-agent-turn'
 import { messageQueueStatusSourceFromHookServer } from '../terminal-message-queue/terminal-message-queue-status-source'
 import { watchTranscriptForInterrupts } from '../terminal-message-queue/terminal-message-queue-transcript-watch'
 import type { TerminalQueuedMessage } from '../../shared/terminal-message-queue-contract'

@@ -4,12 +4,13 @@ import {
   admitNativeChatPastedText,
   resolveNativeChatPastedText
 } from './native-chat-composer-pasted-text-references'
-import { useCallback, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useContext, type Dispatch, type SetStateAction } from 'react'
+import { NativeChatComposerHostQueueContext } from './native-chat-composer-host-queue-context'
 import type { AgentType } from '../../../../shared/agent-status/contracts/agent-status-types'
-import type { NativeChatLaunchDraft } from '@/lib/native-chat-launch-prompt'
+import type { NativeChatLaunchDraft } from '@/components/native-chat/drafts/native-chat-launch-prompt'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '../../store/index'
-import { emitNativeChatMessageSent } from '@/lib/native-chat-telemetry'
+import { emitNativeChatMessageSent } from '@/components/native-chat/telemetry/native-chat-telemetry'
 import {
   sendNativeChatMessage,
   sendNativeChatTypedCommand,
@@ -26,10 +27,7 @@ import { isSlashCommandDraft } from '../../../../shared/native-chat/input/native
 import type { NativeChatPickerState } from './use-native-chat-picker-state'
 import type { NativeChatSendLifecycle } from './use-native-chat-send-lifecycle'
 import type { NativeChatPtySessionOptionsSurface } from '../../../../shared/native-chat/input/native-chat-pty-session-options'
-import type {
-  NativeChatComposerQueue,
-  NativeChatOptimisticSendOutcome
-} from './native-chat-composer-types'
+import type { NativeChatOptimisticSendOutcome } from './native-chat-composer-types'
 import {
   answerNativeChatCommandInComposer,
   type NativeChatLocalCommandAnswer
@@ -60,8 +58,6 @@ type PtyComposerSendArgs = {
   clearSkillOrigin: () => void
   clearImageAttachments: () => void
   setNotice: (notice: string | null) => void
-  /** Present when the host holds mid-turn prompts; absent keeps every send direct, as before. */
-  queue?: NativeChatComposerQueue | null
 }
 
 /** A failed chat message sent again as-is; the draft is left alone. */
@@ -70,6 +66,7 @@ export type NativeChatPtyRetry = { text: string; imagePaths?: string[] }
 export function useNativeChatPtyComposerSend(
   args: PtyComposerSendArgs
 ): (send?: string | NativeChatPtyRetry) => boolean {
+  const queue = useContext(NativeChatComposerHostQueueContext)
   // A string `reply` (a project card's action) is sent as typed text and leaves the draft alone.
   return useCallback(
     (send?: string | NativeChatPtyRetry): boolean => {
@@ -109,7 +106,6 @@ export function useNativeChatPtyComposerSend(
           ? resolveNativeChatPastedText(args.draftScopeKey, text)
           : serializeNativeChatAgentReferences(text, submitted.document, submitted.pastedTextFiles)
       }
-      const queue = args.queue
       if (classification === 'chat' && queue?.willQueue) {
         // Why: typed into a mid-turn TUI, the prompt is absorbed into the running turn. The host
         // holds it instead; if it answers that the agent went idle meanwhile, or cannot hold it,
@@ -129,7 +125,7 @@ export function useNativeChatPtyComposerSend(
       finishSend(args, keepDraft)
       return true
     },
-    [args]
+    [args, queue]
   )
 }
 

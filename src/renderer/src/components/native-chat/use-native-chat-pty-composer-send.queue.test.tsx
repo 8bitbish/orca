@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createElement, type ReactNode } from 'react'
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NativeChatComposerQueue } from './native-chat-composer-types'
@@ -22,32 +23,37 @@ vi.mock('../../store', () => ({
 }))
 
 import { useNativeChatPtyComposerSend } from './use-native-chat-pty-composer-send'
+import { NativeChatComposerHostQueueContext } from './native-chat-composer-host-queue-context'
 
 function harness(draft: string, queue: NativeChatComposerQueue | null) {
   const setDraft = vi.fn()
   const onOptimisticSend = vi.fn(() => 'pending-1')
-  const { result } = renderHook(() =>
-    useNativeChatPtyComposerSend({
-      agent: 'claude',
-      draft,
-      draftScopeKey: 'scope-1',
-      imageAttachments: [],
-      disabled: false,
-      isDispatchingSessionOption: false,
-      launchDraftResolved: true,
-      resolveTarget: () => ({ ptyId: 'pty-1', settings: null }),
-      classifySend: () => 'chat',
-      onOptimisticSend,
-      sessionOptionsSurface: null,
-      terminalTabId: 'tab-1',
-      trackPendingSend: vi.fn(),
-      setDraft,
-      setCaret: vi.fn(),
-      clearSkillOrigin: vi.fn(),
-      clearImageAttachments: vi.fn(),
-      setNotice: vi.fn(),
-      queue
-    })
+  const { result } = renderHook(
+    () =>
+      useNativeChatPtyComposerSend({
+        agent: 'claude',
+        draft,
+        draftScopeKey: 'scope-1',
+        imageAttachments: [],
+        disabled: false,
+        isDispatchingSessionOption: false,
+        launchDraftResolved: true,
+        resolveTarget: () => ({ ptyId: 'pty-1', settings: null }),
+        classifySend: () => 'chat',
+        onOptimisticSend,
+        sessionOptionsSurface: null,
+        terminalTabId: 'tab-1',
+        trackPendingSend: vi.fn(),
+        setDraft,
+        setCaret: vi.fn(),
+        clearSkillOrigin: vi.fn(),
+        clearImageAttachments: vi.fn(),
+        setNotice: vi.fn()
+      }),
+    {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(NativeChatComposerHostQueueContext, { value: queue }, children)
+    }
   )
   return { send: result.current, setDraft, onOptimisticSend }
 }

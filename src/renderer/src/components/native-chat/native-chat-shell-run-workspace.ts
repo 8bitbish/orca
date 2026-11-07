@@ -6,7 +6,7 @@ import { isWslUncPath } from '../../../../shared/wsl-paths'
 import { getSshTargetIdForExecutionHost } from '../../../../shared/execution-host'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { WINDOWS_GIT_BASH_SHELL } from '../../../../shared/windows-terminal-shell'
-import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
+import { getExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
 import { ipcOrRuntimeTargetForHostId } from '@/runtime/runtime-client-target'
 import type { AppState } from '@/store'
 import {

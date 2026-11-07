@@ -116,12 +116,9 @@ export function useMobileNativeChatController(args: {
   })
 
   // Only a terminal-backed chat has a host queue.
-  const { terminalQueue } = useMobileNativeChatTerminalLane({
-    drafts: { captureSendOrigin, acceptSend, clearDraftForSend, setText: setChatComposerText },
-    chat: { client, session: nativeChatSession, hostSupport: agentSessionHostSupport, onSendError },
+  const { terminalQueue } = useMobileNativeChatTerminalLane(args, nativeChatSession, {
     resolution: activeChatStructured ? null : activeChatResolution,
-    terminal: args.activeHandle ?? null,
-    scopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId)
+    drafts: { captureSendOrigin, acceptSend, clearDraftForSend, setText: setChatComposerText }
   })
 
   // Require both input lease and live connection; remembered-only agents may now be shells and must never receive chat writes.
@@ -224,6 +221,7 @@ export function useMobileNativeChatController(args: {
     captureSendOrigin,
     clearDraftForSend,
     restoreRejectedDraft,
+    holdUnconfirmed: structuredNativeChat.holdUnconfirmed,
     onSendError
   })
 
@@ -317,6 +315,8 @@ export function useMobileNativeChatController(args: {
     nativeChatSessionOptions,
     ...terminalQueue.controllerFields,
     nativeChatSessionCommands: nativeChatLane.sessionCommands,
-    nativeChatAcceptsImages: !activeChatStructured || structuredNativeChat.acceptsImages
+    nativeChatAcceptsImages: !activeChatStructured || structuredNativeChat.acceptsImages,
+    nativeChatForkSupport: activeChatStructured ? structuredNativeChat.forkSupport : undefined,
+    nativeChatUsageLimit: activeChatStructured ? structuredNativeChat.usageLimit : null
   }
 }

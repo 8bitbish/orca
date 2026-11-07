@@ -20,6 +20,10 @@ import { claudeInterruptedMessageId } from './transcript-turn-markers'
 import { claudeAbsorbedPromptBlocks } from './transcript-claude-absorbed-prompt'
 import { claudeStopHookFeedbackRow } from '../claude/claude-stop-hook-feedback'
 import { structuredAgentSessionStatusBlock } from '../../shared/agent-session/view/structured-agent-session-status-block'
+import {
+  claudeMessageWithoutSyntheticText,
+  isClaudeInjectedUserMessage
+} from '../claude/claude-internal-message-content'
 
 const MAX_EDIT_PATCH_HUNKS = 40
 const MAX_EDIT_PATCH_HUNK_LINES = 400
@@ -78,7 +82,10 @@ export function decodeClaudeTranscriptLine(
   if (!parsed) {
     return null
   }
-  const record = claudeQueuedPromptAsUserRecord(parsed) ?? parsed
+  const record = claudeMessageWithoutSyntheticText(claudeQueuedPromptAsUserRecord(parsed) ?? parsed)
+  if (!record) {
+    return null
+  }
   const role = record.type
   if (role === 'attachment') {
     const absorbed = claudeAbsorbedPromptBlocks(record)
@@ -134,9 +141,7 @@ export function decodeClaudeTranscriptLine(
     return null
   }
   // Meta user turns may still contain genuine tool output.
-  const isInjectedUserTurn =
-    role === 'user' &&
-    (record.isMeta === true || record.isSynthetic === true || record.isCompactSummary === true)
+  const isInjectedUserTurn = isClaudeInjectedUserMessage(record)
   const stopHookFeedback = isInjectedUserTurn ? claudeStopHookFeedbackMessage(decodedBlocks) : null
   if (stopHookFeedback) {
     return { id: recordMessageId, timestamp, source: 'transcript', ...stopHookFeedback, ...parent }

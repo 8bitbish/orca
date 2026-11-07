@@ -1,27 +1,63 @@
-import { useNativeChatContextUsageSummary } from './use-native-chat-context-usage-summary'
-import { useNativeChatSessionOptions } from './use-native-chat-session-options'
 import { useNativeChatSessionOptionCommand } from './use-native-chat-session-option-command'
-import type { NativeChatStructuredComposerTransport } from './native-chat-composer-types'
+import { useNativeChatSessionOptions } from './use-native-chat-session-options'
+import type { NativeChatComposerProps } from './native-chat-composer-types'
+import type {
+  SessionOptionDescriptor,
+  SessionOptionsSurface
+} from '../../../../shared/native-chat/input/native-chat-session-options'
 
-type CommandInput = Parameters<typeof useNativeChatSessionOptionCommand>[0]
-type PtyOptionsInput = Omit<Parameters<typeof useNativeChatSessionOptions>[0], 'dispatchCommand'>
+type ComposerSessionOptionsArgs = Pick<
+  NativeChatComposerProps,
+  | 'agent'
+  | 'terminalTabId'
+  | 'targetPtyId'
+  | 'paneKey'
+  | 'onSlashCommand'
+  | 'onSubmitted'
+  | 'onSwitchToTerminal'
+  | 'readTerminalScreen'
+  | 'structuredTransport'
+> &
+  Pick<Parameters<typeof useNativeChatSessionOptionCommand>[0], 'disabled' | 'resolveTarget'>
 
-/** The composer's session-option pickers: a structured chat's own, else the terminal's. */
-export function useNativeChatComposerSessionOptions(
-  command: CommandInput,
-  pty: PtyOptionsInput,
-  structuredTransport: NativeChatStructuredComposerTransport | undefined
-) {
-  const { dispatch, isDispatching } = useNativeChatSessionOptionCommand(command)
-  const { surface: ptySurface, snapshot: ptySnapshot } = useNativeChatSessionOptions({
-    ...pty,
-    dispatchCommand: dispatch
+export function useNativeChatComposerSessionOptions({
+  agent,
+  disabled,
+  onSlashCommand,
+  onSubmitted,
+  resolveTarget,
+  terminalTabId,
+  targetPtyId,
+  onSwitchToTerminal,
+  readTerminalScreen,
+  paneKey,
+  structuredTransport
+}: ComposerSessionOptionsArgs): {
+  isDispatching: boolean
+  pty: ReturnType<typeof useNativeChatSessionOptions>
+  surface: SessionOptionsSurface | null
+  snapshot: SessionOptionDescriptor[]
+} {
+  const { dispatch, isDispatching } = useNativeChatSessionOptionCommand({
+    agent,
+    disabled,
+    onSlashCommand,
+    onSubmitted,
+    resolveTarget
+  })
+  const pty = useNativeChatSessionOptions({
+    agent,
+    terminalTabId,
+    targetPtyId,
+    dispatchCommand: dispatch,
+    onAgentPicker: onSwitchToTerminal,
+    readTerminalScreen,
+    paneKey
   })
   return {
-    isDispatchingSessionOption: isDispatching,
-    ptySessionOptionsSurface: ptySurface,
-    sessionOptionsSurface: structuredTransport?.optionsSurface ?? ptySurface,
-    sessionOptionsSnapshot: structuredTransport?.optionSnapshot ?? ptySnapshot,
-    contextUsageSummary: useNativeChatContextUsageSummary(structuredTransport)
+    isDispatching,
+    pty,
+    surface: structuredTransport?.optionsSurface ?? pty.surface,
+    snapshot: structuredTransport?.optionSnapshot ?? pty.snapshot
   }
 }

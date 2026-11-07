@@ -13,7 +13,7 @@ import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
 import { getRuntimeEnvironmentRevision } from '@/runtime/runtime-environment-revision'
 import { toRuntimeWorktreeSelector } from '@/runtime/runtime-worktree-selector'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 
 export const NATIVE_CHAT_SHELL_RUN_TERMINAL_TITLE = 'Runs'
 const RPC_TIMEOUT_MS = 15_000

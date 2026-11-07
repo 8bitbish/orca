@@ -52,3 +52,16 @@ export async function offerMobileNativeChatSendToQueue<Origin>(args: {
   }
   return routed
 }
+
+/** The queue offer for a send, or null when there is no queue or the send must go direct. */
+export function mobileNativeChatQueueOffer<Origin>(
+  args: Omit<Parameters<typeof offerMobileNativeChatSendToQueue<Origin>>[0], 'submit'> & {
+    submit: MobileNativeChatQueueSubmit | null
+    eligible: boolean
+  }
+): Promise<'queued' | 'direct' | 'rejected'> | null {
+  const { submit, eligible, ...offer } = args
+  return submit && eligible && args.text
+    ? offerMobileNativeChatSendToQueue({ ...offer, submit })
+    : null
+}
