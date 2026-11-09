@@ -9,10 +9,10 @@ import type {
   RuntimeTerminalSend,
   RuntimeTerminalShow
 } from '../../../../shared/runtime-terminal-contracts'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
-import { getRuntimeEnvironmentRevision } from '@/runtime/runtime-environment-revision'
-import { toRuntimeWorktreeSelector } from '@/runtime/runtime-worktree-selector'
+import { getRuntimeEnvironmentRevision } from '@/runtime/rpc/environment-revisions/runtime-environment-revision'
+import { toRuntimeWorktreeSelector } from '@/runtime/rpc/targets/runtime-worktree-selector'
 import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 
 export const NATIVE_CHAT_SHELL_RUN_TERMINAL_TITLE = 'Runs'

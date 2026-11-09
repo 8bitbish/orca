@@ -14,7 +14,7 @@ import {
 import { withoutPullRequestEventRows } from '../../../../shared/native-chat/native-chat-pull-request-event'
 import { nativeChatShowsCiResultLines } from '../../../../shared/native-chat/native-chat-appearance-settings'
 import { nativeChatSessionThoughtSeconds } from '../../../../shared/native-chat-thought-duration'
-import { compareMessages } from './session/terminal/assembly/native-chat-session-assembler'
+import { compareNativeChatDisplayMessages as compareMessages } from '../../../../shared/native-chat/transcript/native-chat-message-order'
 import {
   nativeChatThoughtTiming,
   type NativeChatThoughtTiming

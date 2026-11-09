@@ -7,8 +7,8 @@ import { getSshTargetIdForExecutionHost } from '../../../../shared/execution-hos
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { WINDOWS_GIT_BASH_SHELL } from '../../../../shared/windows-terminal-shell'
 import { getExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
-import { ipcOrRuntimeTargetForHostId } from '@/runtime/runtime-client-target'
-import type { AppState } from '@/store'
+import { ipcOrRuntimeTargetForHostId } from '@/runtime/rpc/targets/runtime-client-target'
+import type { AppState } from '@/store/types'
 import {
   resolveNativeChatProjectTarget,
   type NativeChatProjectTarget

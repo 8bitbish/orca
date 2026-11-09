@@ -9,17 +9,18 @@ import type {
   TerminalMessageQueueStopResult,
   TerminalMessageQueueSubmitResult
 } from '../../../shared/terminal-message-queue-contract'
-import { getRuntimeEnvironmentRevision } from './runtime-environment-revision'
-import { callRuntimeRpc, runtimeEnvironmentSupportsCapability } from './runtime-rpc-client'
+import { getRuntimeEnvironmentRevision } from './rpc/environment-revisions/runtime-environment-revision'
+import { callRuntimeRpc } from './rpc/calls/runtime-rpc-call'
+import { runtimeEnvironmentSupportsCapability } from './rpc/compatibility/runtime-capability-proof'
 import type { RuntimeClientTarget } from '../../../shared/runtime-client-target'
 import {
   ensureLocalRuntimeCapabilities,
   readLocalRuntimeCapabilitiesOrUnknown
-} from './local-runtime-capabilities'
+} from './hosts/capabilities/local-runtime-capabilities'
 import {
   getRemoteRuntimePtyEnvironmentId,
   getRemoteRuntimeTerminalHandle
-} from './runtime-terminal-stream'
+} from './hosted-terminals/identity/remote-runtime-pty-owner'
 
 /** Where a pane's queue lives: the runtime that owns its PTY, named the way that runtime knows it. */
 export type TerminalMessageQueueClientTarget = {

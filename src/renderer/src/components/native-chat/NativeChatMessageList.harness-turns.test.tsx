@@ -15,10 +15,8 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { NativeChatMessageList } from './NativeChatMessageList'
 import { installNativeChatMessageListTestViewport } from './viewport/virtualization/native-chat-message-list-test-viewport'
 import { createNativeChatMessageListProjection } from './conversation/projection/native-chat-message-list-projection'
-import {
-  assembleNativeChatSession,
-  compareMessages
-} from './session/terminal/assembly/native-chat-session-assembler'
+import { assembleNativeChatSession } from './session/terminal/assembly/native-chat-session-assembler'
+import { compareNativeChatDisplayMessages as compareMessages } from '../../../../shared/native-chat/transcript/native-chat-message-order'
 import {
   nativeChatLatestTurnId,
   nativeChatTranscriptSettledTurns
@@ -27,7 +25,7 @@ import {
   buildNativeChatTranscriptSlots,
   type NativeChatMessageSlot
 } from './conversation/slots/native-chat-transcript-slots'
-import type { NativeChatLiveSession } from './session/terminal/read/use-native-chat-live-session'
+import type { NativeChatLiveSession } from './session/terminal/read/native-chat-live-session-contract'
 
 // Scrubbed records from a Claude Code 2.1.286 session: two prompts, each answered and then
 // followed by a background-task notification the agent answered on its own. Text is

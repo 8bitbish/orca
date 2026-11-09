@@ -3,7 +3,7 @@ import {
   readRuntimeFixture,
   replayTranscript,
   type TranscriptReplayFrame
-} from './agent-transcript-replay-test-harness'
+} from './terminal/wait/agent-transcript-replay-test-harness'
 
 // Claude Code 2.1.286 at 100x30 (see the .meta.json): the stock `Try "…"` placeholder, two
 // replies, then the dim (SGR 2) prompt suggestion it paints into the empty composer, typed text
