@@ -17,7 +17,7 @@ import { stopMacOSPermissionStatusHelper } from './macos-computer-use-permission
 
 const PERMISSION_STATUS_HELPER_LAUNCH_TIMEOUT_MS = 5_000
 
-// onHelperSpawn fires when `open` actually starts, so launch budgets measure real spawns.
+// onHelperSpawn fires when the helper actually starts, so launch budgets measure real spawns.
 export function getComputerUsePermissionStatus(
   onHelperSpawn: () => void = () => {}
 ): Promise<ComputerUsePermissionStatusResult> {
@@ -48,7 +48,10 @@ async function getComputerUsePermissionStatusAsync(
     )
   }
 
-  const raw = await readPermissionStatusFromHelperApp(helperAppPath, onHelperSpawn)
+  const raw = await readPermissionStatusFromHelperApp(
+    resolveMacOSComputerUseExecutablePath() ?? helperAppPath,
+    onHelperSpawn
+  )
 
   return {
     platform: process.platform,
@@ -89,14 +92,14 @@ function createUnavailablePermissionStatus(
 }
 
 async function readPermissionStatusFromHelperApp(
-  helperAppPath: string,
+  helperExecutablePath: string,
   onHelperSpawn: () => void
 ): Promise<Partial<Record<ComputerUsePermissionId, ComputerUsePermissionStatus>>> {
   const tempDir = await mkdtemp(join(tmpdir(), 'orca-computer-use-permissions-'))
   const statusPath = join(tempDir, 'status.json')
   try {
-    // Launch the helper app so TCC checks its identity instead of inheriting the parent's grants.
-    await launchPermissionStatusHelper(helperAppPath, statusPath, onHelperSpawn)
+    // Same direct spawn as the agent (the helper disclaims Orca's TCC responsibility), so granted means actions work.
+    await launchPermissionStatusHelper(helperExecutablePath, statusPath, onHelperSpawn)
 
     for (let attempt = 0; attempt < 50; attempt++) {
       if (await fileExists(statusPath)) {
@@ -115,18 +118,14 @@ async function readPermissionStatusFromHelperApp(
 }
 
 function launchPermissionStatusHelper(
-  helperAppPath: string,
+  helperExecutablePath: string,
   statusPath: string,
   onHelperSpawn: () => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const launch = spawn(
-      '/usr/bin/open',
-      ['-n', helperAppPath, '--args', '--permission-status-file', statusPath],
-      {
-        stdio: ['ignore', 'pipe', 'pipe']
-      }
-    )
+    const launch = spawn(helperExecutablePath, ['--permission-status-file', statusPath], {
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
     onHelperSpawn()
     let stdout = ''
     let stderr = ''
@@ -191,7 +190,7 @@ function launchPermissionStatusHelper(
         new RuntimeClientError('accessibility_error', 'Timed out launching permission helper')
       )
     }
-    // Polling starts after open exits, so a stalled launch needs its own deadline.
+    // Polling starts after the helper exits, so a stalled launch needs its own deadline.
     launchTimeout = setTimeout(onTimeout, PERMISSION_STATUS_HELPER_LAUNCH_TIMEOUT_MS)
     if (typeof launchTimeout.unref === 'function') {
       launchTimeout.unref()

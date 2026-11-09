@@ -4486,6 +4486,10 @@ private func writeAll(_ data: Data, to fd: Int32) -> Bool {
 }
 
 let arguments = Array(CommandLine.arguments.dropFirst())
+if arguments.first == "--agent" || arguments.first == "--permission-status-file" {
+    // Why: a direct spawn inherits Orca as TCC responsible process, so AXIsProcessTrusted checked Orca's grant.
+    ResponsibleProcessDisclaim.reexecIfNeeded()
+}
 if arguments.first == "--agent" {
     guard arguments.count >= 2 else {
         fputs("usage: orca-computer-use-macos --agent <socket-path> --token-file <token-path>\n", stderr)
