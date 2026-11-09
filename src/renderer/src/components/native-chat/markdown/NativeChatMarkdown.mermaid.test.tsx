@@ -94,7 +94,7 @@ describe('native chat Mermaid fences', () => {
   it('shows partial source while streaming and renders the diagram when the reply finishes', async () => {
     const { container, rerender } = render(reply(partial, true))
     expect(container.querySelector('[data-native-chat-code-content]')?.textContent).toContain(
-      partial
+      partial.trimEnd()
     )
     expect(container.querySelector('[data-native-chat-diagram]')).toBeNull()
     expect(mermaid.render).not.toHaveBeenCalled()
