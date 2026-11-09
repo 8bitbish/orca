@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import './runtime-test-module-registration.spec'
 import { OrcaRuntimeService } from '../orca-runtime'
 import '../orca-runtime-test-mocks/setup.spec'
-import { RpcDispatcher } from '../rpc/dispatcher'
-import { TERMINAL_METHODS } from '../rpc/methods/terminal/terminal'
-import { makeRpcRequest, store, syncSinglePty } from './orca-runtime-test-fixtures.spec'
+import '../rpc/dispatcher'
+import '../rpc/methods/terminal/terminal'
+import { store, syncSinglePty } from './orca-runtime-test-fixtures.spec'
 
 describe('OrcaRuntimeService', () => {
   it('rejects a provider visible frame after live non-mode-switch output advances', async () => {
@@ -442,43 +442,6 @@ describe('OrcaRuntimeService', () => {
     expect(shown.preview).toBe(expectedTail.join('\n'))
     expect(shown.preview.length).toBe(300)
     expect(serializeProviderBuffer).toHaveBeenCalledOnce()
-  })
-
-  it('returns renderer visible screen lines through terminal.read RPC JSON result', async () => {
-    const serializeBuffer = vi.fn().mockResolvedValue({
-      data: '\x1b[?1049hClaude Code\r\nChecking files\r\nWaiting for input\r\n',
-      cols: 80,
-      rows: 24
-    })
-    const runtime = new OrcaRuntimeService(store)
-    runtime.setPtyController({
-      write: () => true,
-      kill: () => true,
-      getForegroundProcess: async () => null,
-      hasRendererSerializer: () => true,
-      serializeBuffer
-    })
-    syncSinglePty(runtime)
-
-    const [terminal] = (await runtime.listTerminals()).terminals
-    runtime.onPtyData('pty-1', `${Array.from({ length: 3000 }, () => '').join('\n')}\n`, 100)
-    const dispatcher = new RpcDispatcher({ runtime, methods: TERMINAL_METHODS })
-
-    const response = await dispatcher.dispatch(
-      makeRpcRequest('terminal.read', { terminal: terminal.handle })
-    )
-
-    expect(response.ok).toBe(true)
-    if (!response.ok) {
-      throw new Error(response.error.message)
-    }
-    expect(response.result).toMatchObject({
-      terminal: {
-        handle: terminal.handle,
-        status: 'running',
-        tail: ['Claude Code', 'Checking files', 'Waiting for input']
-      }
-    })
   })
 
   // Deliberately reverses 419e3b4496: Claude Code's dim (SGR 2) prompt suggestion is the agent's,

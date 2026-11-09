@@ -5,8 +5,8 @@ import type {
   TerminalMessageQueueSnapshot,
   TerminalQueuedMessage
 } from '../../../src/shared/terminal-message-queue-contract'
-import type { RpcClient } from '../transport/rpc-client'
-import { markRpcDeliveryUnknown } from '../transport/rpc-delivery-ambiguity'
+import type { RpcClient } from '../transport/rpc/rpc-client-contract'
+import { markRpcDeliveryUnknown } from '../transport/rpc/rpc-delivery-ambiguity'
 import { clearMobileQueueOrphansForTests } from './mobile-terminal-message-queue-orphans'
 import {
   useMobileNativeChatMessageQueue,

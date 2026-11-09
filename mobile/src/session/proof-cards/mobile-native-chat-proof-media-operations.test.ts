@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { RpcResponse } from '../../transport/types'
+import type { RpcResponse } from '../../transport/rpc/rpc-wire-types'
 import {
   createMobileNativeChatProofImageRegionHost,
   createMobileNativeChatProofMediaHost

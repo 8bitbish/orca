@@ -36,6 +36,8 @@ export type MobileNativeChatQueueSurface = {
 
 /** Prompts the host holds until the agent's turn ends, and whether a send now would join them. */
 export type MobileNativeChatQueueProps = { queue?: MobileNativeChatQueueSurface }
+/** The chat view's props for the host queue. */
+export type Props = MobileNativeChatQueueProps
 
 function rowItems(
   snapshot: TerminalMessageQueueSnapshot,

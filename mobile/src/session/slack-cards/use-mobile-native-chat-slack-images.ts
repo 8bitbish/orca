@@ -3,7 +3,7 @@ import type {
   NativeChatSlackImageResult,
   NativeChatSlackImageVariant
 } from '../../../../src/shared/native-chat-slack-image-contract'
-import type { RpcClient } from '../../transport/rpc-client'
+import type { RpcClient } from '../../transport/rpc/rpc-client-contract'
 import type { MobileNativeChatSlack } from './mobile-native-chat-slack-context'
 import { fetchMobileNativeChatSlackImage } from './mobile-native-chat-slack-image-operation'
 import { fetchMobileNativeChatSlackNames } from './mobile-native-chat-slack-names-operation'

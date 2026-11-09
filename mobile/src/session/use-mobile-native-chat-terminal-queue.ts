@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { Dispatch, SetStateAction } from 'react'
 import type { NativeChatMessage } from '../../../src/shared/native-chat/native-chat-types'
 import type { TerminalQueuedMessage } from '../../../src/shared/terminal-message-queue-contract'
-import type { RpcClient } from '../transport/rpc-client'
+import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import type { MobileNativeChatResolution } from './native-chat/mobile-native-chat-eligibility'
 import type {
   MobileNativeChatAcceptSend,

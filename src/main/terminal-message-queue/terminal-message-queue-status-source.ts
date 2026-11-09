@@ -1,4 +1,4 @@
-import type { AgentHookServer } from '../agent-hooks/server'
+import type { AgentHookServer } from '../agent-hooks/server/agent-hook-server'
 import type { TerminalMessageQueueStatusSource } from './terminal-message-queue-host'
 
 type HookStatusStore = Pick<

@@ -1,4 +1,4 @@
-import type { ConnectionState } from '../../transport/types'
+import type { ConnectionState } from '../../transport/connection/connection-state'
 
 // The overlay's personal-build props, for the prompt-controller harness.
 export function personalOverlayProps(

@@ -52,11 +52,12 @@ export type MobileNativeChatProject = {
   liveLine: { text: string; time: string | null } | null
 }
 
-const NEEDS_YOU = new Set<AgentDotState>(['blocked', 'waiting', 'failed'])
+const NEEDS_YOU = new Set<AgentDotState>(['blocked', 'waiting', 'permission', 'failed'])
 const AGENT_RANK: Record<AgentDotState, number> = {
   failed: 0,
   blocked: 0,
   waiting: 0,
+  permission: 0,
   working: 1,
   monitoring: 1,
   done: 2,

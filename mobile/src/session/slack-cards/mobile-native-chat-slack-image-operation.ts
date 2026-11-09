@@ -3,8 +3,8 @@ import {
   type NativeChatSlackImageResult,
   type NativeChatSlackImageVariant
 } from '../../../../src/shared/native-chat-slack-image-contract'
-import { bindDeferredRpcOperation, defineRpcOperation } from '../../transport/rpc-operation'
-import type { RpcCompatibleReader } from '../../transport/rpc-operation-contract'
+import { bindDeferredRpcOperation, defineRpcOperation } from '../../transport/rpc/rpc-operation'
+import type { RpcCompatibleReader } from '../../transport/rpc/rpc-operation-contract'
 
 const readSlackImage: RpcCompatibleReader<unknown, 'slack-image', NativeChatSlackImageResult> = (
   raw

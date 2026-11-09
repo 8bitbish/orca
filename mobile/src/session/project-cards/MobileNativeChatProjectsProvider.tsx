@@ -3,8 +3,8 @@ import type { NativeChatMessage } from '../../../../src/shared/native-chat/nativ
 import { useOptionalHostProtocolGates } from '../../components/host-protocol-gates-context'
 import { MobileMarkdownRenderersContext } from '../../components/mobile-markdown-renderers'
 import { useRouteHandoff } from '../../navigation/route-handoff'
-import type { RpcClient } from '../../transport/rpc-client'
-import type { ConnectionState } from '../../transport/types'
+import type { RpcClient } from '../../transport/rpc/rpc-client-contract'
+import type { ConnectionState } from '../../transport/connection/connection-state'
 import { MOBILE_NATIVE_CHAT_MARKDOWN_RENDERERS } from './mobile-native-chat-markdown-renderers'
 import {
   pendingMobileNativeChatProject,

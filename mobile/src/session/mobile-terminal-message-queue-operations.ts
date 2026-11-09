@@ -1,9 +1,9 @@
-import { bindDeferredRpcOperation, defineRpcOperation } from '../transport/rpc-operation'
-import { rpcResultVariant } from '../transport/rpc-operation-result-reader'
-import { RpcIncompatibleReplyError } from '../transport/rpc-incompatible-reply-error'
-import { isRpcDeliveryUnknown } from '../transport/rpc-delivery-ambiguity'
-import { isLogicalClientCutoverError } from '../transport/stable-logical-rpc-client'
-import type { RpcResponse } from '../transport/types'
+import { bindDeferredRpcOperation, defineRpcOperation } from '../transport/rpc/rpc-operation'
+import { rpcResultVariant } from '../transport/rpc/rpc-operation-result-reader'
+import { RpcIncompatibleReplyError } from '../transport/rpc/rpc-incompatible-reply-error'
+import { isRpcDeliveryUnknown } from '../transport/rpc/rpc-delivery-ambiguity'
+import { isLogicalClientCutoverError } from '../transport/connection/logical-client-cutover-error'
+import type { RpcResponse } from '../transport/rpc/rpc-wire-types'
 import type {
   TerminalMessageQueueEditResult,
   TerminalMessageQueueSendNextResult,

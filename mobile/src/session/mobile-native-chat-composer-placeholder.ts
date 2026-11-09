@@ -5,8 +5,8 @@ import { mobileNativeChatComposerPlaceholder as hostComposerPlaceholder } from '
 
 /** The composer's hint: why input is locked, what a send does while stopping, or that a send now
  *  waits in the host's terminal queue. */
-export function mobileNativeChatComposerPlaceholder(
-  lockReason: MobileNativeChatInputLockReason | null,
+export function hostQueueComposerPlaceholder(
+  { lockReason }: { lockReason: MobileNativeChatInputLockReason | null },
   turnIndicator: Pick<NativeChatLiveTurnIndicator, 'afterStop'> | null | undefined,
   queue: Pick<MobileNativeChatQueueSurface, 'willQueue'> | undefined
 ): string {

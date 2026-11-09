@@ -6,7 +6,7 @@ import {
   type TerminalMessageQueueStopOutcome,
   type TerminalQueuedMessage
 } from '../../../src/shared/terminal-message-queue-contract'
-import type { RpcClient } from '../transport/rpc-client'
+import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import { terminalMessageQueueRpc } from './mobile-terminal-message-queue-operations'
 import { subscribeMobileTerminalMessageQueue } from './mobile-terminal-message-queue-subscription'
 import {

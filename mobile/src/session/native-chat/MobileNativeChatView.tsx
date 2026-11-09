@@ -54,7 +54,7 @@ import {
 } from './composer/use-mobile-native-chat-composer-tray'
 import type { MobileNativeChatSessionOptionPickersProps } from './input/MobileNativeChatSessionOptionPickers'
 import * as HostQueue from '../MobileNativeChatTerminalQueuedMessages'
-import { mobileNativeChatComposerPlaceholder } from '../mobile-native-chat-composer-placeholder'
+import { hostQueueComposerPlaceholder } from '../mobile-native-chat-composer-placeholder'
 import { MobileNativeChatScrollRootsBoundary } from '../MobileNativeChatScrollRootsBoundary'
 import { MobileNativeChatRowList } from './transcript/MobileNativeChatRowList'
 import { useMobileNativeChatRowRenderer } from './transcript/use-mobile-native-chat-row-renderer'
@@ -67,10 +67,9 @@ import { useMobileNativeChatOfflineQueue } from './composer/use-mobile-native-ch
 
 export type MobileNativeChatInputLockReason = 'disconnected' | 'waiting'
 
-type Props = ComposerTrayProps & MobileNativeChatMicProps & ChatViewProps
+type Props = ComposerTrayProps & MobileNativeChatMicProps & ChatViewProps & HostQueue.Props
 
 type ChatViewProps = MobileNativeChatSendProps &
-  HostQueue.MobileNativeChatQueueProps &
   Omit<ComponentProps<typeof MobileNativeChatPromptCard>, 'answering' | 'requiresTerminal'> & {
     // Keep raw messages to distinguish loading from a loaded transcript filtered to empty.
     messages: NativeChatMessage[]
@@ -79,6 +78,8 @@ type ChatViewProps = MobileNativeChatSendProps &
     error?: string
     // Permanent read failure replaces the pane because further chat actions cannot succeed.
     readFailedFinally?: boolean
+    /** A sent /clear hid the old rows: show a blank list until its divider lands, not the new-chat copy. */
+    clearing?: boolean
     agent?: string | null
     sessionLive?: boolean
     /** The turn is live: working, or waiting on the reader. */
@@ -140,6 +141,7 @@ export function MobileNativeChatView({
   status,
   error,
   readFailedFinally = false,
+  clearing = false,
   agent,
   sessionLive,
   agentWorking,
@@ -238,7 +240,6 @@ export function MobileNativeChatView({
       : (ask ?? permission ?? question ?? collapsedPrompt ?? awaitingInput) != null,
     send: onSend
   })
-  const { lockReason } = offlineQueue
   const handleSend = useCallback(
     async (...send: Parameters<typeof onSend>): Promise<boolean> => {
       // Retire the previous notice before this action can report a new one.
@@ -316,9 +317,9 @@ export function MobileNativeChatView({
   // Changing text scale relays out every row, so preserve the page’s reading anchor.
   const layoutKey = `${fontScale}`
   const footer = mobileNativeChatListFooter(liveStatus, turns.waitingRows, renderItem)
-  const emptyState = mobileNativeChatEmptyState(status, agent ?? null, error, sessionLive)
+  const emptyState = mobileNativeChatEmptyState(status, agent, error, sessionLive, clearing)
 
-  const composerPlaceholder = mobileNativeChatComposerPlaceholder(lockReason, turnIndicator, queue)
+  const composerPlaceholder = hostQueueComposerPlaceholder(offlineQueue, turnIndicator, queue)
   const promptOwnsInput = useMobileNativeChatPromptInputOwner(
     { promptShown, ask, askRequiresTerminal, permission, micActive, micProcessing },
     inputRef
@@ -347,7 +348,7 @@ export function MobileNativeChatView({
       />
       {queue?.stack ? <HostQueue.MobileNativeChatTerminalQueuedMessages {...queue.stack} /> : null}
       <MobileNativeChatInputLockStatus
-        lockReason={lockReason}
+        lockReason={offlineQueue.lockReason}
         waitingText={composerPlaceholder}
         hostOutage={hostOutage}
       />

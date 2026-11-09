@@ -14,8 +14,8 @@ import {
   type NativeChatProofMediaReadReply,
   type NativeChatProofMediaReadRequest
 } from '../../../../src/shared/native-chat-proof-media-rpc-contract'
-import { bindDeferredRpcOperation, defineRpcOperation } from '../../transport/rpc-operation'
-import type { RpcCompatibleReader } from '../../transport/rpc-operation-contract'
+import { bindDeferredRpcOperation, defineRpcOperation } from '../../transport/rpc/rpc-operation'
+import type { RpcCompatibleReader } from '../../transport/rpc/rpc-operation-contract'
 
 /** The three host calls a proof card's media needs. Every one resolves; none throws. */
 export type MobileNativeChatProofMediaHost = {

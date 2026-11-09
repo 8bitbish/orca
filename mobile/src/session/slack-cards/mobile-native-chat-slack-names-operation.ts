@@ -4,8 +4,8 @@ import {
   type NativeChatSlackNamesRequest,
   type NativeChatSlackNamesResult
 } from '../../../../src/shared/native-chat-slack-names-contract'
-import { bindDeferredRpcOperation, defineRpcOperation } from '../../transport/rpc-operation'
-import type { RpcCompatibleReader } from '../../transport/rpc-operation-contract'
+import { bindDeferredRpcOperation, defineRpcOperation } from '../../transport/rpc/rpc-operation'
+import type { RpcCompatibleReader } from '../../transport/rpc/rpc-operation-contract'
 
 const readSlackNames: RpcCompatibleReader<unknown, 'slack-names', NativeChatSlackNamesResult> = (
   raw

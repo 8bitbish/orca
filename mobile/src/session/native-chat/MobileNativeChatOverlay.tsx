@@ -1,7 +1,7 @@
 import { MobileQueuedMessageComposerContext } from '../mobile-queued-message-composer-context'
 import { Activity, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
-import type { RpcClient } from '../../transport/rpc-client'
+import type { RpcClient } from '../../transport/rpc/rpc-client-contract'
 import { MobileNativeChatProjectsProvider } from '../project-cards/MobileNativeChatProjectsProvider'
 import { MobileNativeChatView, type MobileNativeChatInputLockReason } from './MobileNativeChatView'
 import { useMobileNativeChatProjection } from './transcript/use-mobile-native-chat-projection'
@@ -9,8 +9,7 @@ import { nativeChatDockedTaskList } from '../../../../src/shared/native-chat/inp
 import type { MobileNativeChatImageAttachments } from './composer/use-mobile-native-chat-image-attachments'
 import type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
 import type { MobileNativeChatStructuredComposer } from './composer/MobileNativeChatComposer'
-import { useMobileNativeChatTimedThoughtRows } from '../use-mobile-native-chat-thought-seconds'
-import { useMobileNativeChatImageRestoringQueue } from '../use-mobile-native-chat-image-restoring-queue'
+import { useMobileNativeChatOverlayRows } from '../use-mobile-native-chat-overlay-rows'
 import { useMobileNativeChatComposerTray } from './composer/use-mobile-native-chat-composer-tray'
 import { useMobileNativeChatVisualRenderer } from './visual/MobileNativeChatVisual'
 import { MobileNativeChatVisualContext } from './visual/mobile-native-chat-visual-context'
@@ -28,7 +27,7 @@ import type { MobileNativeChatImageSource } from './visual/mobile-native-chat-im
 import type { MobileNativeChatHostOutage } from './mobile-native-chat-host-outage'
 import { useMobileNativeChatMarkdownLinks } from './use-mobile-native-chat-markdown-links'
 import { MobileMarkdownLinksContext } from '../../components/mobile-markdown-links-context'
-import type { ConnectionState } from '../../transport/types'
+import type { ConnectionState } from '../../transport/connection/connection-state'
 import { useMobileTranslation } from '../../i18n/use-mobile-translation'
 
 type Props = {
@@ -128,18 +127,20 @@ function MobileNativeChatOverlayContent({
     session.messages,
     controller.nativeChatItemSource
   )
-  const folded = useMobileNativeChatProjection(fullContent.messages, agent, [
-    sendSurfaceId,
-    sessionId,
-    controller.nativeChatItemSource?.client,
-    controller.nativeChatItemSource?.sessionId
-  ])
+  const folded = useMobileNativeChatProjection(
+    fullContent.messages,
+    agent,
+    [
+      sendSurfaceId,
+      sessionId,
+      controller.nativeChatItemSource?.client,
+      controller.nativeChatItemSource?.sessionId
+    ],
+    controller.nativeChatShowsCiResultLines
+  )
   const taskList = useMemo(() => nativeChatDockedTaskList(folded), [folded])
   const streaming = controller.nativeChatStreamingText ?? null
-  // Durations the host's journal did not stamp, read from the transcript (terminal chats).
-  const timedFolded = useMobileNativeChatTimedThoughtRows(controller, folded, streaming)
-  // The overlay owns the composer chips, so it puts a restored item's images back.
-  const queueStack = useMobileNativeChatImageRestoringQueue(controller.nativeChatQueue, images)
+  const overlayRows = useMobileNativeChatOverlayRows(controller, folded, streaming, images)
   const queued = controller.nativeChatQueued
   const composerTray = useMobileNativeChatComposerTray({
     queued: {
@@ -298,10 +299,11 @@ function MobileNativeChatOverlayContent({
                     <MobileNativeChatNoticeContext.Provider value={noticeView}>
                       <MobileNativeChatView
                         messages={session.messages}
-                        folded={timedFolded}
+                        folded={overlayRows.folded}
                         status={session.status}
                         error={session.error}
                         readFailedFinally={session.readFailedFinally === true}
+                        clearing={session.clearing === true}
                         agent={controller.nativeChatAgent}
                         sessionLive={controller.nativeChatSessionLive}
                         agentWorking={controller.nativeChatTurnActive}
@@ -396,7 +398,7 @@ function MobileNativeChatOverlayContent({
                         sessionOptions={controller.nativeChatSessionOptions}
                         contextUsage={controller.nativeChatContextUsage}
                         structuredComposer={structuredComposer}
-                        queue={{ stack: queueStack, willQueue: controller.nativeChatWillQueue }}
+                        queue={overlayRows.queue}
                         keyboardInset={keyboardInset}
                       />
                     </MobileNativeChatNoticeContext.Provider>

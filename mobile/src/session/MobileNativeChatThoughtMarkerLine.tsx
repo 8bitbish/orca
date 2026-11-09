@@ -4,6 +4,7 @@ import type { NativeChatMessage } from '../../../src/shared/native-chat/native-c
 import { colors } from '../theme/mobile-theme'
 import { styles } from './native-chat/transcript/mobile-native-chat-message-styles'
 import { mobileNativeChatThoughtMarkerLabel } from './mobile-native-chat-thought-rows'
+import { isNativeChatThoughtMarker } from '../../../src/shared/native-chat-thought-marker'
 
 /** A thought with no text: one line in the reasoning row's look, with nothing to open. */
 export function MobileNativeChatThoughtMarkerLine({
@@ -21,4 +22,20 @@ export function MobileNativeChatThoughtMarkerLine({
       </Text>
     </View>
   )
+}
+
+/** The transcript row for an empty-text thought; nothing when the message is not one. */
+export function MobileNativeChatThoughtMarkerRow({
+  message,
+  working
+}: {
+  message: NativeChatMessage
+  /** The live turn's working flag; only an explicit false settles the label. */
+  working: boolean | undefined
+}): React.JSX.Element | null {
+  return isNativeChatThoughtMarker(message) ? (
+    <View style={styles.row}>
+      <MobileNativeChatThoughtMarkerLine message={message} live={working !== false} />
+    </View>
+  ) : null
 }

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import type { NativeChatMessage } from '../../../../../src/shared/native-chat/native-chat-types'
 import {
   findLandedImagePreviewEchoes,
-  type PendingImagePreviewEcho
+  findLandedUnconfirmedSends,
+  type PendingImagePreviewEcho,
+  type UnconfirmedSend
 } from './mobile-native-chat-draft-reconcile'
 import { normalizeNativeChatUserText as normalizeReconcileText } from '../../../../../src/shared/native-chat/transcript/native-chat-image-transcript-markers'
 

@@ -13,18 +13,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { useRouter } from 'expo-router'
 import { ChevronLeft, Clipboard as ClipboardIcon, QrCode } from 'lucide-react-native'
-import { decodePairingUrl, parsePairingCode } from '../src/transport/pairing'
+import { decodePairingUrl, parsePairingCode } from '../src/pairing/pairing'
 import {
   pastedPairingRefusalMessage,
   scannedPairingRefusalMessage
-} from '../src/transport/pairing-refusal-message'
+} from '../src/pairing/pairing-refusal-message'
 import {
   startPreProfilePairing,
   type PreProfilePairingAttempt
-} from '../src/transport/pre-profile-pairing-coordinator'
-import type { ConnectionLogEntry } from '../src/transport/types'
+} from '../src/pairing/pre-profile-pairing-coordinator'
+import type { ConnectionLogEntry } from '../src/diagnostics/connection/connection-log-types'
 import type { PairingOffer } from '../../src/shared/remote-runtime/pairing/mobile-relay-pairing-offer'
-import { useRefreshHostClient } from '../src/transport/host-client-hooks'
+import { useRefreshHostClient } from '../src/transport/connection/host-client-hooks'
 import { colors, spacing, pressedStyle } from '../src/theme/mobile-theme'
 import { useMobileColorScheme } from '../src/theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../src/i18n/use-mobile-translation'

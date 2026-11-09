@@ -3,7 +3,7 @@ import {
   NATIVE_CHAT_PROOF_IMAGE_REGION_RUNTIME_CAPABILITY,
   NATIVE_CHAT_PROOF_MEDIA_RUNTIME_CAPABILITY
 } from '../../../../src/shared/native-chat-proof-media-capability'
-import type { RpcClient } from '../../transport/rpc-client'
+import type { RpcClient } from '../../transport/rpc/rpc-client-contract'
 import { pruneMobileNativeChatProofCache } from './mobile-native-chat-proof-cache'
 import { createExpoMobileNativeChatProofCacheStore } from './mobile-native-chat-proof-cache-store'
 import type { MobileNativeChatProofMediaSource } from './mobile-native-chat-proof-context'

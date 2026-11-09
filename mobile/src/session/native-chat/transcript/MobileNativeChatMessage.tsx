@@ -16,13 +16,14 @@ import {
   MobileNativeChatGroupedThought,
   MobileNativeChatReasoningRow
 } from './MobileNativeChatReasoningRow'
-import { MobileNativeChatThoughtMarkerLine } from '../../MobileNativeChatThoughtMarkerLine'
-import { isNativeChatThoughtMarker } from '../../../../../src/shared/native-chat-thought-marker'
+import { MobileNativeChatThoughtMarkerRow } from '../../MobileNativeChatThoughtMarkerLine'
 import { mobileNativeChatRowId } from '../../mobile-native-chat-reading-place'
 import { nativeChatWorkRunEntries } from '../../../../../src/shared/native-chat/native-chat-work-run'
 import { nativeChatReasoningDisclosureKey } from '../../../../../src/shared/native-chat/transcript/native-chat-reasoning-row'
 import { MobileNativeChatTurnStatus } from './MobileNativeChatTurnStatus'
 import { MobileNativeChatNoticeRow } from './MobileNativeChatNoticeRow'
+import { MobileNativeChatPullRequestEventLine } from './MobileNativeChatPullRequestEventLine'
+import { PULL_REQUEST_EVENT_PRESENTATION } from '../../../../../src/shared/native-chat/native-chat-pull-request-event'
 import { MobileNativeChatRowOverlaysContext } from './mobile-native-chat-row-overlays'
 import { MobileNativeChatUserMessageFold } from './MobileNativeChatUserMessageFold'
 import { TextAttachmentActions } from './MobileNativeChatTextAttachmentActions'
@@ -165,6 +166,12 @@ function MobileNativeChatMessageImpl({
         backgroundTasks.length > 0 ? withoutBackgroundTaskRows(prose) : prose
       )
   const isSystem = message.role === 'system'
+  const pullRequestEvent = isSystem
+    ? drawnProse.find(
+        (block): block is Chat.NativeChatTextBlock =>
+          Chat.isTextBlock(block) && block.presentation === PULL_REQUEST_EVENT_PRESENTATION
+      )
+    : undefined
   const showToolRun = tools.length > 0
   const askPending = structuredActivityUi
     ? selectActiveToolCall(unansweredAsks, { activeTurnIsWorking }) !== null
@@ -222,18 +229,10 @@ function MobileNativeChatMessageImpl({
   if (isReasoning && !workRun) {
     const markdown = deriveNativeChatRowContent(message.blocks).markdown
     const draws = markdown.trim().length > 0 && !reasoningIsLive
-    const marker = !draws && isNativeChatThoughtMarker(message)
     return (
       <>
         {turnStatusAbove ? statusRow : null}
-        {marker ? (
-          <View style={styles.row}>
-            <MobileNativeChatThoughtMarkerLine
-              message={message}
-              live={activeTurnIsWorking !== false}
-            />
-          </View>
-        ) : null}
+        <MobileNativeChatThoughtMarkerRow message={message} working={activeTurnIsWorking} />
         {draws ? (
           <View style={styles.row} testID={mobileNativeChatRowId(rowKey ?? message.id)}>
             <MobileNativeChatReasoningRow
@@ -316,7 +315,14 @@ function MobileNativeChatMessageImpl({
             ) : (
               <>
                 {/* A roster is not tool activity, so it stays out of the settled-tools collapse. */}
-                {isSystem ? (
+                {pullRequestEvent ? (
+                  <MobileNativeChatPullRequestEventLine
+                    block={pullRequestEvent}
+                    messageId={message.id}
+                    fontScale={fontScale}
+                    onLongPress={onLongPress}
+                  />
+                ) : isSystem ? (
                   <MobileNativeChatNoticeRow
                     blocks={drawnProse}
                     fontScale={fontScale}
