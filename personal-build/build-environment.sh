@@ -52,6 +52,13 @@ personal_build_check_update_zips() {
   return "$ok"
 }
 
+# True when the installed Orca's updater still reads upstream's feed (installs before v1.4.251-local):
+# "Restart to update" there downloads upstream's Lovecast-signed build, which Squirrel refuses.
+personal_build_installed_reads_upstream_feed() {
+  local asar=/Applications/Orca.app/Contents/Resources/app.asar
+  [ -f "$asar" ] && LC_ALL=C command grep -qa 'stablyai/orca/releases' "$asar"
+}
+
 personal_build_use_pinned_pnpm() {
   local version bin
   version=$(node -p 'require("./package.json").packageManager.split("@")[1].split("+")[0]')

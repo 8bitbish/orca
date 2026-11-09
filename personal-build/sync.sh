@@ -122,4 +122,10 @@ gh release create "v$version" "${assets[@]}" --repo "$PERSONAL_BUILD_FORK" \
   stop "Creating release v$version failed." 13
 
 echo "Published v$version. Orca will offer it on its next update check."
-personal_build_notify "Orca personal build ready" "v$version (upstream $upstream_tag). Update from Orca to install."
+if personal_build_installed_reads_upstream_feed; then
+  echo "WARNING: the installed Orca updates from upstream's feed and will fail the signature check."
+  echo "Install once by hand: Option-click Orca menu > Check for Updates… and choose $PWD/$manifest."
+  personal_build_notify "Orca personal build: install by hand" "Installed Orca reads upstream's feed. Option-click Check for Updates… and pick dist/latest-mac.yml."
+else
+  personal_build_notify "Orca personal build ready" "v$version (upstream $upstream_tag). Update from Orca to install."
+fi
