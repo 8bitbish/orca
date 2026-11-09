@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as z from 'zod'
 import { NATIVE_CHAT_LINK_CARD_MAX_URL_LENGTH } from '../native-chat-link-cards-payload'
 
 // Why: the host re-validates both URLs (http/https, public host) before fetching,

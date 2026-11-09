@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as z from 'zod'
 import {
   TERMINAL_MESSAGE_QUEUE_MAX_IMAGES,
   TERMINAL_MESSAGE_QUEUE_MAX_TEXT_LENGTH

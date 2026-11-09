@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as z from 'zod'
 import { NATIVE_CHAT_SLACK_NAMES_MAX_IDS } from '../native-chat-slack-names-contract'
 
 // Why: the path is only a request; the host resolves it inside slack-mcp's cache

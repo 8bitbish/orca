@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as z from 'zod'
 import {
   NATIVE_CHAT_PROOF_MEDIA_MAX_FILE_BYTES,
   NATIVE_CHAT_PROOF_MEDIA_READ_MAX_CHUNK_BYTES
