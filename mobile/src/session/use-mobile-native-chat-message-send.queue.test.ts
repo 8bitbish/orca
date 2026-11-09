@@ -25,11 +25,11 @@ vi.mock('./native-chat/mobile-native-chat-stale-input', () => ({
   healMobileNativeChatStaleInput: (...args: unknown[]) => heal(...args)
 }))
 
-import { useMobileNativeChatMessageSend } from './native-chat/transcript/use-mobile-native-chat-message-send'
+import { useMobileNativeChatQueuedMessageSend } from './native-chat/transcript/use-mobile-native-chat-queued-message-send'
 
-type Send = ReturnType<typeof useMobileNativeChatMessageSend>
+type Send = ReturnType<typeof useMobileNativeChatQueuedMessageSend>
 
-describe('useMobileNativeChatMessageSend with a host queue', () => {
+describe('useMobileNativeChatQueuedMessageSend', () => {
   let renderer: ReactTestRenderer | null = null
   let api: Send | null = null
   const origin: MobileNativeChatSendOrigin = {
@@ -39,7 +39,8 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
     pendingKey: 'p',
     normalizedText: '',
     boundary: { afterMessageId: null },
-    sentAt: 0
+    sentAt: 0,
+    queuedDuringWorkingEpoch: null
   }
   // The send goes through the mocked writers, so the client is never called.
   const client: RpcClient = {
@@ -62,7 +63,7 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
 
   const mount = (queue: typeof queueSubmit | null): void => {
     function Probe(): null {
-      api = useMobileNativeChatMessageSend({
+      api = useMobileNativeChatQueuedMessageSend({
         client,
         enabled: true,
         handleRef: { current: 'term' },
@@ -76,7 +77,8 @@ describe('useMobileNativeChatMessageSend with a host queue', () => {
         acceptSend,
         holdUnconfirmedSend: vi.fn(),
         onSendError,
-        queueSubmit: queue
+        queueSubmit: queue,
+        workingEpoch: null
       })
       return null
     }

@@ -34,6 +34,9 @@ export type MobileNativeChatQueueSurface = {
   willQueue: boolean
 }
 
+/** Prompts the host holds until the agent's turn ends, and whether a send now would join them. */
+export type MobileNativeChatQueueProps = { queue?: MobileNativeChatQueueSurface }
+
 function rowItems(
   snapshot: TerminalMessageQueueSnapshot,
   orphans: readonly MobileQueuedMessageOrphan[],

@@ -2,7 +2,7 @@ import { useId, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import { NativeChatCopyButton } from './NativeChatCopyButton'
+import { NativeChatCopyButton } from './messages/actions/NativeChatCopyButton'
 
 /**
  * A ```widget fence, framed the way Claude.ai frames its inline visuals: a quiet

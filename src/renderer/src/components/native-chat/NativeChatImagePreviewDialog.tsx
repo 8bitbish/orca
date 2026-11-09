@@ -3,7 +3,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
-import { keepPreviewOpenForChatMenu } from './native-chat-image-copy'
+import { keepPreviewOpenForChatMenu } from './media/images/native-chat-image-copy'
 import {
   NativeChatImageCompareLayer,
   type NativeChatImageCompare

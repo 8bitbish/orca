@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { getCachedRepos } from '../../cache/repo-cache'
-import { getCachedWorktrees } from '../../cache/worktree-cache'
+import { useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { cachedHostRepos, cachedHostWorktrees } from '../../host-screen/host-list-queries'
 import { hostRepoCatalogSnapshotRead } from '../../host-screen/host-screen-operations'
 import type { RpcClient } from '../../transport/rpc-client'
 import type { ConnectionState } from '../../transport/types'
@@ -13,9 +13,9 @@ import type {
 
 const REFRESH_MS = 15_000
 
-// The caches hold what the host screen last decoded; rows of any other shape are skipped.
-function seededRepos(hostId: string): MobileNativeChatProjectRepo[] {
-  return (getCachedRepos(hostId) ?? []).filter(
+// The host list's query cache holds what the host screen last read; rows of any other shape are skipped.
+function seededRepos(queryClient: QueryClient, hostId: string): MobileNativeChatProjectRepo[] {
+  return (cachedHostRepos<unknown>(queryClient, hostId) ?? []).filter(
     (repo): repo is MobileNativeChatProjectRepo =>
       typeof repo === 'object' &&
       repo !== null &&
@@ -26,8 +26,8 @@ function seededRepos(hostId: string): MobileNativeChatProjectRepo[] {
   )
 }
 
-function seededWorktrees(hostId: string): Worktree[] {
-  return (getCachedWorktrees(hostId) ?? []).filter(
+function seededWorktrees(queryClient: QueryClient, hostId: string): Worktree[] {
+  return (cachedHostWorktrees(queryClient, hostId) ?? []).filter(
     (row): row is Worktree =>
       typeof row === 'object' &&
       row !== null &&
@@ -47,8 +47,9 @@ export function useMobileNativeChatProjectCatalog(args: {
   enabled: boolean
 }): MobileNativeChatProjectCatalog {
   const { client, hostId, connState, enabled } = args
-  const [repos, setRepos] = useState(() => seededRepos(hostId))
-  const [worktrees, setWorktrees] = useState(() => seededWorktrees(hostId))
+  const queryClient = useQueryClient()
+  const [repos, setRepos] = useState(() => seededRepos(queryClient, hostId))
+  const [worktrees, setWorktrees] = useState(() => seededWorktrees(queryClient, hostId))
   const snapshotRef = useRef(new WorktreeCatalogSnapshotClient())
   const connected = connState === 'connected'
 

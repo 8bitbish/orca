@@ -8,7 +8,7 @@ import { projectStructuredEventForClient } from '../structured-agent-session-cli
 import { requireInstalledStructuredHost as requireInstalledHost } from '../creation/structured-agent-session-gate'
 import { bindStructuredAgentSessionStream } from './structured-agent-session-status-stream'
 import { structuredAgentSessionSubscriptionId as subscriptionIdFor } from './structured-agent-session-subscription-id'
-import { SubscribeParams } from '../../../../../../shared/rpc-contract/structured-agent-session-params'
+import { SubscribeParams } from '../../../../../../shared/rpc-contract/structured-agent-session-subscribe-params'
 import * as queuedImages from '../attachments/structured-agent-session-queued-image-capability'
 
 export const STRUCTURED_AGENT_SESSION_SUBSCRIBE_METHOD = defineStreamingMethod({
@@ -16,7 +16,9 @@ export const STRUCTURED_AGENT_SESSION_SUBSCRIBE_METHOD = defineStreamingMethod({
   permission: 'workspace',
   params: SubscribeParams,
   handler: async (params, ctx, emitFrame) => {
-    const emit = params.capabilities?.textAppend === 1 ? sendingTextAppends(emitFrame) : emitFrame
+    const { capabilities } = params
+    const emit =
+      capabilities?.textAppend === 1 ? sendingTextAppends(emitFrame, capabilities) : emitFrame
     const host = await requireInstalledHost(ctx, params.sessionId)
     const subscriptionId = subscriptionIdFor(ctx, params.sessionId)
     // A stream reads; it never keeps an agent alive or starts one.

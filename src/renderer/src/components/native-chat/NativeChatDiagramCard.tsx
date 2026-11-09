@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Code2, Workflow } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
-import { NativeChatCopyButton } from './NativeChatCopyButton'
+import { NativeChatCopyButton } from './messages/actions/NativeChatCopyButton'
 
 /**
  * The frame a rendered fence sits in: the same header strip as a code block, so

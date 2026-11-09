@@ -4,7 +4,7 @@ import type { TerminalQueuedMessage } from '../../../../shared/terminal-message-
 import type {
   NativeChatComposerHandle,
   NativeChatComposerQueue
-} from './native-chat-composer-types'
+} from './composer/native-chat-composer-types'
 import type { NativeChatQueuedMessagesProps } from './NativeChatQueuedMessages'
 import { useNativeChatMessageQueue } from './use-native-chat-message-queue'
 

@@ -1,12 +1,12 @@
 import { asyncQuestionSourceScope } from '../../../../src/shared/native-chat/input/native-chat-ask'
-import { useCallback, useLayoutEffect, useMemo, useRef, type MutableRefObject } from 'react'
+import { useLayoutEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import type { RpcClient } from '../../transport/rpc-client'
 import type { ConnectionState } from '../../transport/types'
 import type { MobileNativeChatTab } from './mobile-native-chat-eligibility'
 import type { StructuredAgentSessionHostSupport } from '../mobile-structured-agent-session-host-support'
 import { useMobileNativeChatDrafts } from './composer/use-mobile-native-chat-drafts'
 import { useMobileNativeChatWorkspaceCatalog } from './composer/use-mobile-native-chat-workspace-catalog'
-import { useMobileNativeChatMessageSend } from './transcript/use-mobile-native-chat-message-send'
+import { useMobileNativeChatQueuedMessageSend } from './transcript/use-mobile-native-chat-queued-message-send'
 import { useMobileNativeChatSessionOptionController } from './input/use-mobile-native-chat-session-option-controller'
 import { useMobileNativeChatSessionLane } from './use-mobile-native-chat-session-lane'
 import { useMobileStructuredNativeChatSendBridge } from '../use-mobile-structured-native-chat-send-bridge'
@@ -112,7 +112,9 @@ export function useMobileNativeChatController(args: {
     // Off-chat null would look like host retraction and permanently decline launch prefill; preserve the draft plus visibility.
     chatActive: showNativeChat,
     transcriptLoading: nativeChatSession.transcriptLoading,
-    transcriptSettled: nativeChatSession.status === 'ready'
+    transcriptSettled: nativeChatSession.status === 'ready',
+    connected: connState === 'connected',
+    onSendError
   })
 
   // Only a terminal-backed chat has a host queue.
@@ -180,13 +182,6 @@ export function useMobileNativeChatController(args: {
       })),
     [chatPending, workingEpoch]
   )
-  const captureTerminalSendOrigin = useCallback(
-    (text: string, sentAt?: number) => {
-      const origin = captureSendOrigin(text, sentAt)
-      return origin ? { ...origin, queuedDuringWorkingEpoch: workingEpoch } : null
-    },
-    [captureSendOrigin, workingEpoch]
-  )
 
   const workspaceCatalog = useMobileNativeChatWorkspaceCatalog(args, activeChatAgent)
 
@@ -197,14 +192,15 @@ export function useMobileNativeChatController(args: {
     send: handleNativeChatSend,
     sendWithOutcome: handleNativeChatSendWithOutcome,
     dispatchCommand: handleNativeChatDispatchCommand
-  } = useMobileNativeChatMessageSend({
+  } = useMobileNativeChatQueuedMessageSend({
     client,
     enabled: inputSendable && !activeChatStructured,
     handleRef: activeHandleRef,
     deviceTokenRef,
     agentRef: activeChatAgentRef,
     commandSendRef: recordSessionOptionCommandRef,
-    captureSendOrigin: captureTerminalSendOrigin,
+    captureSendOrigin,
+    workingEpoch,
     readSeededLaunchDraftSeed,
     clearDraftForSend,
     restoreRejectedDraft,
@@ -244,6 +240,8 @@ export function useMobileNativeChatController(args: {
         compactInstructions: structuredNativeChat.compactInstructions,
         snapshot: structuredNativeChat.optionSnapshot,
         pendingId: structuredNativeChat.pendingOptionId,
+        appliesOnAttach: structuredNativeChat.appliesOnAttach,
+        heldPick: structuredNativeChat.heldPick,
         setOption: structuredNativeChat.setStructuredOption,
         invokeAction: structuredNativeChat.invokeStructuredOption
       },

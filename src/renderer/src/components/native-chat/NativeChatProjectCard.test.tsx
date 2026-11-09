@@ -6,8 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import type { Repo } from '../../../../shared/repo-types'
 import { useAppStore } from '@/store'
-import { makeWorktree } from '../../store/slices/store-test-helpers'
-import { NativeChatCodeBlock } from './NativeChatCodeBlock'
+import { makeWorktree } from '../../store/slices/worktrees/worktree.test-fixture'
+import { NativeChatCodeBlock } from './markdown/code/NativeChatCodeBlock'
 import {
   NativeChatFencePreviewContext,
   type NativeChatFencePreviewScope

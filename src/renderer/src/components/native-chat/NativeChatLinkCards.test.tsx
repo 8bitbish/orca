@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { NativeChatCodeBlock } from './NativeChatCodeBlock'
+import { NativeChatCodeBlock } from './markdown/code/NativeChatCodeBlock'
 import { NativeChatFencePreviewContext } from './native-chat-fence-preview'
 import { PIXEL_PNG, REPLY_SCOPE } from './native-chat-slack-card-test-fixtures'
 

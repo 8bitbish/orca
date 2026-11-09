@@ -12,7 +12,7 @@ import {
   type NativeChatShellRunRisk
 } from '../../../../shared/native-chat-shell-run-risk'
 import { isNativeChatShellRunActive } from '../../../../shared/native-chat-shell-run-state'
-import { NativeChatCopyButton } from './NativeChatCopyButton'
+import { NativeChatCopyButton } from './messages/actions/NativeChatCopyButton'
 import { NativeChatProjectChip } from './NativeChatProjectChip'
 import { NativeChatShellRunConfirmDialog } from './NativeChatShellRunConfirmDialog'
 import { NativeChatShellRunOutput } from './NativeChatShellRunOutput'

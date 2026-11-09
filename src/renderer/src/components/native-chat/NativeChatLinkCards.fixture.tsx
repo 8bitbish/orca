@@ -1,6 +1,6 @@
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import { NativeChatLinkCards } from './NativeChatLinkCards'
-import { nativeChatAppearanceStyle } from './native-chat-appearance-style'
+import { nativeChatAppearanceStyle } from './appearance/native-chat-appearance-style'
 
 // Made-up pages; images are drawn here, standing in for the host's thumbnails.
 function picture(width: number, height: number, from: string, to: string): string {

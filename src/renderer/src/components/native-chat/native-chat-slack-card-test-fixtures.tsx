@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { expect, vi } from 'vitest'
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
-import { NativeChatCodeBlock } from './NativeChatCodeBlock'
+import { NativeChatCodeBlock } from './markdown/code/NativeChatCodeBlock'
 import {
   NativeChatFencePreviewContext,
   type NativeChatFencePreviewScope

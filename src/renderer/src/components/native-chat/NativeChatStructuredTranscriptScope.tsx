@@ -1,11 +1,11 @@
 import type { ComponentProps, RefObject } from 'react'
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
-import type { NativeChatComposerHandle } from './native-chat-composer-types'
+import type { NativeChatComposerHandle } from './composer/native-chat-composer-types'
 import { useNativeChatProjectReplyChannel } from './native-chat-project-reply-context'
 import { NativeChatReplyScope } from './NativeChatReplyScope'
-import { NativeChatRowActionsProvider } from './NativeChatRowActionsProvider'
-import { NativeChatSignInContext } from './native-chat-sign-in'
-import { NativeChatUsageLimitActionsProvider } from './NativeChatUsageLimitActions'
+import { NativeChatRowActionsProvider } from './messages/actions/NativeChatRowActionsProvider'
+import { NativeChatSignInContext } from './host-access/native-chat-sign-in'
+import { NativeChatUsageLimitActionsProvider } from './usage/NativeChatUsageLimitActions'
 
 type RowActions = ComponentProps<typeof NativeChatRowActionsProvider>
 type UsageLimit = ComponentProps<typeof NativeChatUsageLimitActionsProvider>
@@ -18,6 +18,7 @@ export function NativeChatStructuredTranscriptScope(props: {
   canSend: boolean
   pane: RowActions['pane'] & UsageLimit['pane']
   chat: RowActions['chat'] & UsageLimit['recovery'] & { messages: readonly NativeChatMessage[] }
+  forks: RowActions['forks']
   directory: UsageLimit['directory']
   view: UsageLimit['view']
   signIn: React.ContextType<typeof NativeChatSignInContext>
@@ -35,7 +36,7 @@ export function NativeChatStructuredTranscriptScope(props: {
       worktreeId={props.directory?.worktreeId}
       sessionId={pane.sessionId}
     >
-      <NativeChatRowActionsProvider pane={pane} chat={chat}>
+      <NativeChatRowActionsProvider pane={pane} chat={chat} forks={props.forks}>
         <NativeChatUsageLimitActionsProvider
           recovery={chat}
           pane={pane}

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useAppStore } from '@/store'
 import type {
   AgentJournalRenderItem,
   AgentJournalSubmission
@@ -10,8 +11,10 @@ import {
   nativeChatHarnessTurns,
   nativeChatRowTurnKeys
 } from '../../../../shared/native-chat/transcript/native-chat-turn-grouping'
+import { withoutPullRequestEventRows } from '../../../../shared/native-chat/native-chat-pull-request-event'
+import { nativeChatShowsCiResultLines } from '../../../../shared/native-chat/native-chat-appearance-settings'
 import { nativeChatSessionThoughtSeconds } from '../../../../shared/native-chat-thought-duration'
-import { compareMessages } from './native-chat-session-assembler'
+import { compareMessages } from './session/terminal/assembly/native-chat-session-assembler'
 import {
   nativeChatThoughtTiming,
   type NativeChatThoughtTiming
@@ -19,7 +22,7 @@ import {
 import {
   useNativeChatTurnMembership,
   type NativeChatTurnRows
-} from './use-native-chat-turn-membership'
+} from './conversation/slots/use-native-chat-turn-membership'
 
 /** `useNativeChatTurnMembership`, plus terminal transcripts' harness turns (a turn a harness
  *  delivery opened, such as a background-task notification, is keyed by that delivery, which the
@@ -63,5 +66,17 @@ export function useNativeChatRowTurns(
       thoughtTiming: nativeChatThoughtTiming(rows.messages, rows.turnKeys, thoughtSeconds)
     }),
     [rows, thoughtSeconds]
+  )
+}
+
+/** The rows the transcript draws: CI result lines leave it entirely when hidden, so they
+ *  reserve no row or gap. */
+export function useNativeChatDrawnTurnRows(
+  turnRows: NativeChatTurnRows
+): Pick<NativeChatTurnRows, 'messages' | 'turnKeys'> {
+  const showCiResultLines = useAppStore((state) => nativeChatShowsCiResultLines(state.settings))
+  return useMemo(
+    () => (showCiResultLines ? turnRows : withoutPullRequestEventRows(turnRows)),
+    [showCiResultLines, turnRows]
   )
 }

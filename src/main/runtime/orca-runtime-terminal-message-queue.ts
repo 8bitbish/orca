@@ -1,4 +1,4 @@
-import { OrcaRuntimeWithAgentTransitions } from './orca-runtime-agent-transitions'
+import { OrcaRuntimeWithAgentTransitions } from './construction/orca-runtime-agent-transitions'
 import { OrcaRuntimeWithSidebarTemporal } from './sidebar-inputs/orca-runtime-sidebar-temporal'
 import { ORCA_SIDEBAR_INPUTS_IS_MAIN } from '../../shared/sidebar-inputs-switch'
 import {

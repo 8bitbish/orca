@@ -1,6 +1,6 @@
 import { createContext, useMemo, type RefObject } from 'react'
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
-import type { NativeChatComposerHandle } from './native-chat-composer-types'
+import type { NativeChatComposerHandle } from './composer/native-chat-composer-types'
 
 /** How a project card in a reply answers: through this chat's own composer. */
 export type NativeChatProjectReplyChannel = {

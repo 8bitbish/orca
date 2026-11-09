@@ -11,6 +11,7 @@ import {
   useMobileNativeChatImageAttachments,
   type MobileNativeChatImageAttachments
 } from './native-chat/composer/use-mobile-native-chat-image-attachments'
+import { useMobileNativeChatQueuedImageSend } from './native-chat/composer/use-mobile-native-chat-queued-image-send'
 import {
   useMobileNativeChatFileAttachments,
   type MobileNativeChatFileAttachments
@@ -124,8 +125,17 @@ export function useMobileSessionImageAttachments({
     baseSend: nativeChatBaseSend,
     readSeededLaunchDraft,
     onAttachSuccess: onSuccess,
-    onError,
-    queueSend: nativeChatQueueSend
+    onError
   })
-  return { attachImage, isAttaching, nativeChatImages, nativeChatFiles }
+  return {
+    attachImage,
+    isAttaching,
+    nativeChatImages: useMobileNativeChatQueuedImageSend(nativeChatImages, {
+      scopeKey: nativeChatScopeKey,
+      structuredNativeChat,
+      queueSend: nativeChatQueueSend,
+      onError
+    }),
+    nativeChatFiles
+  }
 }

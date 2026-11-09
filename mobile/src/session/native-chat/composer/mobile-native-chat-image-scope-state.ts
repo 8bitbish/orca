@@ -3,7 +3,7 @@ import type { PendingNativeChatImage } from './mobile-native-chat-image-attachme
 import {
   addMobileNativeChatDraftImages,
   mobileNativeChatDraftDestination,
-  updateMobileNativeChatDraftInputs,
+  removeMobileNativeChatDraftImages,
   type MobileNativeChatDraftDestination
 } from './mobile-native-chat-draft-inputs'
 
@@ -29,18 +29,6 @@ export function withScopeAttachments<List extends readonly unknown[]>(
   return remaining
 }
 
-/** Drops the given chips from one scope's draft; chips attached meanwhile stay. */
-export function dropMobileNativeChatDraftImages(
-  scope: string | MobileNativeChatDraftDestination,
-  images: readonly Pick<PendingNativeChatImage, 'id'>[]
-): void {
-  const dropped = new Set(images.map((image) => image.id))
-  updateMobileNativeChatDraftInputs(scope, (current) => ({
-    ...current,
-    images: current.images.filter((attachment) => !dropped.has(attachment.id))
-  }))
-}
-
 /** Puts a restored queued message's images back as chips on the active scope. */
 export function restoreMobileNativeChatDraftImages(
   scopeKey: string | null,
@@ -62,7 +50,11 @@ export function useMobileNativeChatRestoreImages(
  *  refused it, null when it should be pasted as usual. */
 export async function routeMobileNativeChatImageSendToQueue(
   queueSend: MobileNativeChatImageQueueSend | undefined,
-  send: { scope: string; text: string; images: readonly PendingNativeChatImage[] },
+  send: {
+    scope: MobileNativeChatDraftDestination | null
+    text: string
+    images: readonly PendingNativeChatImage[]
+  },
   onError: (() => void) | undefined
 ): Promise<boolean | null> {
   const routed = queueSend ? await queueSend(send.text, send.images) : 'direct'
@@ -70,7 +62,12 @@ export async function routeMobileNativeChatImageSendToQueue(
     return null
   }
   if (routed === 'queued') {
-    dropMobileNativeChatDraftImages(send.scope, send.images)
+    if (send.scope) {
+      removeMobileNativeChatDraftImages(
+        send.scope,
+        send.images.map((image) => image.id)
+      )
+    }
   } else {
     onError?.()
   }

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Repo } from '../../../../shared/repo-types'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
 import { useAppStore } from '@/store'
-import { makeWorktree } from '../../store/slices/store-test-helpers'
+import { makeWorktree } from '../../store/slices/worktrees/worktree.test-fixture'
 import { renderNativeChatLink } from './NativeChatProjectChip'
 import type { NativeChatProjectLiveStatus } from './use-native-chat-project-live-status'
 

@@ -1,7 +1,7 @@
 import { useCallback, type RefObject } from 'react'
 import type { AgentType } from '../../../../shared/agent-status/contracts/agent-status-types'
-import type { NativeChatComposerHandle } from './native-chat-composer-types'
-import type { NativeChatInteractiveSend } from './use-native-chat-interactive-send'
+import type { NativeChatComposerHandle } from './composer/native-chat-composer-types'
+import type { NativeChatInteractiveSend } from './session/terminal/send/use-native-chat-interactive-send'
 import { useNativeChatPaneMessageQueue } from './use-native-chat-pane-message-queue'
 
 /** The pane's host-side message queue and the Stop that respects it. */

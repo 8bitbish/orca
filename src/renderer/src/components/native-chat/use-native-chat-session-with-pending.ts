@@ -11,7 +11,7 @@ import {
 import {
   commandMarkersAsMessages,
   type NativeChatCommandMarker
-} from './native-chat-command-marker'
+} from './session/terminal/delivery/native-chat-command-marker'
 
 /** The session as the pane draws it: the transcript, then local command lines, the streaming
  *  preview and the sends not yet in the transcript, each placed against the current working epoch. */
