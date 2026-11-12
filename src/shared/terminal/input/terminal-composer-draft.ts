@@ -1,4 +1,5 @@
 import { isStockPlaceholder } from './terminal-composer-stock-placeholder'
+import { joinComposerLines } from './terminal-composer-lines'
 
 export type TerminalCursorContext = {
   rows: string[]
@@ -122,26 +123,6 @@ function findCodexFooterIndex(context: TerminalCursorContext): number {
   return isCodexFooterRow(context, status) ? status : -1
 }
 
-function joinComposerLines(
-  lines: { text: string; wrapped: boolean }[],
-  layoutPadding: number | null
-): string {
-  return lines
-    .map((line, lineIndex) => {
-      const continuesPrevious = lineIndex > 0 && line.wrapped
-      const continuesNext = lines[lineIndex + 1]?.wrapped ?? false
-      const start = continuesPrevious ? '' : lineIndex > 0 ? '\n' : ''
-      const content = continuesPrevious
-        ? line.text
-        : layoutPadding !== null && lineIndex > 0
-          ? line.text.slice(Math.min(layoutPadding, line.text.search(/\S|$/)))
-          : line.text.trimStart()
-      return `${start}${continuesNext ? content : content.trimEnd()}`
-    })
-    .join('')
-    .trim()
-}
-
 // Why: Claude's default caret hides the native cursor and parks it at a painted caret cell. That paint
 // drops on focus-out, so it is required only where another program's alternate-screen frame could
 // mimic the box; a complete frame with the cursor inside is always required.
@@ -157,6 +138,21 @@ function isHiddenComposerCaret(
   )
 }
 
+// Why: Claude paints its caret over a suggestion's first glyph undimmed and dims the rest (#40195).
+function isCaretOverDimSuggestion(context: TerminalCursorContext): boolean {
+  const painted = context.afterCursor
+  const raw = context.rawAfterCursor
+  return (
+    context.cursorInverse === true &&
+    [...painted].length === 1 &&
+    raw.length > painted.length &&
+    raw.startsWith(painted) &&
+    // Why: on a typed word's last glyph the caret sits before a dim hint and the glyph is real.
+    (!context.beforeCursor.replace(COMPOSER_PROMPT_PREFIX, '').trim() ||
+      !/\s/.test(raw[painted.length] ?? ''))
+  )
+}
+
 /** The prompt box at the cursor, if one is on screen. `text` holds only what was typed. */
 export function detectTerminalComposerPrompt(
   context: TerminalCursorContext | null | undefined,
@@ -167,10 +163,9 @@ export function detectTerminalComposerPrompt(
   }
   const cursorIndex = context.rows.length - 1
   const codexFooterIndex = findCodexFooterIndex(context)
-  let rawAfterCursor = typedOnly
-    ? context.afterCursor
-    : context.afterCursor || context.rawAfterCursor
-  let afterCursor = context.afterCursor
+  const typedAfter = isCaretOverDimSuggestion(context) ? '' : context.afterCursor
+  let rawAfterCursor = typedOnly ? typedAfter : typedAfter || context.rawAfterCursor
+  let afterCursor = typedAfter
   let continuationRows = composerContinuationRows(
     context,
     rawAfterCursor,

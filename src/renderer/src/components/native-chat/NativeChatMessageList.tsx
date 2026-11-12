@@ -4,14 +4,13 @@ import {
   NATIVE_CHAT_TRANSCRIPT_COLUMN_CLASS
 } from './appearance/native-chat-appearance-style'
 import { NativeChatJumpToLatest } from './viewport/scroll/NativeChatJumpToLatest'
+import { NativeChatNewRowsAnnouncement } from './viewport/new-rows/NativeChatNewRowsMarker'
+import { useNativeChatNewRowsMarker } from './viewport/new-rows/native-chat-new-rows-marker'
 import { useNativeChatRowTypography } from './viewport/virtualization/use-native-chat-row-typography'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
-import {
-  nativeChatScrollsToLatestOnSend,
-  nativeChatShowsTurnDiffSummary
-} from '../../../../shared/native-chat/native-chat-appearance-settings'
+import { nativeChatShowsTurnDiffSummary } from '../../../../shared/native-chat/native-chat-appearance-settings'
 import type { NativeChatLiveSession } from './session/terminal/read/native-chat-live-session-contract'
 import { useNativeChatTranscriptProjection } from './conversation/projection/use-native-chat-transcript-projection'
 import { desktopStructuredTranscript } from './conversation/projection/structured-agent-session-message-projection'
@@ -123,10 +122,10 @@ export function NativeChatMessageList({
   runtimeContext?: RuntimeFileOperationArgs | null
 }): React.JSX.Element {
   const t = useTranslate()
+  const questionTranscript = useMemo(() => desktopStructuredTranscript.stream(), [])
   const receipts = useMemo(
-    () =>
-      journalItems ? desktopStructuredTranscript.transcript(journalItems).receipts : new Map(),
-    [journalItems]
+    () => (journalItems ? questionTranscript(journalItems).receipts : new Map()),
+    [journalItems, questionTranscript]
   )
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const contentRef = useRef<HTMLDivElement | null>(null)
@@ -239,12 +238,18 @@ export function NativeChatMessageList({
     [allSlots, journalItems, stopping, journalSubmissions, latestTurn, hostWork]
   )
   const navigationRequest = useNativeChatNavigationRequest(slots, messages, subagentSections)
+  const newRows = useNativeChatNewRowsMarker(
+    slots,
+    waitingSlots,
+    isVisible && session.readCurrent === true
+  )
   const transcriptWindow = useNativeChatTranscriptWindow({
     scrollRef,
     slots,
     isVisible,
     // Rail jumps, diff reveals and subagent reveals share one mutually exclusive pin.
     revealIndex: navigationRequest.revealIndex,
+    newRowsMarkerIndex: newRows.index,
     typography
   })
   const transcriptScroll = useNativeChatTranscriptScroll({
@@ -322,25 +327,15 @@ export function NativeChatMessageList({
     onLeaveEnd: readerLeavesEnd,
     onScrollGesture: transcriptScroll.forwardedGesture
   })
-  // Off keeps a reader who scrolled up in place; one at the end still follows the reply.
-  const revealSent = useCallback(
-    (readerWasAtEnd = readerAtEnd()) => {
-      if (!nativeChatScrollsToLatestOnSend(useAppStore.getState().settings) && !readerWasAtEnd) {
-        return
-      }
-      beginNavigation()
-      scrollToBottom('send')
-    },
-    [beginNavigation, readerAtEnd, scrollToBottom]
-  )
-  useNativeChatMessageListHandle(
-    ref,
-    revealSent,
-    readerInput.revealFindMatch,
-    allSlots,
+  useNativeChatMessageListHandle(ref, {
     readerAtEnd,
-    navigation.revealSubagent
-  )
+    beginNavigation,
+    scrollToBottom,
+    onSent: newRows.dismiss,
+    revealFindMatch: readerInput.revealFindMatch,
+    slots: allSlots,
+    revealSubagent: navigation.revealSubagent
+  })
 
   const rowContext = useNativeChatTranscriptRowContext({
     agent: session.agent,
@@ -394,6 +389,7 @@ export function NativeChatMessageList({
                       loadedMessageIds={loadedMessageIds}
                       context={rowContext}
                       window={transcriptWindow}
+                      newRowsMarker={newRows.marker}
                       forwardGesture={readerInput.forwardedGesture}
                     />
                     {liveLine ? (
@@ -414,6 +410,7 @@ export function NativeChatMessageList({
                 onReaderScroll={readerInput.railWheel}
                 pendingId={navigation.pendingRailId}
               />
+              <NativeChatNewRowsAnnouncement marked={newRows.marker !== undefined} />
             </div>
             <NativeChatDockedTaskList key={session.sessionId} messages={messages} />
           </div>

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { NativeChatSignInContext } from '../../host-access/native-chat-sign-in'
+import { NativeChatHostSetupContext } from '../../host-access/native-chat-host-setup'
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { render } from '../actions/native-chat-tooltip-test-harness'
@@ -47,6 +47,7 @@ vi.mock('@/components/confirmation-dialog-context', () => ({
 
 afterEach(cleanup)
 const signInView = { signingIn: false, signIn: vi.fn() }
+const setupView = { signIn: signInView, install: null }
 
 function renderMessage(
   role: NativeChatMessage['role'],
@@ -224,7 +225,7 @@ describe('what a user message says about its delivery', () => {
   it('lets a user sign in from the refused message when no composer notice is shown', () => {
     const { signIn } = signInView
     render(
-      <NativeChatSignInContext.Provider value={signInView}>
+      <NativeChatHostSetupContext.Provider value={setupView}>
         <RecordedMessage
           submission={{
             clientMessageId: 'signed-out',
@@ -238,7 +239,7 @@ describe('what a user message says about its delivery', () => {
             resolvedAt: 2
           }}
         />
-      </NativeChatSignInContext.Provider>
+      </NativeChatHostSetupContext.Provider>
     )
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
     expect(signIn).toHaveBeenCalledOnce()

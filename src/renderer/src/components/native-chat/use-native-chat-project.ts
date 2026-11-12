@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
-import { activateWorktreeFromSidebar } from '@/lib/sidebar-worktree-activation'
+import { activateWorktreeFromSidebar } from '@/lib/workspace/activation/sidebar-worktree-activation'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import {
   nativeChatProjectWorkspaceLabel,

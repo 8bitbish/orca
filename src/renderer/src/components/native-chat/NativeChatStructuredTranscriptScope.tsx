@@ -4,13 +4,13 @@ import type { NativeChatComposerHandle } from './composer/native-chat-composer-t
 import { useNativeChatProjectReplyChannel } from './native-chat-project-reply-context'
 import { NativeChatReplyScope } from './NativeChatReplyScope'
 import { NativeChatRowActionsProvider } from './messages/actions/NativeChatRowActionsProvider'
-import { NativeChatSignInContext } from './host-access/native-chat-sign-in'
+import { NativeChatHostSetupContext } from './host-access/native-chat-host-setup'
 import { NativeChatUsageLimitActionsProvider } from './usage/NativeChatUsageLimitActions'
 
 type RowActions = ComponentProps<typeof NativeChatRowActionsProvider>
 type UsageLimit = ComponentProps<typeof NativeChatUsageLimitActionsProvider>
 
-/** A structured chat transcript's contexts: row actions, usage-limit actions, sign-in, and
+/** A structured chat transcript's contexts: row actions, usage-limit actions, host setup, and
  *  replies that act through the composer (which a pending prompt card replaces) or run in the
  *  workspace. */
 export function NativeChatStructuredTranscriptScope(props: {
@@ -21,7 +21,7 @@ export function NativeChatStructuredTranscriptScope(props: {
   forks: RowActions['forks']
   directory: UsageLimit['directory']
   view: UsageLimit['view']
-  signIn: React.ContextType<typeof NativeChatSignInContext>
+  setup: React.ContextType<typeof NativeChatHostSetupContext>
   children: React.ReactNode
 }): React.JSX.Element {
   const { pane, chat } = props
@@ -44,9 +44,9 @@ export function NativeChatStructuredTranscriptScope(props: {
           messages={chat.messages}
           view={props.view}
         >
-          <NativeChatSignInContext.Provider value={props.signIn}>
+          <NativeChatHostSetupContext.Provider value={props.setup}>
             {props.children}
-          </NativeChatSignInContext.Provider>
+          </NativeChatHostSetupContext.Provider>
         </NativeChatUsageLimitActionsProvider>
       </NativeChatRowActionsProvider>
     </NativeChatReplyScope>

@@ -1,7 +1,6 @@
 import { MobileQueuedMessageComposerContext } from '../mobile-queued-message-composer-context'
 import { Activity, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
-import type { RpcClient } from '../../transport/rpc/rpc-client-contract'
 import { MobileNativeChatProjectsProvider } from '../project-cards/MobileNativeChatProjectsProvider'
 import { MobileNativeChatView, type MobileNativeChatInputLockReason } from './MobileNativeChatView'
 import { useMobileNativeChatProjection } from './transcript/use-mobile-native-chat-projection'
@@ -32,10 +31,8 @@ import { useMobileTranslation } from '../../i18n/use-mobile-translation'
 
 type Props = {
   controller: MobileNativeChatController
-  /** Project chips and cards read the host's repos and workspaces through these; without a
-   *  client they show what the reply carries. */
-  client?: RpcClient | null
-  hostId?: string
+  /** Project chips and cards read the host through its client and `hostId`; without one they
+   *  show what the reply carries. */
   imageSource?: MobileNativeChatImageSource
   /** The workspace's folder on its host; null until known, which leaves chat paths unchecked. */
   worktreePath: string | null
@@ -92,8 +89,6 @@ export function MobileNativeChatOverlay(props: Props): React.JSX.Element | null 
 
 function MobileNativeChatOverlayContent({
   controller,
-  client = null,
-  hostId = '',
   imageSource,
   worktreePath,
   connState,
@@ -286,8 +281,8 @@ function MobileNativeChatOverlayContent({
         <MobileQueuedMessageComposerContext.Provider value={queuedComposerContext}>
           <View style={styles.overlay}>
             <MobileNativeChatProjectsProvider
-              client={client}
-              hostId={hostId}
+              client={imageSource?.client ?? null}
+              hostId={imageSource?.hostId ?? ''}
               connState={connState}
               messages={session.messages}
               send={controller.handleNativeChatSend}

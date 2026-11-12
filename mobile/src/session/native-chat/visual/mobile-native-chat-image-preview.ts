@@ -37,6 +37,8 @@ const hostImageRead = bindDeferredRpcOperation(
 export type MobileNativeChatImageSource = {
   client: RpcClient
   worktreeId: string
+  /** Project chips and cards read the host's repos and workspaces through it. */
+  hostId?: string
 }
 
 // Each reply can be megabytes; a burst over a slow link overflows the host's outbound queue, which drops the socket.

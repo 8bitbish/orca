@@ -4,10 +4,8 @@ import { join } from 'node:path'
 import type { WebSocket } from 'ws'
 import type { AgentStatusEntry } from '../../src/shared/agent-status/contracts/agent-status-types'
 import type { NativeChatMessage } from '../../src/shared/native-chat/native-chat-types'
-import type {
-  RuntimeMobileSessionTabsResult,
-  RuntimeMobileSessionTerminalClientTab
-} from '../../src/shared/runtime-types'
+import type { RuntimeMobileSessionTabsResult } from '../../src/shared/runtime-types'
+import type { RuntimeMobileSessionTerminalClientTab } from '../../src/shared/runtime-mobile-session-tab-contracts'
 import { proofScrollTranscript } from './mock-server-proof-scroll-transcript'
 import { startProofScrollStream } from './mock-server-proof-scroll-stream'
 import type { RpcRequest, RpcResponse } from './mock-server-rpc-handlers'

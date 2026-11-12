@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => {
 vi.mock('./use-native-chat-project-live-status', () => ({
   useNativeChatProjectLiveStatus: () => mocks.live
 }))
-vi.mock('@/lib/sidebar-worktree-activation', () => ({
+vi.mock('@/lib/workspace/activation/sidebar-worktree-activation', () => ({
   activateWorktreeFromSidebar: mocks.activate
 }))
 

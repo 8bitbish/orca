@@ -227,7 +227,7 @@ export function NativeChatStructuredSession(props: Omit<NativeChatStructuredView
     transport
   })
 
-  const { signIn, notices } = useNativeChatStructuredPaneNotices({
+  const { setup, notices } = useNativeChatStructuredPaneNotices({
     props,
     ownerWorktreeId,
     provisionalLaunch,
@@ -297,7 +297,7 @@ export function NativeChatStructuredSession(props: Omit<NativeChatStructuredView
               forks={forks}
               directory={fileLinkContext}
               view={continuation.view}
-              signIn={signIn}
+              setup={setup}
             >
               <NativeChatMessageList
                 // A rewind or a /clear replaces the conversation; nothing the old one held carries over.

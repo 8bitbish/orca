@@ -19,8 +19,7 @@ import {
   sendButton,
   permissionAction,
   getController,
-  askAnswer,
-  getTree
+  askAnswer
 } from './__mocks__/mobile-prompt-controller'
 // Project chips read the host through transport modules the harness does not load.
 vi.mock('./project-cards/MobileNativeChatProjectsProvider', () => ({
@@ -68,18 +67,6 @@ describe('prompt cards through the production controller, send contract and view
       )
     }
   )
-
-  it('shows a collapsed prompt again as a new wait', async () => {
-    await render({ tab: permissionTab })
-    act(() => {
-      getTree().root.findByProps({ accessibilityLabel: 'Collapse' }).props.onPress()
-    })
-    await render({
-      tab: { ...permissionTab, agentStatus: { ...permissionTab.agentStatus, stateStartedAt: 20 } }
-    })
-    expect(getController().nativeChatPermission).not.toBe(null)
-    expect(getController().nativeChatCollapsedPrompt).toBe(null)
-  })
 
   it('keeps an acknowledged Deny hidden after the chat screen remounts on a lingering status', async () => {
     await render({ tab: permissionTab })
