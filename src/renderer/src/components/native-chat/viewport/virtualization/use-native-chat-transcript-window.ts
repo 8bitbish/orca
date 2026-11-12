@@ -232,8 +232,7 @@ export function useNativeChatTranscriptWindow({
       return true
     }
     return (
-      !(item.index === revealIndex && !instance.itemSizeCache.has(item.key)) &&
-      item.end <= offset
+      !(item.index === revealIndex && !instance.itemSizeCache.has(item.key)) && item.end <= offset
     )
   }
 
