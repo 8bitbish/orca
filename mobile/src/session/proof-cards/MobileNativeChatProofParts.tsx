@@ -230,12 +230,12 @@ const styles = StyleSheet.create({
   },
   caption: { color: colors.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 4 },
   skeleton: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: radii.surface,
     backgroundColor: colors.bgPanel
   },
   progressOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,

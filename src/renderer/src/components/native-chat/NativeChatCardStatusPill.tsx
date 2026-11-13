@@ -1,5 +1,5 @@
 import { AgentStateDot } from '@/components/AgentStateDot'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import {
   nativeChatProjectStatusDot,
   nativeChatProjectStatusLabel,

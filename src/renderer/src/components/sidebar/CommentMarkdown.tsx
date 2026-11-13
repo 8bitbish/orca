@@ -4,24 +4,22 @@ import {
   CommentMarkdownMermaidContext,
   CommentMarkdownMermaidSourceContext
 } from './comment-markdown-mermaid-policy'
+import type { Components, Options as MarkdownOptions } from 'react-markdown'
 import {
-  defaultUrlTransform,
-  type Components,
-  type Options as MarkdownOptions
-} from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import remarkBreaks from 'remark-breaks'
+  commentMarkdownSanitizeSchema,
+  commentMarkdownAllowedTagNames,
+  commentMarkdownUrlTransform
+} from './comment-markdown-sanitize'
+import { commentMarkdownRemarkPlugins as remarkPlugins } from './comment-markdown-remark-plugins'
 import { remarkChatMath } from './chat-markdown-math'
 import { copyChatMathSelection } from './chat-markdown-math-selection'
-import remarkCjkFriendly from 'remark-cjk-friendly/parseOnly'
 import rehypeRaw from 'rehype-raw'
-import rehypeSanitize, { defaultSchema, type Options as SanitizeSchema } from 'rehype-sanitize'
+import rehypeSanitize, { type Options as SanitizeSchema } from 'rehype-sanitize'
 import remend from 'remend'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import {
   isChatLinkHref,
   selectCommentMarkdownComponents,
-  isTrustedCompactImageSrc,
   type CommentMarkdownLinkClickHandler,
   type DocumentCodeBlockRenderer,
   type ChatLinkRenderer
@@ -38,10 +36,6 @@ import {
   useMarkdownBlocks,
   markdownBlockContent
 } from './comment-markdown-block-pipeline'
-import { GITHUB_CALLOUT_SANITIZE_ATTRIBUTE } from '../../../../shared/github/github-callouts'
-import { remarkGitHubCallouts } from '@/lib/remark-github-callouts'
-import { remarkAutolinkLiteralProseBoundary } from '@/lib/remark-autolink-literal-prose-boundary'
-import { NATIVE_CHAT_SLACK_LINK_PROTOCOLS } from '../../../../shared/native-chat-slack-href'
 import {
   linkGitHubReferences,
   type GitHubRepoReference
@@ -52,13 +46,6 @@ export type { CommentMarkdownLinkClickHandler } from './comment-markdown-element
 type MarkdownPlugins = NonNullable<MarkdownOptions['rehypePlugins']>
 type RemarkPlugins = NonNullable<MarkdownOptions['remarkPlugins']>
 type UrlTransform = NonNullable<MarkdownOptions['urlTransform']>
-
-const commentMarkdownUrlTransform: UrlTransform = (value, key, node) => {
-  if (key === 'src' && node?.tagName === 'img' && isTrustedCompactImageSrc(value)) {
-    return value
-  }
-  return defaultUrlTransform(value)
-}
 
 // Why: only a surface that draws chat chips keeps their schemes; everywhere else they are stripped.
 function withChatLinks(transform: UrlTransform): UrlTransform {
@@ -75,15 +62,6 @@ const commentMarkdownFileUriUrlTransform: UrlTransform = (value, key, node) => {
   return commentMarkdownUrlTransform(value, key, node)
 }
 
-// remark-breaks preserves newlines expected by existing plain-text comments; CommonMark otherwise collapses them.
-const remarkPlugins = [
-  remarkGfm,
-  remarkCjkFriendly,
-  remarkAutolinkLiteralProseBoundary,
-  remarkGitHubCallouts,
-  remarkBreaks
-]
-
 function remarkNativeChatFileLinks(
   exists: FileLinkExists
 ): () => (tree: Parameters<typeof linkNativeChatFilePaths>[0]) => void {
@@ -96,54 +74,13 @@ export function remarkGitHubReferences(
   return () => (tree) => linkGitHubReferences(tree, defaultRepo)
 }
 
-const commentMarkdownSanitizeSchema: SanitizeSchema = {
-  ...defaultSchema,
-  tagNames: [...(defaultSchema.tagNames ?? []), 'details', 'summary', 'sub', 'sup', 'ins', 'kbd'],
-  attributes: {
-    ...defaultSchema.attributes,
-    a: [...(defaultSchema.attributes?.a ?? []), 'href', 'title'],
-    blockquote: [
-      ...(defaultSchema.attributes?.blockquote ?? []),
-      GITHUB_CALLOUT_SANITIZE_ATTRIBUTE
-    ],
-    details: [...(defaultSchema.attributes?.details ?? []), 'open'],
-    img: [...(defaultSchema.attributes?.img ?? []), 'src', 'alt', 'title', 'width', 'height'],
-    input: [...(defaultSchema.attributes?.input ?? []), 'type', 'checked', 'disabled'],
-    code: [
-      ...(defaultSchema.attributes?.code ?? []),
-      ['className', 'language-math', 'math-inline', 'math-display']
-    ],
-    span: [
-      ...(defaultSchema.attributes?.span ?? []),
-      ['className', 'language-math', 'math-inline', 'math-display', 'whitespace-pre-wrap']
-    ],
-    div: [
-      ...(defaultSchema.attributes?.div ?? []),
-      ['className', 'language-math', 'math-inline', 'math-display', 'whitespace-pre-wrap']
-    ],
-    td: [...(defaultSchema.attributes?.td ?? []), 'align'],
-    th: [...(defaultSchema.attributes?.th ?? []), 'align']
-  },
-  protocols: {
-    ...defaultSchema.protocols,
-    // Allow file, worktree and Slack chip links through sanitize for native chat; other surfaces
-    // still strip them in URL transformation.
-    href: [
-      ...(defaultSchema.protocols?.href ?? []),
-      'file',
-      'orca-worktree',
-      ...NATIVE_CHAT_SLACK_LINK_PROTOCOLS
-    ],
-    src: [...(defaultSchema.protocols?.src ?? []), 'data', 'blob', 'orca-jira-image']
-  }
-}
-
-const allowedTagNames: ReadonlySet<string> = new Set(
-  (commentMarkdownSanitizeSchema.tagNames ?? []).map((name) => name.toLowerCase())
-)
 // Escape HTML before remark-breaks so newlines inside it still break.
-const unknownHtmlAsTextRemarkPlugins = [remarkUnknownHtmlAsText(allowedTagNames), ...remarkPlugins]
-const unknownHtmlRendersAsText = (html: string): boolean => htmlRendersAsText(html, allowedTagNames)
+const unknownHtmlAsTextRemarkPlugins = [
+  remarkUnknownHtmlAsText(commentMarkdownAllowedTagNames),
+  ...remarkPlugins
+]
+const unknownHtmlRendersAsText = (html: string): boolean =>
+  htmlRendersAsText(html, commentMarkdownAllowedTagNames)
 
 // GitHub comments use raw HTML; parse it then sanitize before rendering.
 const rehypePlugins: MarkdownPlugins = [rehypeRaw, [rehypeSanitize, commentMarkdownSanitizeSchema]]

@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import type { MobileNativeChatSendOrigin } from './mobile-native-chat-pending-echo'
+import type { MobileNativeChatSendOrigin } from './transcript/mobile-native-chat-pending-echo'
 
 /** A terminal send's origin, stamped with the working epoch it was typed in. */
 export function useMobileNativeChatTerminalSendOrigin(

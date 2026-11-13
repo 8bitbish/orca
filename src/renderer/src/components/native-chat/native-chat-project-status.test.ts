@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AgentDotState } from '@/components/AgentStateDot'
-import type { WorktreeStatus } from '@/lib/worktree-status'
+import type { WorktreeStatus } from '../../../../shared/worktree-status-rollup'
 import {
   nativeChatProjectStatusDot,
   resolveNativeChatProjectStatus

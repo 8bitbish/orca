@@ -74,9 +74,11 @@ export function useNativeChatMessageQueue(args: {
   const revisionRef = useRef(-1)
   const retiredIdsRef = useRef(new Set<string>())
 
-  useEffect(() => {
+  const [orphansPaneKey, setOrphansPaneKey] = useState(paneKey)
+  if (orphansPaneKey !== paneKey) {
+    setOrphansPaneKey(paneKey)
     setOrphans(readQueueOrphans(paneKey))
-  }, [paneKey])
+  }
 
   const applySnapshot = useCallback(
     (next: TerminalMessageQueueSnapshot, fresh: boolean) => {

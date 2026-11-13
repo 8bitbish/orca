@@ -1,4 +1,4 @@
-import { MobileQueuedMessageComposerContext } from '../mobile-queued-message-composer-context'
+import { MobileQueuedMessageComposerContext } from './input/mobile-queued-message-composer-context'
 import { Activity, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { MobileNativeChatProjectsProvider } from '../project-cards/MobileNativeChatProjectsProvider'
@@ -7,12 +7,12 @@ import { useMobileNativeChatProjection } from './transcript/use-mobile-native-ch
 import { nativeChatDockedTaskList } from '../../../../src/shared/native-chat/input/native-chat-task-list-state'
 import type { MobileNativeChatImageAttachments } from './composer/use-mobile-native-chat-image-attachments'
 import type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
-import type { MobileNativeChatStructuredComposer } from './composer/MobileNativeChatComposer'
+import type { MobileNativeChatStructuredComposer } from './composer/mobile-native-chat-structured-composer'
 import { useMobileNativeChatOverlayRows } from '../use-mobile-native-chat-overlay-rows'
 import { useMobileNativeChatComposerTray } from './composer/use-mobile-native-chat-composer-tray'
 import { useMobileNativeChatVisualRenderer } from './visual/MobileNativeChatVisual'
 import { MobileNativeChatVisualContext } from './visual/mobile-native-chat-visual-context'
-import { MobileNativeChatRootItemSourceContext } from './mobile-native-chat-item-read'
+import { MobileNativeChatRootItemSourceContext } from './transcript/mobile-native-chat-item-read'
 import { useMobileNativeChatMessageDetail } from './transcript/use-mobile-native-chat-message-detail'
 import {
   MobileNativeChatReplyRevealsContext,
@@ -21,7 +21,7 @@ import {
 import { MobileNativeChatRowOverlaysHost } from './transcript/MobileNativeChatRowOverlaysHost'
 import { nativeChatAskRequiresTerminal } from '../../../../src/shared/native-chat/native-chat-agent-support'
 import { tuiAgentDisplayName } from '../../../../src/shared/agent-launch/catalog/tui-agent-display-names'
-import { MobileNativeChatNoticeContext } from '../mobile-native-chat-notice-context'
+import { MobileNativeChatNoticeContext } from './transcript/mobile-native-chat-notice-context'
 import type { MobileNativeChatImageSource } from './visual/mobile-native-chat-image-preview'
 import type { MobileNativeChatHostOutage } from './mobile-native-chat-host-outage'
 import { useMobileNativeChatMarkdownLinks } from './use-mobile-native-chat-markdown-links'
@@ -409,5 +409,5 @@ function MobileNativeChatOverlayContent({
 }
 
 const styles = StyleSheet.create({
-  overlay: StyleSheet.absoluteFillObject
+  overlay: StyleSheet.absoluteFill
 })

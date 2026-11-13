@@ -10,6 +10,8 @@ import {
 } from '../../../../../../shared/native-chat/transcript/native-chat-turn-fold'
 import { nativeChatRowRendersContent } from '../../../../../../shared/native-chat/transcript/native-chat-row-content'
 import { isNativeChatThoughtMarker } from '../../../../../../shared/native-chat-thought-marker'
+import { nativeChatGeneratedImageAnswers } from '../../../../../../shared/native-chat/transcript/native-chat-generated-image-answers'
+import { nativeChatMarkdownImageSources } from '../../markdown/native-chat-markdown-image-sources'
 import {
   estimateNativeChatRowHeight,
   nativeChatRowContentMetrics
@@ -28,7 +30,11 @@ import {
   type NativeChatSubagentEntriesSlot,
   type NativeChatSubagentSectionSlot
 } from '../../subagents/native-chat-subagent-section-slots'
-import { nativeChatRowSpeaksOrActs } from '../../../../../../shared/native-chat/native-chat-trailing-run'
+import { isGeneratedImageOperation } from '../../../../../../shared/native-chat/native-chat-generated-image'
+import {
+  nativeChatRowRendersProse,
+  nativeChatRowSpeaksOrActs
+} from '../../../../../../shared/native-chat/native-chat-trailing-run'
 import { nativeChatTranscriptWorkRuns } from '../../tools/runs/native-chat-transcript-work-runs'
 import {
   nativeChatAgentRowHasImages,
@@ -41,6 +47,7 @@ import {
   nativeChatSlotOffersFork,
   type NativeChatSideChatForkPoint
 } from '../../messages/actions/native-chat-side-chat-fork-point'
+import { markNativeChatResponseActionsHang } from './native-chat-response-actions-hang'
 import type { Translate } from '../../../../i18n/use-translate'
 
 export type NativeChatTranscriptSlot =
@@ -76,6 +83,11 @@ export type NativeChatMessageSlot = {
   endsResponse?: boolean
   /** This response is the newest one in the conversation. */
   latestResponse?: boolean
+  /** Response controls under this row may hang into the gap below it: the row draws nothing after
+   *  its message, and what follows is the person's own right-aligned bubble or nothing. Absent when
+   *  something left-side follows (an agent's card, a notice, a task or subagent row, the turn's bar,
+   *  diff rollup or PR card), where the controls keep their own height, and in subagent sections. */
+  actionsHang?: boolean
   turnDiff: NativeChatTurnDiff | undefined
   /** Pull requests this row's turn opened, drawn after it. */
   openedPullRequests?: readonly NativeChatOpenedPullRequest[]
@@ -114,7 +126,8 @@ export function buildNativeChatTranscript(
   forkPoint: NativeChatSideChatForkPoint | null
 } {
   const {
-    messages,
+    messages: sourceMessages,
+    imageSources = nativeChatMarkdownImageSources,
     unresolvedRowIds,
     typography,
     turnKeys,
@@ -130,21 +143,28 @@ export function buildNativeChatTranscript(
     subagentChoices: choices = NO_NATIVE_CHAT_SUBAGENT_CHOICES,
     liveReasoningId = null,
     mergedThoughtIds = NO_MERGED_THOUGHTS,
+    tailRowBelow = false,
     forkOffer
   } = input
+  const settledTurnKeys = new Set(
+    Object.entries(turnStatuses.completedByTurn)
+      .filter(([, status]) => status.workedSeconds != null)
+      .map(([turnKey]) => turnKey)
+  )
+  const messages = nativeChatGeneratedImageAnswers(
+    sourceMessages,
+    turnKeys,
+    settledTurnKeys,
+    imageSources
+  )
   // Share row rendering facts with fold selection so answer detection agrees with visible prose.
   const foldRows = messages.map((message, index) => ({
     ...nativeChatTurnFoldRow(message, turnKeys[index], receipts.has(message.id)),
     draws: receipts.has(message.id) || rowDraws(message, mergedThoughtIds)
   }))
   // Liveness follows the turn frontier, not a call’s stale running flag.
-  const trailingRunIndex = foldRows.findLastIndex((row, index) =>
-    nativeChatRowSpeaksOrActs(messages[index]!, row.rendersProse, receipts)
-  )
-  const settledTurnKeys = new Set(
-    Object.entries(turnStatuses.completedByTurn)
-      .filter(([, status]) => status.workedSeconds != null)
-      .map(([turnKey]) => turnKey)
+  const trailingRunIndex = messages.findLastIndex((message) =>
+    nativeChatRowSpeaksOrActs(message, nativeChatRowRendersProse(message), receipts)
   )
   const { foldedRows, foldableTurnKeys } = nativeChatTurnFold({
     rows: foldRows,
@@ -256,7 +276,10 @@ export function buildNativeChatTranscript(
     if (!slot.drawsMessage || slot.message.role !== 'assistant') {
       continue
     }
-    if (nativeChatAgentRowWords(slot.message, t).length > 0) {
+    if (
+      !slot.message.blocks.some(isGeneratedImageOperation) &&
+      nativeChatAgentRowWords(slot.message, t).length > 0
+    ) {
       lastWordsByTurn.set(slot.turnKey, slot)
     } else if (nativeChatAgentRowHasImages(slot.message, t)) {
       lastImageByTurn.set(slot.turnKey, slot)
@@ -301,6 +324,7 @@ export function buildNativeChatTranscript(
       slot.continuesTurn = true
     }
   }
+  markNativeChatResponseActionsHang(drawn, tailRowBelow, typography)
   return {
     slots: drawn,
     forkPoint: forkOffer

@@ -4,7 +4,7 @@
 // project whose host is not connected reads `unverifiable`, never Idle or Done.
 
 import type { AgentDotState } from '@/components/AgentStateDot'
-import type { WorktreeStatus } from '@/lib/worktree-status'
+import type { WorktreeStatus } from '../../../../shared/worktree-status-rollup'
 import { translate } from '@/i18n/i18n'
 
 export type NativeChatProjectStatus = 'working' | 'needs-you' | 'done' | 'idle' | 'unverifiable'

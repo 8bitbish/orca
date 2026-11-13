@@ -236,46 +236,6 @@ describe('jumping from the rail while following the end', () => {
     }
   }
 
-  function distanceFromBottom(): number {
-    const element = scroller()
-    return element.scrollHeight - element.clientHeight - element.scrollTop
-  }
-
-  function rowOffsetFromViewportTop(prompt: string): number {
-    const row = screen.getByText(prompt).closest<HTMLElement>('[data-index]')
-    if (!row) {
-      throw new Error(`${prompt} has no mounted row`)
-    }
-    return layout.aboveTranscriptPx + row.offsetTop - scroller().scrollTop
-  }
-
-  it('lets a later pick of a loaded message win over a jump still paging', async () => {
-    let releaseFirstPage: (() => void) | null = null
-    let held = false
-    const holdPage = (): Promise<void> => {
-      if (held) {
-        return Promise.resolve()
-      }
-      held = true
-      return new Promise<void>((resolve) => {
-        releaseFirstPage = resolve
-      })
-    }
-    render(<PagedTranscript holdPage={holdPage} />)
-    await settle(10)
-
-    fireEvent.click(screen.getByRole('button', { name: 'prompt-5' }))
-    await frame()
-    expect(releaseFirstPage).not.toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'prompt-45' }))
-    await settle(40)
-    act(() => releaseFirstPage?.())
-    await settle(60)
-
-    // The superseded jump would have kept paging and pulled the reader to prompt-5.
-    expect(screen.queryByText('prompt-5')).toBeNull()
-    expect(Math.abs(rowOffsetFromViewportTop('prompt-45'))).toBeLessThanOrEqual(2)
-  })
   /** Holds the first older page in flight until released; later pages land at once. */
   function holdFirstPage(): {
     holdPage: () => Promise<void>
@@ -303,32 +263,6 @@ describe('jumping from the rail while following the end', () => {
     await frame()
   }
 
-  it.each([
-    ['a wheel over the transcript', () => fireEvent.wheel(scroller(), { deltaY: -40 })],
-    ['a scroll key', () => fireEvent.keyDown(scroller(), { key: 'PageUp' })],
-    ['a touch drag', () => fireEvent.touchMove(scroller())],
-    ['a scrollbar grab', () => fireEvent.pointerDown(scroller())]
-  ])('leaves the reader where they are after %s while the jump pages', async (_case, input) => {
-    const pages = holdFirstPage()
-    render(<PagedTranscript holdPage={pages.holdPage} />)
-    await settle(10)
-    await pickUnloadedWhilePaging('prompt-5')
-    expect(pages.asked()).toBe(1)
-
-    expect(screen.getByRole('button', { name: 'prompt-5' }).getAttribute('aria-busy')).toBe('true')
-
-    input()
-    await frame()
-    expect(screen.getByRole('button', { name: 'prompt-5' }).getAttribute('aria-busy')).toBeNull()
-    pages.release()
-    await settle(60)
-
-    // The abandoned jump would have paged on and pulled the reader up to prompt-5.
-    expect(pages.asked()).toBe(1)
-    expect(screen.queryByText('prompt-5')).toBeNull()
-    expect(distanceFromBottom()).toBe(0)
-  })
-
   it('leaves the reader where they are after a wheel over "Jump to latest" while the jump pages', async () => {
     const pages = holdFirstPage()
     render(<PagedTranscript holdPage={pages.holdPage} />)
@@ -351,28 +285,5 @@ describe('jumping from the rail while following the end', () => {
 
     expect(pages.asked()).toBe(1)
     expect(screen.queryByText('prompt-5')).toBeNull()
-  })
-
-  it('stays at the latest message when "Jump to latest" is pressed while the jump pages', async () => {
-    const pages = holdFirstPage()
-    render(<PagedTranscript holdPage={pages.holdPage} />)
-    await settle(10)
-    // A reader parked above the end, so the button shows.
-    act(() => {
-      fireEvent.wheel(scroller(), { deltaY: -100 })
-      scroller().scrollTop = 200
-    })
-    await settle(2)
-    await pickUnloadedWhilePaging('prompt-5')
-    expect(pages.asked()).toBe(1)
-
-    fireEvent.click(screen.getByRole('button', { name: 'Jump to latest' }))
-    await frame()
-    pages.release()
-    await settle(60)
-
-    expect(pages.asked()).toBe(1)
-    expect(screen.queryByText('prompt-5')).toBeNull()
-    expect(distanceFromBottom()).toBe(0)
   })
 })

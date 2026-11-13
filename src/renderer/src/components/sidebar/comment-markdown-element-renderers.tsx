@@ -1,6 +1,6 @@
 import { GitHubBodyImageUrlsContext } from './comment-markdown-github-image-urls'
 import React from 'react'
-import { jiraImageReference } from '../../../../shared/jira/jira-attachment-image'
+import { isTrustedCompactImageSrc } from './comment-markdown-sanitize'
 import type { Components } from 'react-markdown'
 import { NATIVE_CHAT_FILE_HREF_PREFIX } from '../../../../shared/native-chat/native-chat-href-routing'
 import { isNativeChatSlackHref } from '../../../../shared/native-chat-slack-href'
@@ -49,18 +49,6 @@ export function isOrcaWorktreeHref(href: string | undefined): href is string {
 /** The chat-only schemes: project chips and Slack chips. */
 export function isChatLinkHref(href: string | undefined): href is string {
   return isOrcaWorktreeHref(href) || isNativeChatSlackHref(href)
-}
-
-export function isTrustedCompactImageSrc(src: string | undefined): src is string {
-  if (!src) {
-    return false
-  }
-  const normalized = src.trim().toLowerCase()
-  return (
-    jiraImageReference(src) !== null ||
-    normalized.startsWith('blob:') ||
-    /^data:image\/(?:png|jpe?g|gif|webp);base64,/.test(normalized)
-  )
 }
 
 function handleMarkdownAnchorClick(

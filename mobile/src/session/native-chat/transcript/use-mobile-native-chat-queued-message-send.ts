@@ -3,9 +3,9 @@ import {
   useMobileNativeChatMessageSend,
   type MobileNativeChatMessageSend
 } from './use-mobile-native-chat-message-send'
-import { openMobileNativeChatSendBudget } from '../mobile-native-chat-send'
-import { healMobileNativeChatStaleInput } from '../mobile-native-chat-stale-input'
-import { classifyMobileNativeChatSend } from '../mobile-native-chat-send-classification'
+import { openMobileNativeChatSendBudget } from '../composer/mobile-native-chat-send'
+import { healMobileNativeChatStaleInput } from '../composer/mobile-native-chat-stale-input'
+import { classifyMobileNativeChatSend } from '../composer/mobile-native-chat-send-classification'
 import { readMobileNativeChatSkillOrigin } from '../composer/mobile-native-chat-draft-store'
 import { useMobileNativeChatTerminalSendOrigin } from '../use-mobile-native-chat-terminal-send-origin'
 import {

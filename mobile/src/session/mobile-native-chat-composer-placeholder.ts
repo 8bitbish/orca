@@ -1,7 +1,7 @@
 import type { NativeChatLiveTurnIndicator } from '../../../src/shared/native-chat/transcript/native-chat-turn-status'
 import type { MobileNativeChatInputLockReason } from './native-chat/MobileNativeChatView'
 import type { MobileNativeChatQueueSurface } from './MobileNativeChatTerminalQueuedMessages'
-import { mobileNativeChatComposerPlaceholder as hostComposerPlaceholder } from './native-chat/use-mobile-native-chat-input-lease'
+import { mobileNativeChatComposerPlaceholder as hostComposerPlaceholder } from './native-chat/composer/use-mobile-native-chat-input-lease'
 
 /** The composer's hint: why input is locked, what a send does while stopping, or that a send now
  *  waits in the host's terminal queue. */

@@ -6,9 +6,8 @@ import {
   View,
   type AccessibilityActionEvent,
   type GestureResponderEvent,
-  type ImageLoadEventData,
-  type LayoutChangeEvent,
-  type NativeSyntheticEvent
+  type ImageLoadEvent,
+  type LayoutChangeEvent
 } from 'react-native'
 import {
   IMAGE_ZOOM_STEP,
@@ -134,7 +133,7 @@ export function ProofZoomableImage({
     setViewport(width > 0 && height > 0 ? { width, height } : null)
   }
   // The full file replaces the thumbnail: keep what is on screen at its new size.
-  const onLoad = (event: NativeSyntheticEvent<ImageLoadEventData>): void => {
+  const onLoad = (event: ImageLoadEvent): void => {
     const source = event.nativeEvent?.source
     if (!source || !(source.width > 0) || !(source.height > 0)) {
       return

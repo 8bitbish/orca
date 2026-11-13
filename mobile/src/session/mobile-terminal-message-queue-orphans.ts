@@ -1,7 +1,9 @@
 import type { NativeChatMessage } from '../../../src/shared/native-chat/native-chat-types'
 import type { TerminalQueuedMessage } from '../../../src/shared/terminal-message-queue-contract'
-import { normalizeNativeChatUserText } from '../../../src/shared/native-chat/transcript/native-chat-image-transcript-markers'
-import { normalizedUserText } from './native-chat/composer/mobile-native-chat-draft-reconcile'
+import {
+  normalizeNativeChatUserText,
+  normalizedNativeChatUserMessageText
+} from '../../../src/shared/native-chat/transcript/native-chat-image-transcript-markers'
 
 /** A queued message the host can no longer send, kept here so the user can restore it. */
 export type MobileQueuedMessageOrphan = {
@@ -62,7 +64,7 @@ export function mobileQueueOrphanReachedTranscript(
     (message) =>
       message.role === 'user' &&
       (message.timestamp ?? 0) >= orphan.queuedAt - TRANSCRIPT_TIMESTAMP_SLACK_MS &&
-      normalizedUserText(message) === text
+      normalizedNativeChatUserMessageText(message) === text
   )
 }
 

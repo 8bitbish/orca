@@ -7,14 +7,14 @@ import type { MobileNativeChatResolution } from './native-chat/mobile-native-cha
 import type {
   MobileNativeChatAcceptSend,
   MobileNativeChatSendOrigin
-} from './native-chat/mobile-native-chat-pending-echo'
+} from './native-chat/transcript/mobile-native-chat-pending-echo'
 import { mobileQueueOrphanReachedTranscript } from './mobile-terminal-message-queue-orphans'
 import {
   queuedImagesWithPreviews,
   rememberQueuedImagePreviews
 } from './mobile-terminal-message-queue-previews'
 import type { PendingNativeChatImage } from './native-chat/composer/mobile-native-chat-image-attachment'
-import { classifyMobileNativeChatSend } from './native-chat/mobile-native-chat-send-classification'
+import { classifyMobileNativeChatSend } from './native-chat/composer/mobile-native-chat-send-classification'
 import { routeMobileNativeChatSendThroughQueue } from './mobile-native-chat-queue-send'
 import type { MobileNativeChatQueueStackProps } from './MobileNativeChatTerminalQueuedMessages'
 import {

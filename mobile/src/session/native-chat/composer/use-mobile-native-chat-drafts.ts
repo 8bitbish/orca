@@ -18,7 +18,7 @@ import {
   normalizeImageTranscriptMessages,
   normalizeNativeChatUserText as normalizeReconcileText
 } from '../../../../../src/shared/native-chat/transcript/native-chat-image-transcript-markers'
-import { useMobileNativeChatUnconfirmedSends } from '../use-mobile-native-chat-unconfirmed-sends'
+import { useMobileNativeChatUnconfirmedSends } from './use-mobile-native-chat-unconfirmed-sends'
 import {
   appendMobileNativeChatPending,
   combineMobileNativeChatPending,
@@ -29,7 +29,7 @@ import {
   type MobileNativeChatPendingMessage,
   type MobileNativeChatAcceptSend,
   type MobileNativeChatSendOrigin
-} from '../mobile-native-chat-pending-echo'
+} from '../transcript/mobile-native-chat-pending-echo'
 import { mobileNativeChatScopeKey } from '../mobile-native-chat-scope-key'
 import { mobileNativeChatDraftDestination } from './mobile-native-chat-draft-inputs'
 import { useMobileNativeChatLaunchDraftSeed } from './use-mobile-native-chat-launch-draft-seed'

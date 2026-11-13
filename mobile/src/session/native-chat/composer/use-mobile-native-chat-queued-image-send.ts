@@ -8,7 +8,7 @@ import {
   routeMobileNativeChatImageSendToQueue,
   useMobileNativeChatRestoreImages,
   type MobileNativeChatImageQueueSend
-} from './mobile-native-chat-image-scope-state'
+} from './mobile-native-chat-queued-image-routing'
 
 /** Offers a terminal chat's image send to the host queue before any paste, and lets a restored
  *  queued message put its images back as chips. */

@@ -159,7 +159,7 @@ const PROOF_VIDEO_LOADING_HEIGHT = 196
 const styles = StyleSheet.create({
   videoFrame: { backgroundColor: colors.bgBase },
   openArea: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
     padding: spacing.sm

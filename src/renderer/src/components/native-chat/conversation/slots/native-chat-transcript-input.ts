@@ -10,7 +10,10 @@ import type {
   NativeChatSubagentSections
 } from '../../subagents/native-chat-subagent-sections'
 
+import type { NativeChatMarkdownImageSources } from '../../../../../../shared/native-chat/transcript/native-chat-generated-image-answers'
+
 export type NativeChatTranscriptSlotsInput = {
+  imageSources?: NativeChatMarkdownImageSources
   messages: readonly NativeChatMessage[]
   unresolvedRowIds?: ReadonlySet<string>
   typography?: NativeChatRowTypography
@@ -37,4 +40,6 @@ export type NativeChatTranscriptSlotsInput = {
   liveReasoningId?: string | null
   /** Thoughts with no text folded into the one before them (`nativeChatThoughtTiming`). */
   mergedThoughtIds?: ReadonlySet<string>
+  /** A left-side row draws under the last slot: the live activity line or the awaiting-input row. */
+  tailRowBelow?: boolean
 }

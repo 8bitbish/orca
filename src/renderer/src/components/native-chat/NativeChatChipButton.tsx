@@ -1,5 +1,5 @@
 import type React from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 
 /**
  * The inline pill every chat chip draws with: exactly one 20px prose line box,

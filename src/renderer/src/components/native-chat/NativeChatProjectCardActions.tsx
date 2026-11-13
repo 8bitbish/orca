@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, CornerDownLeft, Pencil } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import type { NativeChatProjectCardAction } from '../../../../shared/native-chat-project-card-payload'
 import {

@@ -38,6 +38,18 @@ export const STRUCTURED_AGENT_SESSION_SUBSCRIBE_METHOD = defineStreamingMethod({
         queuedImages.projectQueuedImageCardPublication(publication, ctx),
       emit: (event) =>
         emit(projectStructuredEventForClient(event, ctx, host.sessionAgent(params.sessionId))),
+      end: (cause) => {
+        if (stream.isClosed()) {
+          return
+        }
+        console.warn('[agent-session] ending stream after a failed frame', params.sessionId, cause)
+        try {
+          emitFrame({ type: 'end' })
+        } catch {
+          // The transport is gone; releasing the stream below is all that is left to do.
+        }
+        stream.close()
+      },
       ...(params.cursor ? { cursor: params.cursor } : {}),
       snapshotCatchUp: clientSupportsSnapshotCatchUp(ctx),
       // Every phone's app, whatever its version, ends a stream over a frame its bridge cannot carry.
