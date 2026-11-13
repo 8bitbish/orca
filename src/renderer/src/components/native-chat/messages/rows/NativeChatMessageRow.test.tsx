@@ -105,14 +105,14 @@ describe('MessageRow thoughts', () => {
 
   it('draws a thought with no text as one line with nothing to open', () => {
     const { container } = renderThought('')
-    expect(screen.getByText('Thought')).toBeInTheDocument()
+    expect(screen.getByText('Thought')).toBeTruthy()
     expect(container.querySelector('[data-native-chat-thought-marker]')).not.toBeNull()
     expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('times a thought with no text from the journal when the host kept no timing', () => {
     renderThought('', { seconds: { thought: 7 } })
-    expect(screen.getByText('Thought for 7s')).toBeInTheDocument()
+    expect(screen.getByText('Thought for 7s')).toBeTruthy()
   })
 
   it('draws nothing for a thought folded into the one before it', () => {
@@ -139,11 +139,11 @@ describe('MessageRow thoughts', () => {
         />
       )
     )
-    expect(screen.getByRole('button', { name: /Thought for 3s/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Thought for 3s/ })).toBeTruthy()
   })
 
   it('uses the journal duration for a thought with text only when the host gave none', () => {
     renderThought('Weighing options', { seconds: { thought: 12 } })
-    expect(screen.getByRole('button', { name: /Thought for 12s/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Thought for 12s/ })).toBeTruthy()
   })
 })
