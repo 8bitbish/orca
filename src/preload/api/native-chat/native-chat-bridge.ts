@@ -10,6 +10,13 @@ import {
   NATIVE_CHAT_VISUAL_GUEST_THEME_PUBLISH,
   type NativeChatVisualTheme
 } from '../../../shared/native-chat/native-chat-visual-shell'
+import type { NativeChatSlackImageRequest } from '../../../shared/native-chat-slack-image-contract'
+import type { NativeChatSlackNamesRequest } from '../../../shared/native-chat-slack-names-contract'
+import type { NativeChatLinkPreviewRequest } from '../../../shared/native-chat-link-preview-contract'
+import type {
+  NativeChatProofImageRequest,
+  NativeChatProofVideoRequest
+} from '../../../shared/native-chat-proof-media-contract'
 
 export const nativeChatApi = {
   // Acknowledge the in-memory snapshot before guest creation can start its preload.
@@ -53,6 +60,17 @@ export const nativeChatApi = {
       ipcRenderer.send('nativeChat:unsubscribe', { subscriptionId: args.subscriptionId })
     }
   },
+  slackImage: (request: NativeChatSlackImageRequest) =>
+    ipcRenderer.invoke('nativeChat:slackImage', request),
+  slackNames: (request: NativeChatSlackNamesRequest) =>
+    ipcRenderer.invoke('nativeChat:slackNames', request),
+  linkPreview: (request: NativeChatLinkPreviewRequest) =>
+    ipcRenderer.invoke('nativeChat:linkPreview', request),
+  openSlack: (href: string): Promise<boolean> => ipcRenderer.invoke('nativeChat:openSlack', href),
+  proofImage: (request: NativeChatProofImageRequest) =>
+    ipcRenderer.invoke('nativeChat:proofImage', request),
+  proofVideo: (request: NativeChatProofVideoRequest) =>
+    ipcRenderer.invoke('nativeChat:proofVideo', request),
   getConversationNameFailureOutput: (sessionId: string): Promise<string | null> =>
     ipcRenderer.invoke('nativeChat:conversationNameFailureOutput', sessionId)
 } satisfies PreloadApi['nativeChat']

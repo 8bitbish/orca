@@ -1,5 +1,5 @@
 /** Transport stamps proven scope; unstamped calls are local desktop/owner CLI. Non-owner methods require an explicitly granted permission. */
-import { MOBILE_RPC_METHOD_ALLOWLIST } from '../server/runtime-rpc-mobile-method-allowlist'
+import { isMobileRpcMethodAllowed } from '../server/runtime-rpc-mobile-method-access'
 import type { RpcMethodPermission, RuntimeDeviceGrant } from './rpc-method-permission'
 
 export type RpcCallerScope =
@@ -28,7 +28,7 @@ export function denyRpcMethodForCaller(
   permission: RpcMethodPermission | undefined
 ): string | null {
   if (scope.kind === 'mobile') {
-    if (!MOBILE_RPC_METHOD_ALLOWLIST.has(methodName)) {
+    if (!isMobileRpcMethodAllowed(methodName)) {
       return `Method '${methodName}' is not available to mobile clients`
     }
     return scope.delegated && permission === 'pairing-admin'

@@ -2,6 +2,7 @@ import type { AgentJournalItemIdentity } from '../../../../shared/agent-session/
 import type { AgentJournalMessageItem } from '../../../../shared/agent-session/journal/agent-session-journal-types'
 import type { AgentJournalTurnScope } from '../../../../shared/agent-session/journal/agent-session-journal-turn-scope'
 import { agentJournalItemKey } from '../../../../shared/agent-session/journal/agent-session-journal-item-key'
+import { nativeChatThoughtMarkerBlocks } from '../../../../shared/native-chat-thought-marker'
 import {
   endedJournalReasoning,
   journalReasoningBody
@@ -110,7 +111,12 @@ export function createClaudeStreamedThinking(deps: {
       envelope: ClaudeMessageEnvelope,
       observedAt: number
     ): ClaudeReasoningFinal | null => {
-      if (!envelope.content.some((part) => claudeRecord(part)?.type === 'thinking')) {
+      if (
+        !envelope.content.some((part) => {
+          const type = claudeRecord(part)?.type
+          return type === 'thinking' || type === 'redacted_thinking'
+        })
+      ) {
         return null
       }
       const streamed = blocks.reconcile(envelope)
@@ -118,16 +124,19 @@ export function createClaudeStreamedThinking(deps: {
         streamed?.identity ?? claudeThinkingIdentity(envelope.sessionId, envelope.uuid)
       const key = agentJournalItemKey(identity)
       // A textless final frame still closes its streamed row.
-      const text = claudeThinkingText(envelope) ?? checkpoints.latest(key) ?? ''
+      // `||`: a thought with no text reads '' here, and the streamed text still wins.
+      const text = claudeThinkingText(envelope) || checkpoints.latest(key) || ''
       checkpoints.forget(key)
       open.delete(key)
-      const body = journalReasoningBody(
-        text,
-        endedJournalReasoning(streamed ? observedAt : undefined)
-      )
-      return body
-        ? { identity, body, ...(streamed ? { startedAt: streamed.startedAt } : {}) }
-        : null
+      const ended = endedJournalReasoning(streamed ? observedAt : undefined)
+      // Thinking with no text still journals: it is the row "Thought for Ns" reads.
+      const body: AgentJournalMessageItem = journalReasoningBody(text, ended) ?? {
+        kind: 'message',
+        role: 'reasoning',
+        blocks: nativeChatThoughtMarkerBlocks(),
+        ...ended
+      }
+      return { identity, body, ...(streamed ? { startedAt: streamed.startedAt } : {}) }
     },
     finishOpen: (completedAt: number): void => {
       finish({ completedAt })

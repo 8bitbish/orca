@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { decodeClaudeTranscriptLine } from './transcript-line-decoders-claude'
 import { decodeClaudeTurnLifecycle } from './transcript-turn-lifecycle'
 
-const FIXTURES = join(__dirname, '../../shared/__fixtures__')
+const FIXTURES = join(__dirname, '../../../shared/__fixtures__')
 
 function fixtureLines(): string[] {
   return readFileSync(join(FIXTURES, 'claude-mid-turn-queued-prompts.jsonl'), 'utf8')

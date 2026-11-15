@@ -10,11 +10,13 @@ import { extractString } from '../../../shared/trimmed-string'
 import { parseJsonObject } from '../../ai-vault/parsing/session-json-object'
 import { timestampMs } from '../../ai-vault/parsing/session-record-time'
 import { imageSourcePathFromText } from '../../../shared/native-chat/transcript/native-chat-image-transcript-markers'
-import { claudeContentBlocks } from './transcript-record-blocks'
+import { isHarnessTurnOpenerText } from '../../../shared/harness-injected-user-turns'
+import { claudeContentBlocks, claudeThinkingOnlyBlocks } from './transcript-record-blocks'
 import { isKnownRasterImageMimeType } from '../../../shared/file-preview/raster-image-preview-limits'
 import { unwrapClaudePastedContentBlock } from '../../../shared/claude-pasted-content'
 import { unwrapClaudeBashInputBlock } from '../../../shared/claude-bash-input'
 import { claudeInterruptedMessageId } from './transcript-turn-markers'
+import { claudeAbsorbedPromptBlocks } from './transcript-claude-absorbed-prompt'
 import { claudeStopHookFeedbackRow } from '../../claude/structured/journal/claude-stop-hook-feedback'
 import { structuredAgentSessionStatusBlock } from '../../../shared/agent-session/view/structured-agent-session-status-block'
 import {
@@ -84,6 +86,18 @@ export function decodeClaudeTranscriptLine(
     return null
   }
   const role = record.type
+  if (role === 'attachment') {
+    const absorbed = claudeAbsorbedPromptBlocks(record)
+    return absorbed
+      ? {
+          id: extractString(record.uuid) ?? fallbackId,
+          role: 'user',
+          blocks: absorbed.map(unwrapClaudePastedContentBlock),
+          timestamp: parseTimestamp(record.timestamp),
+          source: 'transcript'
+        }
+      : null
+  }
   if (role !== 'user' && role !== 'assistant') {
     return null
   }
@@ -104,6 +118,21 @@ export function decodeClaudeTranscriptLine(
     }
   }
   const message = asRecord(record.message)
+  if (role === 'assistant' && isClaudeNoResponseFiller(message)) {
+    // Why: the harness's stand-in reply to a meta turn. Drawn, it is the newest prose of the
+    // turn it lands in, so it would stand as that turn's answer and fold the real reply away.
+    return null
+  }
+  const thought = role === 'assistant' ? claudeThinkingOnlyBlocks(message?.content) : null
+  if (thought) {
+    return {
+      id: extractString(record.uuid) ?? extractString(message?.id) ?? fallbackId,
+      role: 'reasoning',
+      blocks: thought,
+      timestamp,
+      source: 'transcript'
+    }
+  }
   const editPatch = claudeEditPatch(record)
   const contentBlocks = claudeContentBlocks(message?.content)
   const decodedBlocks = editPatch ? withEditPatch(contentBlocks, editPatch) : contentBlocks
@@ -117,8 +146,11 @@ export function decodeClaudeTranscriptLine(
     return { id: recordMessageId, timestamp, source: 'transcript', ...stopHookFeedback, ...parent }
   }
   // Keep image-source companions despite isMeta: prompt base64 has no path and cannot render attachments.
+  // A peer session's hand-back arrives as a meta turn the agent answers. It still draws
+  // nothing, but it is the boundary that keeps that answer out of the previous turn.
   const blocks = isInjectedUserTurn
-    ? isImageSourceRecord(decodedBlocks)
+    ? isImageSourceRecord(decodedBlocks) ||
+      (record.isMeta === true && isHarnessTurnOpenerRecord(decodedBlocks))
       ? decodedBlocks
       : decodedBlocks.filter((block) => block.type === 'tool-result')
     : decodedBlocks
@@ -138,6 +170,29 @@ export function decodeClaudeTranscriptLine(
     source: 'transcript',
     ...parent
   }
+}
+
+function isClaudeNoResponseFiller(message: Record<string, unknown> | null): boolean {
+  if (message?.model !== '<synthetic>') {
+    return false
+  }
+  const content = message.content
+  const text =
+    typeof content === 'string'
+      ? content
+      : Array.isArray(content) && content.length === 1
+        ? asRecord(content[0])?.text
+        : undefined
+  return typeof text === 'string' && text.trim() === 'No response requested.'
+}
+
+function isHarnessTurnOpenerRecord(blocks: NativeChatBlock[]): boolean {
+  const first = blocks[0]
+  return (
+    first?.type === 'text' &&
+    blocks.every((block) => block.type === 'text') &&
+    isHarnessTurnOpenerText(first.text)
+  )
 }
 
 /** Mid-turn human prompts exist only as queued_command attachments; decode them to reconcile local echoes. */

@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { isHarnessTurnOpenerMessage } from '../../shared/native-chat/native-chat-noise'
+import { isHarnessTurnOpenerMessage } from '../../../shared/native-chat/native-chat-noise'
 import { decodeClaudeTranscriptLine } from './transcript-line-decoders-claude'
 
-const FIXTURES = join(__dirname, '../../shared/__fixtures__')
+const FIXTURES = join(__dirname, '../../../shared/__fixtures__')
 
 // The renderer's harness-turn pipeline test reads the decoded form so it stays inside the web
 // project; this pins that form to what the decoder makes of the scrubbed raw records.
