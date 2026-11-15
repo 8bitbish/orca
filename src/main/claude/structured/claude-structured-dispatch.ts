@@ -11,7 +11,7 @@ import {
 import type { AgentJournalMessageItem } from '../../../shared/agent-session/journal/agent-session-journal-types'
 import type { AgentSessionDispatchOutcome } from '../../native-chat/agent-session-wire/providers/structured-agent-session-adapter'
 import type { ClaudeDispatchWaiter, ClaudeSession } from './claude-structured-session-state'
-import type { ClaudeLateDispatchSettlement } from '../claude-replay-turn-resolution'
+import type { ClaudeLateDispatchSettlement } from './turns/claude-replay-turn-resolution'
 import {
   claudeDispatchContentKey,
   claudeDispatchContentRejection,
@@ -30,7 +30,7 @@ import type { AgentJournalDispatchRejection } from '../../../shared/agent-sessio
 import {
   claudeUnwrittenUserMessageError,
   claudeUserMessageWasProvablyUnwritten
-} from '../claude-agent-sdk-user-message-queue'
+} from '../sdk-transport/claude-agent-sdk-user-message-queue'
 import { AgentSessionPreDispatchError } from '../../native-chat/agent-session-wire/operations/structured-agent-session-operation-settlement'
 import {
   ClaudeEffortValidationError,
@@ -153,8 +153,6 @@ export async function dispatchClaudeTurn(
       : randomUUID())
   const arm = () => {
     ++session.dispatchSequence
-    // Invalidate context reports requested before this send.
-    session.translator?.markContextActivity()
     return waitForReplay(
       session,
       acceptsResult,

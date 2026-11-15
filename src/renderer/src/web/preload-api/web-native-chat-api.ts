@@ -1,4 +1,7 @@
-import type { NativeChatApi, NativeChatAppendedMessages } from '../../../../preload/api-types'
+import type {
+  NativeChatApi,
+  NativeChatAppendedMessages
+} from '../../../../preload/api/native-chat/native-chat-api'
 import { buildNativeChatUnsubscribe } from '../../../../shared/native-chat/native-chat-stream-unsubscribe'
 import { parseNativeChatSlackHref } from '../../../../shared/native-chat-slack-href'
 import { parseNativeChatSlackImageResult } from '../../../../shared/native-chat-slack-image-contract'

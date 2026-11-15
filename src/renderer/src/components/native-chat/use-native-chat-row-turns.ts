@@ -1,10 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
-import type {
-  AgentJournalRenderItem,
-  AgentJournalSubmission
-} from '../../../../shared/agent-session/journal/agent-session-journal-types'
-import type { AgentSessionLatestTurn } from '../../../../shared/agent-session/agent-session-wire'
+import type { AgentJournalRenderItem } from '../../../../shared/agent-session/journal/agent-session-journal-types'
 import type { AgentType } from '../../../../shared/agent-status/contracts/agent-status-types'
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import {
@@ -19,41 +15,35 @@ import {
   nativeChatThoughtTiming,
   type NativeChatThoughtTiming
 } from './native-chat-thought-markers'
-import {
-  useNativeChatTurnMembership,
-  type NativeChatTurnRows
-} from './conversation/slots/use-native-chat-turn-membership'
+import type { NativeChatTurnRows } from './conversation/slots/use-native-chat-turn-membership'
 
-/** `useNativeChatTurnMembership`, plus terminal transcripts' harness turns (a turn a harness
- *  delivery opened, such as a background-task notification, is keyed by that delivery, which the
- *  projection has already stripped) and each reasoning row's fallback timing. */
+/** The conversation's turns plus terminal transcripts' harness turns (a turn a harness delivery
+ *  opened, such as a background-task notification, is keyed by that delivery, which the
+ *  projection has already stripped) and each reasoning row's fallback timing. A subagent's view
+ *  (`conversation` false) keeps its turnless rows. */
 export function useNativeChatRowTurns(
   /** `messages` are the unprojected rows, harness deliveries included. */
   session: { agent: AgentType; messages: readonly NativeChatMessage[] },
-  messages: readonly NativeChatMessage[],
+  membership: NativeChatTurnRows,
   journalItems: readonly AgentJournalRenderItem[] | undefined,
-  journalSubmissions: readonly AgentJournalSubmission[] | undefined,
-  latestTurn?: AgentSessionLatestTurn | null
+  conversation: boolean
 ): NativeChatTurnRows & { thoughtTiming: NativeChatThoughtTiming } {
-  const membership = useNativeChatTurnMembership(
-    messages,
-    journalItems,
-    journalSubmissions,
-    latestTurn
-  )
   const harnessTurns = useMemo(
-    () => (journalItems ? null : nativeChatHarnessTurns(session.messages, compareMessages)),
-    [journalItems, session.messages]
+    () =>
+      journalItems || !conversation
+        ? null
+        : nativeChatHarnessTurns(session.messages, compareMessages),
+    [conversation, journalItems, session.messages]
   )
   const thoughtSeconds = useMemo(
-    () => nativeChatSessionThoughtSeconds(session.agent, journalItems, messages),
-    [journalItems, messages, session.agent]
+    () => nativeChatSessionThoughtSeconds(session.agent, journalItems, membership.messages),
+    [journalItems, membership.messages, session.agent]
   )
   const rows = useMemo(
     () =>
       harnessTurns
         ? {
-            messages: membership.messages,
+            ...membership,
             turnKeys: nativeChatRowTurnKeys(membership.messages, harnessTurns.turnKeysByItemId),
             liveTurnKey: harnessTurns.latestTurnOpenedBy ?? membership.liveTurnKey
           }

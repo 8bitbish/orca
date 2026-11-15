@@ -18,7 +18,8 @@ import { structuredAgentSessionDraftScopeKey } from '@/components/native-chat/dr
 import { NativeChatEmptyState } from '@/components/native-chat/host-access/NativeChatEmptyState'
 import { NativeChatEmptyPane } from '@/components/native-chat/host-access/NativeChatEmptyPane'
 import { NativeChatLoadingCue } from '@/components/native-chat/host-access/NativeChatLoadingCue'
-import { NativeChatMessageList } from '@/components/native-chat/NativeChatMessageList'
+import { NativeChatSubagentTranscripts } from '@/components/native-chat/subagents/NativeChatSubagentTranscripts'
+import { useStructuredNativeChatSubagents } from '@/components/native-chat/subagents/use-structured-native-chat-subagents'
 import { NativeChatContextClearFade } from '@/components/native-chat/conversation/projection/NativeChatContextClearFade'
 import { useStructuredNativeChatSubmitReveal } from '@/components/native-chat/pane/actions/use-structured-native-chat-submit-reveal'
 import { useStructuredPromptResponseHold } from '@/components/native-chat/prompts/use-structured-prompt-response-hold'
@@ -42,7 +43,6 @@ import { useStructuredAgentSession } from '@/components/native-chat/session/stru
 import { useNativeChatImageRuntimeContext } from '@/components/native-chat/media/images/native-chat-image-runtime-context'
 import { useStructuredNativeChatPaneCommands } from '@/components/native-chat/pane/actions/use-structured-native-chat-pane-commands'
 import type { NativeChatStructuredViewProps } from '@/components/native-chat/native-chat-view-types'
-import { NativeChatStructuredSessionStatus } from '@/components/native-chat/tools/tasks/NativeChatStructuredSessionStatus'
 import { useNativeChatInterruptedContinuation } from '@/components/native-chat/usage/NativeChatInterruptedContinue'
 import { NativeChatPromptSlotNotices } from '@/components/native-chat/composer/controls/NativeChatComposerNotices'
 import {
@@ -186,7 +186,11 @@ export function NativeChatStructuredSession(props: Omit<NativeChatStructuredView
   const prompt = controller.prompts[0] ?? null
   // Unknown prompts leave the composer usable; a send starts a turn whose cancel can resolve them.
   const promptsUnanswerable = pendingPromptsAllUnanswerableHere(controller.prompts)
-  const composerShown = (prompt === null || promptsUnanswerable) && readFailure?.final !== true
+  const subagents = useStructuredNativeChatSubagents({ ...props, paneKey, controller })
+  const subagentOpen = subagents.openId !== null
+  // A subagent's view takes the composer's place; the main agent's prompts still show.
+  const composerShown =
+    (prompt === null || promptsUnanswerable) && readFailure?.final !== true && !subagentOpen
   // An owned prompt keeps its card; otherwise a missing program leaves the composer disabled.
   const installLayout = viewState.kind === 'empty' ? 'hero' : 'strip'
   const install = useNativeChatInstallSlot(props, agentLabel, installLayout)
@@ -260,6 +264,7 @@ export function NativeChatStructuredSession(props: Omit<NativeChatStructuredView
         paneCommands.onKeyDownCapture(event)
         rootInput.onKeyDownCapture(event)
       }}
+      onKeyDown={subagents.onKeyDown}
       onContextMenuCapture={paneCommands.onContextMenuCapture}
       className={cn(
         NATIVE_CHAT_APPEARANCE_ROOT_CLASS,
@@ -302,9 +307,11 @@ export function NativeChatStructuredSession(props: Omit<NativeChatStructuredView
             >
               <NativeChatWorkerApprovalTimeline party={workerApprovalParty}>
                 {(timedRows) => (
-                  <NativeChatMessageList
+                  <NativeChatSubagentTranscripts
+                    find={find}
                     // A rewind or a /clear replaces the conversation; nothing the old one held carries over.
                     key={`${controller.epoch}:${controller.contextClear.clears}`}
+                    paneKey={paneKey}
                     ref={submits.messageListRef}
                     session={session}
                     journalItems={controller.journalItems}
@@ -344,20 +351,14 @@ export function NativeChatStructuredSession(props: Omit<NativeChatStructuredView
             focusComposer={focusComposer}
             editAttachTo={{ terminalTabId: props.tabId, agent: props.agent, transport }}
           />
-          <NativeChatStructuredSessionStatus
-            sessionId={props.sessionId}
-            paneKey={paneKey}
-            isVisible={props.isVisible}
-            tasks={controller}
-            messageListRef={submits.messageListRef}
-          />
+          {subagents.strip}
           {/* Workers' open prompts stay pinned here, above this chat's own prompt. */}
           <NativeChatPartyWorkerApprovalStack
             party={workerApprovalParty}
             target={props.target}
             isVisible={props.isVisible}
           />
-          {prompt ? null : (
+          {prompt || subagentOpen ? null : (
             <NativeChatStructuredComposerTabStrips
               tabId={props.tabId}
               runtimeContext={imageRuntimeContext}
@@ -369,7 +370,7 @@ export function NativeChatStructuredSession(props: Omit<NativeChatStructuredView
               workingStartedAt={controller.workingStartedAt}
             />
           )}
-          {composerShown ? null : <NativeChatPromptSlotNotices notices={notices} />}
+          {composerShown || subagentOpen ? null : <NativeChatPromptSlotNotices notices={notices} />}
           <NativeChatStructuredPromptCard
             key={prompt ? `${prompt.itemId}:${prompt.revision}` : undefined}
             prompt={prompt}
@@ -379,7 +380,8 @@ export function NativeChatStructuredSession(props: Omit<NativeChatStructuredView
             answerInputRef={questionAnswerInputRef}
           />
           {nativeChatStructuredAsyncQuestion(props, controller, session, transport, submits)}
-          {composerShown && <NativeChatInstallSlot slot={install.slot} agentLabel={agentLabel} />}
+          {composerShown && <NativeChatInstallSlot install={install} agentLabel={agentLabel} />}
+          {subagents.statusBar}
           {composerShown ? (
             <NativeChatComposer
               ref={composerRef}

@@ -20,7 +20,7 @@ import type { NativeChatTranscriptSlotsInput } from './native-chat-transcript-in
 export function useNativeChatTranscriptSlots({
   line,
   ...input
-}: Omit<NativeChatTranscriptSlotsInput, 'liveReasoningId' | 'tailRowBelow'> & {
+}: Omit<NativeChatTranscriptSlotsInput, 'liveReasoningId'> & {
   line: {
     /** The row drawn under the transcript, if any. */
     tailRow: 'awaiting-input' | 'activity' | null
@@ -50,8 +50,7 @@ export function useNativeChatTranscriptSlots({
     expandedTurnKeys,
     isWorking,
     lifecycleWorking,
-    subagentSections,
-    subagentChoices,
+    subagentHeads,
     mergedThoughtIds,
     forkOffer
   } = input
@@ -87,8 +86,6 @@ export function useNativeChatTranscriptSlots({
     ]
   )
   const liveReasoningId = liveLine?.reasoning?.message.id ?? null
-  // A boolean, so the line's changing words never rebuild the slots.
-  const tailRowBelow = liveLine !== null || tailRow === 'awaiting-input'
   const { slots, forkPoint } = useMemo(
     () =>
       buildNativeChatTranscript({
@@ -105,11 +102,9 @@ export function useNativeChatTranscriptSlots({
         expandedTurnKeys,
         isWorking,
         lifecycleWorking,
-        subagentSections,
-        subagentChoices,
+        subagentHeads,
         liveReasoningId,
         mergedThoughtIds,
-        tailRowBelow,
         forkOffer
       }),
     [
@@ -124,9 +119,7 @@ export function useNativeChatTranscriptSlots({
       messages,
       openedPullRequests,
       receipts,
-      subagentChoices,
-      subagentSections,
-      tailRowBelow,
+      subagentHeads,
       turnDiffs,
       turnKeys,
       turnStatuses,

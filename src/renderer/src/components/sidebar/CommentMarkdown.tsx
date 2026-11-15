@@ -39,7 +39,7 @@ import {
 import {
   linkGitHubReferences,
   type GitHubRepoReference
-} from '../../../../shared/github/github-reference-links'
+} from '../../../../shared/github/markdown/github-reference-links'
 
 export type { CommentMarkdownLinkClickHandler } from './comment-markdown-element-renderers'
 
