@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
-import { cachedHostRepos, cachedHostWorktrees } from '../../host-screen/host-list-queries'
+import { cachedHostRepos, cachedHostWorktrees } from '../../host-screen/catalog/host-list-queries'
 import { hostRepoCatalogSnapshotRead } from '../../host-screen/host-screen-operations'
 import type { RpcClient } from '../../transport/rpc/rpc-client-contract'
 import type { ConnectionState } from '../../transport/connection/connection-state'

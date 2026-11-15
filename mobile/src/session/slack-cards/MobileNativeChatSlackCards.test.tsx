@@ -43,7 +43,7 @@ vi.mock('../../components/MobileRepoIcon', () => ({ MobileRepoIcon: 'MobileRepoI
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: async () => null, setItem: async () => {} }
 }))
-vi.mock('../../platform/external-link', () => ({
+vi.mock('../../platform/external-links/external-link', () => ({
   tryOpenExternalLink: links.tryOpen,
   openExternalLink: links.open
 }))

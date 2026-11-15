@@ -13,7 +13,6 @@ import {
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { NativeChatMessageList } from './NativeChatMessageList'
-import { installNativeChatMessageListTestViewport } from './viewport/virtualization/native-chat-message-list-test-viewport'
 import { createNativeChatMessageListProjection } from './conversation/projection/native-chat-message-list-projection'
 import { assembleNativeChatSession } from './session/terminal/assembly/native-chat-session-assembler'
 import { compareNativeChatDisplayMessages as compareMessages } from '../../../../shared/native-chat/transcript/native-chat-message-order'
@@ -26,6 +25,33 @@ import {
   type NativeChatMessageSlot
 } from './conversation/slots/native-chat-transcript-slots'
 import type { NativeChatLiveSession } from './session/terminal/read/native-chat-live-session-contract'
+
+const TEST_VIEWPORT_HEIGHT_PX = 1_000_000
+const TEST_ROW_HEIGHT_PX = 48
+
+/** Give non-windowing component tests a measurable viewport that contains every fixture row. */
+function installNativeChatMessageListTestViewport(): () => void {
+  const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+    configurable: true,
+    get(this: HTMLElement): number {
+      if (this.hasAttribute('data-native-chat-scroll')) {
+        return TEST_VIEWPORT_HEIGHT_PX
+      }
+      if (this.dataset.index !== undefined) {
+        return TEST_ROW_HEIGHT_PX
+      }
+      return original?.get?.call(this) ?? 0
+    }
+  })
+  return () => {
+    if (original) {
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', original)
+    } else {
+      Reflect.deleteProperty(HTMLElement.prototype, 'offsetHeight')
+    }
+  }
+}
 
 // Scrubbed records from a Claude Code 2.1.286 session: two prompts, each answered and then
 // followed by a background-task notification the agent answered on its own. Text is

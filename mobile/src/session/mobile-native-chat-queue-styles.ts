@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native'
 import { colors, radii, spacing, typography } from '../theme/mobile-theme'
-import { TEXT_INPUT_FONT_SIZE } from '../platform/text-input-font-size'
+import { TEXT_INPUT_FONT_SIZE } from '../platform/text-input/text-input-font-size'
 
 // 44pt is the platform minimum touch target; icons sit centred inside it.
 const TOUCH = 44

@@ -20,7 +20,7 @@ import type {
 import { parseNativeChatProofCard } from '../../../../src/shared/native-chat-proof-card-reader'
 import { nativeChatProjectCardKey } from '../../../../src/shared/native-chat-project-card-choice'
 import { NATIVE_CHAT_WORKTREE_LINK_SCHEME } from '../../../../src/shared/native-chat-project-target'
-import { openExternalLink } from '../../platform/external-link'
+import { openExternalLink } from '../../platform/external-links/external-link'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
 import {
   MobileNativeChatMessageIdContext,

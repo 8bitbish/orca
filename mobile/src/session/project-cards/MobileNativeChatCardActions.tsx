@@ -10,7 +10,7 @@ import {
   deriveNativeChatProjectCardChoice,
   type NativeChatProjectCardChoice
 } from '../../../../src/shared/native-chat-project-card-choice'
-import { TEXT_INPUT_FONT_SIZE } from '../../platform/text-input-font-size'
+import { TEXT_INPUT_FONT_SIZE } from '../../platform/text-input/text-input-font-size'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
 import type { MobileNativeChatProjects } from './mobile-native-chat-project-context'
 import {

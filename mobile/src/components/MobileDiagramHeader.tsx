@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, Code2, Copy } from 'lucide-react-native'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { useClipboardWriter } from '../platform/clipboard'
+import { useClipboardWriter } from '../platform/clipboard/clipboard'
 import { colors, spacing, typography } from '../theme/mobile-theme'
 
 const COPIED_RESET_MS = 1500

@@ -7,7 +7,7 @@ import type {
   TerminalQueuedMessage
 } from '../../../src/shared/terminal-message-queue-contract'
 import type { RpcClient } from '../transport/rpc/rpc-client-contract'
-import type { MobileNativeChatSendOrigin } from './native-chat/mobile-native-chat-pending-echo'
+import type { MobileNativeChatSendOrigin } from './native-chat/transcript/mobile-native-chat-pending-echo'
 import { mobileNativeChatDraftDestination } from './native-chat/composer/mobile-native-chat-draft-inputs'
 import { clearMobileQueueOrphansForTests } from './mobile-terminal-message-queue-orphans'
 import { clearQueuedImagePreviewsForTests } from './mobile-terminal-message-queue-previews'

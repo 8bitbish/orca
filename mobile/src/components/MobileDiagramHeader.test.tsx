@@ -12,7 +12,7 @@ vi.mock('react-native', () => ({
   View: 'View'
 }))
 vi.mock('lucide-react-native', () => ({ Check: 'Check', Code2: 'Code2', Copy: 'Copy' }))
-vi.mock('../platform/clipboard', () => ({ useClipboardWriter: () => ({ writeText }) }))
+vi.mock('../platform/clipboard/clipboard', () => ({ useClipboardWriter: () => ({ writeText }) }))
 
 let renderer: ReactTestRenderer | null = null
 

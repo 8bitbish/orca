@@ -5,7 +5,7 @@ import {
   type SlackMrkdwnNode
 } from '../../../../src/shared/native-chat-slack-mrkdwn'
 import type { NativeChatSlackNamesResult } from '../../../../src/shared/native-chat-slack-names-contract'
-import { openExternalLink } from '../../platform/external-link'
+import { openExternalLink } from '../../platform/external-links/external-link'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
 import { MobileNativeChatSlackTargetChip } from './MobileNativeChatSlackChip'
 

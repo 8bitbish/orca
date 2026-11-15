@@ -15,7 +15,7 @@ import {
   createDeferredStructuredAgentSessionEventSink,
   type StructuredAgentSessionEventSink
 } from '../../../native-chat/agent-session-wire/journal-ingress/structured-agent-session-event-sink'
-import type { ClaudePendingPrompt } from '../../claude-prompt-registry'
+import type { ClaudePendingPrompt } from '../permissions/claude-prompt-registry'
 import { readAgentJournalTurn } from '../../../../shared/agent-session/lifecycle/agent-session-turn-record'
 import { createClaudeJournalTranslator } from './claude-structured-journal-translation'
 import {

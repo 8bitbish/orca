@@ -23,6 +23,8 @@ function Probe() {
     appendText: () => {},
     handlePasteEvent: () => {},
     pasteFromClipboard: () => {},
+    sendReply: () => false,
+    restoreDraft: () => {},
     focus: () => {
       rootRef.current?.querySelector('textarea')?.focus()
       return true

@@ -10,7 +10,7 @@ import {
   USER_MESSAGE
 } from '../claude-structured-session-test-support'
 import * as dispatchContent from '../claude-structured-dispatch-content'
-import { ClaudeControlRequestError } from '../../claude-agent-sdk-control-requests'
+import { ClaudeControlRequestError } from '../../sdk-transport/claude-agent-sdk-control-requests'
 import { claudeStructuredPermissionOptions } from './claude-structured-launch-resolution'
 
 /** Claude ends a turn; a message sent before this joins the running turn on its choices. */

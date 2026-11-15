@@ -9,7 +9,7 @@ import {
   TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY
 } from '../../../../../shared/terminal-message-queue-capability'
 import { TerminalMessageQueueHost } from '../../../../terminal-message-queue/terminal-message-queue-host'
-import { createSubscriptionRegistryDouble } from '../../subscription-registry-test-double'
+import { createSubscriptionRegistryDouble } from '../../testing/subscription-registry-test-double'
 import { ALL_RPC_METHODS } from '../rpc-method-registry'
 import { TERMINAL_MESSAGE_QUEUE_METHODS } from './terminal-message-queue'
 
