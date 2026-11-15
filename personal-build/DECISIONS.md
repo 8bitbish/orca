@@ -11,18 +11,18 @@ the fixes already applied.
 
 ## Shape
 
-| Decision | Why |
-| --- | --- |
-| One long-lived `personal` branch; fixes are commits on it | No PRs upstream, so per-fix branches only add bookkeeping. `personal:` prefixes keep the fixes findable. |
-| Merge upstream into `personal`; never rebase | 3SC's rule: never rewrite git history (no rebase, reset, amend, force-push). Merges also let rerere replay earlier conflict resolutions. |
-| Follow stable release tags (`vX.Y.Z`), not upstream `main` | `main` moved ~3,200 commits in six weeks. Releases are fewer, tested merge points. |
-| A separate clone at `~/orca-personal` | The job never touches Jake's working worktrees. It was cloned with `--dissociate`, so it shares nothing with any other checkout. |
-| Orca's own automation (daily 09:00, precheck) rather than launchd | The precheck makes quiet days free (no agent starts), the run history and Claude session are visible in Orca, and a missed run catches up within 12 hours of Orca opening. |
-| Deterministic `sync.sh` plus an agent only for judgement | Routine steps stay predictable; Claude only handles conflicts and failures, following [AGENT.md](AGENT.md). |
+| Decision                                                                    | Why                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One long-lived `personal` branch; fixes are commits on it                   | No PRs upstream, so per-fix branches only add bookkeeping. `personal:` prefixes keep the fixes findable.                                                                                                                                                                                                                                                        |
+| Merge upstream into `personal`; never rebase                                | 3SC's rule: never rewrite git history (no rebase, reset, amend, force-push). Merges also let rerere replay earlier conflict resolutions.                                                                                                                                                                                                                        |
+| Follow stable release tags (`vX.Y.Z`), not upstream `main`                  | `main` moved ~3,200 commits in six weeks. Releases are fewer, tested merge points.                                                                                                                                                                                                                                                                              |
+| A separate clone at `~/orca-personal`                                       | The job never touches Jake's working worktrees. It was cloned with `--dissociate`, so it shares nothing with any other checkout.                                                                                                                                                                                                                                |
+| Orca's own automation (daily 09:00, precheck) rather than launchd           | The precheck makes quiet days free (no agent starts), the run history and Claude session are visible in Orca, and a missed run catches up within 12 hours of Orca opening.                                                                                                                                                                                      |
+| Deterministic `sync.sh` plus an agent only for judgement                    | Routine steps stay predictable; Claude only handles conflicts and failures, following [AGENT.md](AGENT.md).                                                                                                                                                                                                                                                     |
 | The session closes itself with `close-session-later.sh`, not an Orca change | Orca closes a finished run's tab only if nobody viewed or typed in it, and has no setting to always close. A detached waiter closes the terminal once the turn has ended and a report newer than the waiter is saved. It doesn't trust the run's `completed` status, which Orca sets seconds after launch. It acts only for the Claude process the run started. |
-| Build and install happen before the prompt | Orca can't replace itself mid-run. Publishing a release and letting the in-app updater install it on click is the normal, tested path. |
-| The updater feed points at the `8bitbish/orca` fork | The one constant in `src/main/updater-release-repository.ts`, plus `publish.owner` in the builder config. Upstream's updater tests still run against `stablyai` in `sync.sh` (the constant is swapped temporarily), so they keep catching real behaviour changes. |
-| Versions are Orca's own local-build versions (`X.Y.Z-local.<ms>.<commit>`) | They already sort newest-last, and the trailing commit lets `needs-build.sh` tell whether `personal` is published. |
+| Build and install happen before the prompt                                  | Orca can't replace itself mid-run. Publishing a release and letting the in-app updater install it on click is the normal, tested path.                                                                                                                                                                                                                          |
+| The updater feed points at the `8bitbish/orca` fork                         | The one constant in `src/main/updater-release-repository.ts`, plus `publish.owner` in the builder config. Upstream's updater tests still run against `stablyai` in `sync.sh` (the constant is swapped temporarily), so they keep catching real behaviour changes.                                                                                               |
+| Versions are Orca's own local-build versions (`X.Y.Z-local.<ms>.<commit>`)  | They already sort newest-last, and the trailing commit lets `needs-build.sh` tell whether `personal` is published.                                                                                                                                                                                                                                              |
 
 ## Signing
 
@@ -45,7 +45,7 @@ the fixes already applied.
 - Switching identity breaks the updater once: install that build by hand, then updates work
   again. The first launch asks once for "orca Safe Storage": Always Allow.
 - electron-builder only uses identities listed by `security find-identity -v`, so the
-  certificate must be *trusted* for code signing, not just imported.
+  certificate must be _trusted_ for code signing, not just imported.
 
 ## What changed from the original chat-order PR (#15609)
 
@@ -60,6 +60,15 @@ The fix was written on 2026-08-18 against v1.4.184 and ported to v1.4.217:
   virtualized transcript window.
 - The e2e spec reads rows as `[data-native-chat-window] > [data-index]`. It passes with the fix
   and fails with the old ranking.
+
+## Mobile page bundle budget
+
+- 2026-11-15 (Jake): `MOBILE_WEB_APP_BUNDLE_MAX_TOTAL_BYTES` in
+  `config/scripts/build/mobile-web-app/verify-mobile-web-app-bundle.mjs` is raised by 128 KiB
+  on `personal` only (10 MiB + 128 KiB = 10,616,832 bytes). v1.4.259 plus the personal page code
+  came to 10,548,031 bytes, 61 KB over upstream's 10 MiB, and the build stopped. Trimming personal
+  page code was the alternative. The fence still sits well inside the phone contract (32 MiB total,
+  10 MiB per asset). If upstream changes that line, keep its value plus 128 KiB.
 
 ## Things specific to this Mac
 
