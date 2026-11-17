@@ -1,10 +1,12 @@
 import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { MobileMarkdown } from './MobileMarkdown'
+import { MobileMarkdown } from './markdown/MobileMarkdown'
 import { MobileMarkdownRenderersContext } from './mobile-markdown-renderers'
 
-vi.mock('./MobileSourceCopyButton', () => ({ MobileSourceCopyButton: 'MobileSourceCopyButton' }))
+vi.mock('./code-presentation/MobileSourceCopyButton', () => ({
+  MobileSourceCopyButton: 'MobileSourceCopyButton'
+}))
 vi.mock('react-native', () => ({
   Linking: { openURL: vi.fn() },
   Platform: { OS: 'ios' },
@@ -14,7 +16,7 @@ vi.mock('react-native', () => ({
   Text: 'Text',
   View: 'View'
 }))
-vi.mock('./pr-sidebar/MermaidDiagram', () => ({ MermaidDiagram: 'MermaidDiagram' }))
+vi.mock('./mermaid/MermaidDiagram', () => ({ MermaidDiagram: 'MermaidDiagram' }))
 vi.mock('./markup-preview/MobileMarkupPreview', () => ({
   MobileMarkupPreview: 'MobileMarkupPreview'
 }))

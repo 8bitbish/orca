@@ -19,6 +19,7 @@ import type { ClaudePendingPrompt } from '../permissions/claude-prompt-registry'
 import { readAgentJournalTurn } from '../../../../shared/agent-session/lifecycle/records/agent-session-turn-record'
 import { createClaudeJournalTranslator } from './claude-structured-journal-translation'
 import { closeTestJournalHostDatabases } from '../../../native-chat/agent-session-journal/store-lifecycle/journal-host-database-test-support'
+import { followTestSinkSnapshots } from '../../../native-chat/agent-session-wire/host/testing/structured-agent-session-direct-sink.test-fixture'
 import { readTestJournalItems } from '../../../native-chat/agent-session-journal/journal-observation.test-support'
 import { openTestAgentSessionDatabase } from '../../../runtime/agent-session/records/agent-session-record-store-test-harness'
 import { testEventSinkLogging } from '../../../native-chat/agent-session-wire/host/testing/structured-agent-session-logger.test-fixture'
@@ -197,6 +198,7 @@ describe('Claude structured journal translation', () => {
       mintEpoch: () => 'epoch-1'
     })
     const deferred = createDeferredStructuredAgentSessionEventSink(testEventSinkLogging())
+    await followTestSinkSnapshots(deferred, journal)
     deferred.bind({ journal, fence: 1, publish: vi.fn() })
     let scheduled: (() => void) | null = null
     const translator = createClaudeJournalTranslator({
@@ -258,6 +260,7 @@ describe('Claude structured journal translation', () => {
       mintEpoch: () => 'epoch-1'
     })
     const deferred = createDeferredStructuredAgentSessionEventSink(testEventSinkLogging())
+    await followTestSinkSnapshots(deferred, journal)
     deferred.bind({ journal, fence: 1, publish: vi.fn() })
     const translator = createClaudeJournalTranslator({ sink: deferred.sink })
     const approval = prompt({

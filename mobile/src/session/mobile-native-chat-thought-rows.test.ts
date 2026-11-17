@@ -184,12 +184,12 @@ vi.mock('lucide-react-native', () =>
     ].map((name) => [name, name])
   )
 )
-vi.mock('../components/MobileMarkdown', () => ({ MobileMarkdown: 'MobileMarkdown' }))
-vi.mock('./native-chat/transcript/MobileNativeChatMessageActionsSheet', () => ({
+vi.mock('../components/markdown/MobileMarkdown', () => ({ MobileMarkdown: 'MobileMarkdown' }))
+vi.mock('./native-chat/transcript/message-actions/MobileNativeChatMessageActionsSheet', () => ({
   MobileNativeChatMessageActionsSheet: 'MessageActionsSheet'
 }))
 
-import { MobileNativeChatMessage } from './native-chat/transcript/MobileNativeChatMessage'
+import { MobileNativeChatMessage } from './native-chat/transcript/messages/MobileNativeChatMessage'
 
 // Claude Code 2.1.x journals a thinking block with empty text; the transcript gives no state.
 const thought = (id: string, timestamp: number, text = ''): NativeChatMessage => ({

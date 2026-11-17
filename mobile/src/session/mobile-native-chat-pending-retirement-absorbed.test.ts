@@ -5,7 +5,7 @@ import type { NativeChatMessage } from '../../../src/shared/native-chat/native-c
 import {
   retireLandedMobileNativeChatPending,
   type MobileNativeChatPendingMessage
-} from './native-chat/transcript/mobile-native-chat-pending-echo'
+} from './native-chat/transcript/sending/mobile-native-chat-pending-echo'
 
 const FIXTURE = join(
   __dirname,

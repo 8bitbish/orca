@@ -2,11 +2,7 @@ import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RpcClient } from '../transport/rpc/rpc-client-contract'
-import { useMobileNativeChatStop } from './native-chat/composer/use-mobile-native-chat-stop'
-
-vi.mock('../terminal/worker-terminal-takeover-report', () => ({
-  reportWorkerTerminalUserInput: vi.fn()
-}))
+import { useMobileNativeChatStop } from './native-chat/composer/delivery/use-mobile-native-chat-stop'
 
 // Stop on a host that holds the queue: the host writes the interrupt and sends the next item.
 describe('useMobileNativeChatStop with the host queue', () => {

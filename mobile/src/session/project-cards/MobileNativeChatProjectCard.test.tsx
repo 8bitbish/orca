@@ -23,8 +23,8 @@ vi.mock('lucide-react-native', () => ({
   CornerDownLeft: 'CornerDownLeft',
   Pencil: 'Pencil'
 }))
-vi.mock('../../components/AgentStateDot', () => ({ AgentStateDot: 'AgentStateDot' }))
-vi.mock('../../components/MobileRepoIcon', () => ({ MobileRepoIcon: 'MobileRepoIcon' }))
+vi.mock('../../agents/presentation/AgentStateDot', () => ({ AgentStateDot: 'AgentStateDot' }))
+vi.mock('../../components/icons/MobileRepoIcon', () => ({ MobileRepoIcon: 'MobileRepoIcon' }))
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: async () => null, setItem: async () => {} }
 }))

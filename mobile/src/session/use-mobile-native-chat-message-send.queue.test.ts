@@ -5,14 +5,14 @@ import { createElement } from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RpcClient } from '../transport/rpc/rpc-client-contract'
-import type { MobileNativeChatSendOrigin } from './native-chat/transcript/mobile-native-chat-pending-echo'
-import { mobileNativeChatDraftDestination } from './native-chat/composer/mobile-native-chat-draft-inputs'
+import type { MobileNativeChatSendOrigin } from './native-chat/transcript/sending/mobile-native-chat-pending-echo'
+import { mobileNativeChatDraftDestination } from './native-chat/composer/drafts/mobile-native-chat-draft-inputs'
 import type { MobileQueueSubmitOutcome } from './use-mobile-native-chat-message-queue'
 
 const sendWithOutcome = vi.fn()
 const clearInputWrite = vi.fn()
 const heal = vi.fn()
-vi.mock('./native-chat/mobile-native-chat-send', () => ({
+vi.mock('./native-chat/composer/delivery/mobile-native-chat-send', () => ({
   sendMobileNativeChatMessageWithOutcome: (...args: unknown[]) => sendWithOutcome(...args),
   typeMobileNativeChatCommandWithOutcome: vi.fn(),
   clearMobileNativeChatInput: (...args: unknown[]) => clearInputWrite(...args),
@@ -21,7 +21,7 @@ vi.mock('./native-chat/mobile-native-chat-send', () => ({
   MOBILE_NATIVE_CHAT_SEND_TIMEOUT_MS: 15_000,
   MOBILE_NATIVE_CHAT_MIN_WRITE_TIMEOUT_MS: 2_000
 }))
-vi.mock('./native-chat/mobile-native-chat-stale-input', () => ({
+vi.mock('./native-chat/composer/delivery/mobile-native-chat-stale-input', () => ({
   healMobileNativeChatStaleInput: (...args: unknown[]) => heal(...args)
 }))
 

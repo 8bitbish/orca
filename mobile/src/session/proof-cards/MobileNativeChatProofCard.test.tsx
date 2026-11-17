@@ -105,11 +105,11 @@ vi.mock('expo-video', () => ({
     return player
   }
 }))
-vi.mock('../../components/AgentStateDot', () => ({
+vi.mock('../../agents/presentation/AgentStateDot', () => ({
   AgentStateDot: 'AgentStateDot',
   agentStateDotColor: () => '#fff'
 }))
-vi.mock('../../components/MobileRepoIcon', () => ({ MobileRepoIcon: 'MobileRepoIcon' }))
+vi.mock('../../components/icons/MobileRepoIcon', () => ({ MobileRepoIcon: 'MobileRepoIcon' }))
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: async () => null, setItem: async () => {} }
 }))

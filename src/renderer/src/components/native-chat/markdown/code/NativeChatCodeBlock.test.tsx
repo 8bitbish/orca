@@ -20,7 +20,7 @@ vi.mock('@/lib/syntax-highlighting/oniguruma', async () => ({
 }))
 
 // Mermaid itself is the editor's renderer; this suite only checks it is routed there.
-vi.mock('@/components/editor/MermaidBlock', () => ({
+vi.mock('@/components/editor/diagrams/MermaidBlock', () => ({
   default: ({ content }: { content: string }) => <div data-testid="mermaid-block">{content}</div>
 }))
 
