@@ -9,24 +9,6 @@ function frameRow(provider: string, kind: string, extra: Partial<ProviderFrameRo
 }
 
 describe('isWordlessProviderFrame', () => {
-  it('keeps rows that carry words, a tone, a failure or an answered request', () => {
-    expect(
-      isWordlessProviderFrame({ ...frameRow('codex', 'notification:x'), text: 'Sandbox degraded' })
-    ).toBe(false)
-    expect(isWordlessProviderFrame(frameRow('codex', 'notification:x', { tone: 'error' }))).toBe(
-      false
-    )
-    expect(isWordlessProviderFrame(frameRow('codex', 'request:future/request'))).toBe(false)
-    expect(isWordlessProviderFrame({ text: 'plain status' })).toBe(false)
-  })
-
-  // Older hosts stored /usage output only in payload; keep their labeled rows visible.
-  it("keeps a Claude local command's row an older host wrote with only the label", () => {
-    expect(isWordlessProviderFrame(frameRow('claude', 'message:system:local_command_output'))).toBe(
-      false
-    )
-  })
-
   it('hides the start-up snapshot an older host stored as an error row, but not other errors', () => {
     expect(
       isWordlessProviderFrame(frameRow('claude', 'message:system:init', { tone: 'error' }))

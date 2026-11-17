@@ -3,7 +3,7 @@ import type { TerminalQueuedMessage } from '../../../src/shared/terminal-message
 import {
   normalizeNativeChatUserText,
   normalizedNativeChatUserMessageText
-} from '../../../src/shared/native-chat/transcript/native-chat-image-transcript-markers'
+} from '../../../src/shared/native-chat/transcript/images/native-chat-image-transcript-markers'
 
 /** A queued message the host can no longer send, kept here so the user can restore it. */
 export type MobileQueuedMessageOrphan = {

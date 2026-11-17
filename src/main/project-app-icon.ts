@@ -1,6 +1,6 @@
 import { readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { MAX_REPO_ICON_UPLOAD_BYTES } from '../shared/repo-icon'
+import { MAX_REPO_ICON_UPLOAD_BYTES } from '../shared/repository/appearance/repo-icon'
 import { detectRepoFileIcon, readLocalImageIcon } from './repository-icons/repo-icon-file-detection'
 import { resolveFilesystemRouteForHost } from './providers/execution-host-provider-dispatch'
 

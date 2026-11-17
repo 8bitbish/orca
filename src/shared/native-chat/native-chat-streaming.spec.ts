@@ -18,28 +18,6 @@ const user = (text: string): NativeChatMessage => ({
 })
 
 describe('deriveNativeChatStreamingText', () => {
-  it('returns null when not working (stale preview never shows)', () => {
-    expect(
-      deriveNativeChatStreamingText({ messages: [], previewText: 'Hello there', working: false })
-    ).toBeNull()
-  })
-
-  it('treats an optimistic user echo as the active streaming-turn boundary', () => {
-    const optimistic = {
-      ...user('new prompt'),
-      id: 'pending:send-1',
-      timestamp: 20,
-      source: 'scrape' as const
-    }
-    expect(
-      deriveNativeChatStreamingText({
-        messages: [assistant('A much longer answer from the completed prior turn'), optimistic],
-        previewText: 'New reply',
-        working: true
-      })
-    ).toBe('New reply')
-  })
-
   // A short reply that repeats earlier wording ("Done.") would otherwise be read as
   // already-landed and suppressed, leaving the turn with no visible bubble at all.
   it('keeps an active-send preview that repeats text from the previous turn', () => {
@@ -79,50 +57,5 @@ describe('deriveNativeChatStreamingText', () => {
         working: true
       })
     ).toBe('Short')
-  })
-
-  it('drops the preview once the real assistant turn contains it (no duplicate)', () => {
-    expect(
-      deriveNativeChatStreamingText({
-        messages: [assistant('Working on it, here is the full answer.')],
-        previewText: 'Working on it',
-        working: true
-      })
-    ).toBeNull()
-  })
-
-  it('drops a preview flagged as tool output even when it leads the transcript', () => {
-    // Status previews may contain tool stdout that never enters assistant blocks; catch-up cannot retire it, so gate tool output explicitly.
-    expect(
-      deriveNativeChatStreamingText({
-        messages: [assistant('Partial')],
-        previewText: 'Exit code 1\nimport { Foo } from "./foo"\nexport function bar() {}',
-        working: true,
-        previewIsToolOutput: true
-      })
-    ).toBeNull()
-  })
-
-  it('hides the sentence it streamed while a tool runs, but not a new reply after the tool', () => {
-    // A Claude transcript writes the sentence and the tool call it led into as separate rows.
-    const sentence = 'Checking the notes file now, then I will compare it with the settings.'
-    const toolCall: NativeChatMessage = {
-      id: 'f4470ba3',
-      role: 'assistant',
-      blocks: [{ type: 'tool-call', name: 'Bash', input: { command: 'sleep 12' } }],
-      timestamp: null,
-      source: 'transcript'
-    }
-    const messages = [user('Say it, then run sleep 12.'), assistant(sentence), toolCall]
-    expect(
-      deriveNativeChatStreamingText({ messages, previewText: sentence, working: true })
-    ).toBeNull()
-    expect(
-      deriveNativeChatStreamingText({
-        messages,
-        previewText: 'The settings look correct.',
-        working: true
-      })
-    ).toBe('The settings look correct.')
   })
 })

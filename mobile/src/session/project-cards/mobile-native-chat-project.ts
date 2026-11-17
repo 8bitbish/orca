@@ -3,7 +3,7 @@
 // screen shows. Losing the host is never evidence the work stopped
 // (docs/reference/ssh-execution-boundary.md), so a card then reads `unverifiable`.
 
-import type { RuntimeWorktreeAgentRow } from '../../../../src/shared/runtime-types'
+import type { RuntimeWorktreeAgentRow } from '../../../../src/shared/worktree/catalog/runtime-worktree-contracts'
 import {
   nativeChatProjectWorkspaceLabel,
   resolveNativeChatProjectTarget,
@@ -11,14 +11,14 @@ import {
   type NativeChatProjectWorktreeRow
 } from '../../../../src/shared/native-chat-project-target'
 import type { MobileHostRepoIcon } from '../../host-screen/host-screen-reply-schema'
-import type { Worktree } from '../../worktree/workspace-list-types'
+import type { Worktree } from '../../worktree/workspace-list/workspace-list-types'
 import {
   agentDisplayLabel,
   agentDotState,
   agentRowTimeAt,
   formatTimeAgo,
   type AgentDotState
-} from '../../worktree/agent-row-display'
+} from '../../worktree/agent-lineage/agent-row-display'
 
 export type MobileNativeChatProjectRepo = NativeChatProjectRepoRow & {
   repoIcon?: MobileHostRepoIcon

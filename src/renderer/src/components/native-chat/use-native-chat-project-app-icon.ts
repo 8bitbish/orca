@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import { nativeChatProjectAppIconLookupAllowed } from './native-chat-project-icon'
 
 // One lookup per repo per window: every chip and card for a repo shares it.

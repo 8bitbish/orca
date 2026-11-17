@@ -1,11 +1,11 @@
 import { useCallback } from 'react'
-import type { PendingNativeChatImage } from './mobile-native-chat-image-attachment'
+import type { PendingNativeChatImage } from './attachments/mobile-native-chat-image-attachment'
 import {
   addMobileNativeChatDraftImages,
   mobileNativeChatDraftDestination,
   removeMobileNativeChatDraftImages,
   type MobileNativeChatDraftDestination
-} from './mobile-native-chat-draft-inputs'
+} from './drafts/mobile-native-chat-draft-inputs'
 
 export type MobileNativeChatImageQueueSend = (
   text: string,

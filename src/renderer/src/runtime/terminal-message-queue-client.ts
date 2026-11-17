@@ -1,4 +1,4 @@
-import type { RuntimeRpcResponse } from '../../../shared/runtime-rpc-envelope'
+import type { RuntimeRpcResponse } from '../../../shared/remote-runtime/rpc/runtime-rpc-envelope'
 import { TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY } from '../../../shared/terminal-message-queue-capability'
 import type {
   TerminalMessageQueueEditResult,
@@ -12,7 +12,7 @@ import type {
 import { getRuntimeEnvironmentRevision } from './rpc/environment-revisions/runtime-environment-revision'
 import { callRuntimeRpc } from './rpc/calls/runtime-rpc-call'
 import { runtimeEnvironmentSupportsCapability } from './rpc/compatibility/runtime-capability-proof'
-import type { RuntimeClientTarget } from '../../../shared/runtime-client-target'
+import type { RuntimeClientTarget } from '../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import {
   ensureLocalRuntimeCapabilities,
   readLocalRuntimeCapabilitiesOrUnknown

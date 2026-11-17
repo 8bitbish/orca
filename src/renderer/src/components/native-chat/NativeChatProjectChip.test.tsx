@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
 import { useAppStore } from '@/store'
 import { makeWorktree } from '../../store/slices/worktrees/worktree.test-fixture'

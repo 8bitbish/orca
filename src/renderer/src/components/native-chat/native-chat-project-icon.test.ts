@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { REPO_COLORS } from '../../../../shared/constants'
-import type { RepoIcon } from '../../../../shared/repo-icon'
+import type { RepoIcon } from '../../../../shared/repository/appearance/repo-icon'
 import {
   nativeChatProjectAppIconLookupAllowed,
   nativeChatProjectMonogram,

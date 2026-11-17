@@ -1,9 +1,9 @@
 import { useCallback } from 'react'
-import type { MobileNativeChatImageAttachments } from './use-mobile-native-chat-image-attachments'
+import type { MobileNativeChatImageAttachments } from './attachments/use-mobile-native-chat-image-attachments'
 import {
   readMobileNativeChatDraftInputs,
   mobileNativeChatDraftDestination
-} from './mobile-native-chat-draft-inputs'
+} from './drafts/mobile-native-chat-draft-inputs'
 import {
   routeMobileNativeChatImageSendToQueue,
   useMobileNativeChatRestoreImages,

@@ -1,4 +1,7 @@
-import { agentImagePasteWrites, formatAgentImagePath } from '../../shared/agent-image-paste'
+import {
+  agentImagePasteWrites,
+  formatAgentImagePath
+} from '../../shared/native-chat/input/composer/agent-image-paste'
 import { buildAgentPromptPasteBytes } from '../../shared/agent-launch/startup/agent-prompt-injection'
 import type { TerminalQueuedMessage } from '../../shared/terminal-message-queue-contract'
 import type { TerminalMessageQueueDeliveryOutcome } from './terminal-message-queue'

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { MobileRepoIcon } from '../../components/MobileRepoIcon'
+import { MobileRepoIcon } from '../../components/icons/MobileRepoIcon'
 import { colors } from '../../theme/mobile-theme'
 import { repoColor } from '../../tasks/repositories/mobile-tasks-repository-presentation'
 import type { MobileNativeChatProjectRepo } from './mobile-native-chat-project'

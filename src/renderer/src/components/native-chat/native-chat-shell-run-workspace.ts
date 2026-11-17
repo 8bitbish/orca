@@ -2,10 +2,10 @@
 // names, on the host that executes that workspace. When it cannot run, why not.
 
 import { createContext } from 'react'
-import { isWslUncPath } from '../../../../shared/wsl-paths'
+import { isWslUncPath } from '../../../../shared/file-access/wsl-paths'
 import { getSshTargetIdForExecutionHost } from '../../../../shared/execution-host'
-import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
-import { WINDOWS_GIT_BASH_SHELL } from '../../../../shared/windows-terminal-shell'
+import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
+import { WINDOWS_GIT_BASH_SHELL } from '../../../../shared/shell/launch/windows-terminal-shell'
 import { getExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
 import { ipcOrRuntimeTargetForHostId } from '@/runtime/rpc/targets/runtime-client-target'
 import type { AppState } from '@/store/types'

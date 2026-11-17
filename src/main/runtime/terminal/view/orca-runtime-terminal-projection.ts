@@ -4,7 +4,7 @@ import {
 } from '../../../../shared/terminal/input/terminal-composer-draft'
 import type { HeadlessEmulator } from '../../../daemon/emulation/headless-emulator'
 import type { HeadlessTerminalRow } from '../../../daemon/emulation/headless-terminal-rows'
-import type { RuntimeTerminalRowMetadata } from '../../../../shared/runtime-terminal-contracts'
+import type { RuntimeTerminalRowMetadata } from '../../../../shared/terminal/runtime/runtime-terminal-contracts'
 
 // Why local: importing orca-runtime-core would pull the main process into the CLI's type graph.
 type ComposerProjectionFields = { draft?: string; suggestion?: string }

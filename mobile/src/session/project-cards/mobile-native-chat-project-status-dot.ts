@@ -1,4 +1,4 @@
-import type { AgentDotState } from '../../worktree/agent-row-display'
+import type { AgentDotState } from '../../worktree/agent-lineage/agent-row-display'
 import type { MobileNativeChatProjectStatus } from './mobile-native-chat-project'
 
 /** The agent-state glyph a project status draws with, as on desktop. */

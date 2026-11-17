@@ -4,8 +4,8 @@ import { cachedHostRepos, cachedHostWorktrees } from '../../host-screen/catalog/
 import { hostRepoCatalogSnapshotRead } from '../../host-screen/host-screen-operations'
 import type { RpcClient } from '../../transport/rpc/rpc-client-contract'
 import type { ConnectionState } from '../../transport/connection/connection-state'
-import type { Worktree } from '../../worktree/workspace-list-types'
-import { WorktreeCatalogSnapshotClient } from '../../worktree/worktree-catalog-snapshot-client'
+import type { Worktree } from '../../worktree/workspace-list/workspace-list-types'
+import { WorktreeCatalogSnapshotClient } from '../../worktree/catalog/worktree-catalog-snapshot-client'
 import type {
   MobileNativeChatProjectCatalog,
   MobileNativeChatProjectRepo

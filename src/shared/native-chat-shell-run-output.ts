@@ -1,6 +1,6 @@
 // What a chat Run keeps of its output, and whether that output is asking for input.
 
-import { stripAnsiEscapeSequences } from './ansi-escape-sequences'
+import { stripAnsiEscapeSequences } from './terminal/protocol/escape/ansi-escape-sequences'
 
 export const NATIVE_CHAT_SHELL_RUN_OUTPUT_MAX_LINES = 200
 export const NATIVE_CHAT_SHELL_RUN_OUTPUT_MAX_BYTES = 64 * 1024

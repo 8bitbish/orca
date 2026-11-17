@@ -6,7 +6,7 @@ import {
   MarkdownProseSizeContext,
   MarkdownSelectableContext,
   MarkdownText
-} from './mobile-markdown-text'
+} from './markdown/mobile-markdown-text'
 
 // Longer spans stay text so they can wrap; a view cannot break across lines.
 const MAX_BOXED_LENGTH = 40

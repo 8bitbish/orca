@@ -3,17 +3,15 @@
 // the workspace executes them — the local one for local and SSH workspaces, the
 // paired host for a remote environment — so a run never lands on the wrong machine.
 
-import type { RuntimeRpcResponse } from '../../../../shared/runtime-rpc-envelope'
-import type {
-  RuntimeTerminalCreate,
-  RuntimeTerminalSend,
-  RuntimeTerminalShow
-} from '../../../../shared/runtime-terminal-contracts'
+import type { RuntimeRpcResponse } from '../../../../shared/remote-runtime/rpc/runtime-rpc-envelope'
+import type { RuntimeTerminalShow } from '../../../../shared/terminal/runtime/runtime-terminal-contracts'
+import type { RuntimeTerminalCreate } from '../../../../shared/terminal/runtime/runtime-terminal-create-contract'
+import type { RuntimeTerminalSend } from '../../../../shared/terminal/runtime/runtime-terminal-send-contract'
 import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
-import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
+import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import { getRuntimeEnvironmentRevision } from '@/runtime/rpc/environment-revisions/runtime-environment-revision'
 import { toRuntimeWorktreeSelector } from '@/runtime/rpc/targets/runtime-worktree-selector'
-import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 
 export const NATIVE_CHAT_SHELL_RUN_TERMINAL_TITLE = 'Runs'
 const RPC_TIMEOUT_MS = 15_000

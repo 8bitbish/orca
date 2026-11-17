@@ -9,13 +9,13 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import {
   nativeChatHarnessTurns,
   nativeChatRowTurnKeys
-} from '../../../../shared/native-chat/transcript/native-chat-turn-grouping'
+} from '../../../../shared/native-chat/transcript/turns/native-chat-turn-grouping'
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { NativeChatMessageList } from './NativeChatMessageList'
 import { createNativeChatMessageListProjection } from './conversation/projection/native-chat-message-list-projection'
 import { assembleNativeChatSession } from './session/terminal/assembly/native-chat-session-assembler'
-import { compareNativeChatDisplayMessages as compareMessages } from '../../../../shared/native-chat/transcript/native-chat-message-order'
+import { compareNativeChatDisplayMessages as compareMessages } from '../../../../shared/native-chat/transcript/messages/native-chat-message-order'
 import {
   nativeChatLatestTurnId,
   nativeChatTranscriptSettledTurns

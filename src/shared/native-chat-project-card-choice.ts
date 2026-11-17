@@ -5,7 +5,7 @@
 // their text in a small local record.
 
 import type { NativeChatMessage } from './native-chat/native-chat-types'
-import { deriveNativeChatRowContent } from './native-chat/transcript/native-chat-row-content'
+import { deriveNativeChatRowContent } from './native-chat/transcript/row-content/native-chat-row-content'
 import type { NativeChatCardAction } from './native-chat-card-actions'
 import { nativeChatCardPressMatches } from './native-chat-card-press'
 

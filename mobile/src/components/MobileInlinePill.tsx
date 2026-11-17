@@ -1,7 +1,7 @@
 import { useContext, type ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors } from '../theme/mobile-theme'
-import { inlineViewBaselineShift, MarkdownProseSizeContext } from './mobile-markdown-text'
+import { inlineViewBaselineShift, MarkdownProseSizeContext } from './markdown/mobile-markdown-text'
 
 function pillFontSize(proseSize: number): number {
   return Math.round(proseSize * 0.82)

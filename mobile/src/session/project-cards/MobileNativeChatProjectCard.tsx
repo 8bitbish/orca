@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ArrowUpRight } from 'lucide-react-native'
 import { parseNativeChatProjectCardPayload } from '../../../../src/shared/native-chat-project-card-payload'
 import { nativeChatProjectCardKey } from '../../../../src/shared/native-chat-project-card-choice'
-import { AgentStateDot } from '../../components/AgentStateDot'
+import { AgentStateDot } from '../../agents/presentation/AgentStateDot'
 import { colors, radii, spacing, typography } from '../../theme/mobile-theme'
 import {
   MOBILE_NATIVE_CHAT_PROJECT_STATUS_LABEL,

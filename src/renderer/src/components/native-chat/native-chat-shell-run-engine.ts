@@ -5,7 +5,7 @@
 // one the end marker carries. Only a user's click reaches `start`; nothing here
 // listens to the chat, the agent, or IPC.
 
-import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
+import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type { NativeChatShellRunBlock } from '../../../../shared/native-chat-shell-run-block'
 import {
   buildNativeChatShellRunCommandLine,

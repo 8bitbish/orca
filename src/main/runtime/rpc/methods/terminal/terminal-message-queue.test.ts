@@ -3,7 +3,7 @@ import { RpcDispatcher } from '../../dispatcher'
 import type { RpcRequest } from '../../core'
 import type { OrcaRuntimeService } from '../../../orca-runtime'
 import { isMobileRpcMethodAllowed } from '../../server/runtime-rpc-mobile-method-access'
-import { RUNTIME_CAPABILITIES } from '../../../../../shared/protocol-version'
+import { RUNTIME_CAPABILITIES } from '../../../../../shared/remote-runtime/protocol/protocol-version'
 import {
   TERMINAL_MESSAGE_QUEUE_RUNTIME_CAPABILITY,
   TERMINAL_MESSAGE_QUEUE_UNSUBSCRIBE_RUNTIME_CAPABILITY

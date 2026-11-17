@@ -15,7 +15,7 @@ import {
   parseNativeChatProofMediaInfoReply,
   parseNativeChatProofMediaReadReply
 } from '../../../../../shared/native-chat-proof-media-rpc-contract'
-import { RUNTIME_CAPABILITIES } from '../../../../../shared/protocol-version'
+import { RUNTIME_CAPABILITIES } from '../../../../../shared/remote-runtime/protocol/protocol-version'
 import { RpcDispatcher } from '../../dispatcher'
 import type { RpcRequest } from '../../core'
 import type { OrcaRuntimeService } from '../../../orca-runtime'

@@ -9,7 +9,7 @@ import type {
   NativeChatToolCallBlock
 } from '../../../../../../shared/native-chat/native-chat-types'
 import { withoutNativeChatCardPressTag } from '../../../../../../shared/native-chat-card-press'
-import { deriveNativeChatRowContent } from '../../../../../../shared/native-chat/transcript/native-chat-row-content'
+import { deriveNativeChatRowContent } from '../../../../../../shared/native-chat/transcript/row-content/native-chat-row-content'
 import { isNativeChatThoughtMarker } from '../../../../../../shared/native-chat-thought-marker'
 import { NativeChatReasoningRow } from '../reasoning/NativeChatReasoningRow'
 import { NativeChatNoticeRow } from '../notices/NativeChatNoticeRow'

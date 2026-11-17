@@ -8,7 +8,7 @@ import {
   pendingSendsAsMessages,
   prunePendingSends,
   type NativeChatPendingSend
-} from '../../../../shared/native-chat/transcript/native-chat-pending-sends'
+} from '../../../../shared/native-chat/transcript/pending-sends/native-chat-pending-sends'
 
 const FIXTURE = join(
   __dirname,

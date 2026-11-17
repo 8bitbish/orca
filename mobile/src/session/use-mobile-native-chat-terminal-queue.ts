@@ -3,18 +3,18 @@ import type { Dispatch, SetStateAction } from 'react'
 import type { NativeChatMessage } from '../../../src/shared/native-chat/native-chat-types'
 import type { TerminalQueuedMessage } from '../../../src/shared/terminal-message-queue-contract'
 import type { RpcClient } from '../transport/rpc/rpc-client-contract'
-import type { MobileNativeChatResolution } from './native-chat/mobile-native-chat-eligibility'
+import type { MobileNativeChatResolution } from './native-chat/conversation/mobile-native-chat-eligibility'
 import type {
   MobileNativeChatAcceptSend,
   MobileNativeChatSendOrigin
-} from './native-chat/transcript/mobile-native-chat-pending-echo'
+} from './native-chat/transcript/sending/mobile-native-chat-pending-echo'
 import { mobileQueueOrphanReachedTranscript } from './mobile-terminal-message-queue-orphans'
 import {
   queuedImagesWithPreviews,
   rememberQueuedImagePreviews
 } from './mobile-terminal-message-queue-previews'
-import type { PendingNativeChatImage } from './native-chat/composer/mobile-native-chat-image-attachment'
-import { classifyMobileNativeChatSend } from './native-chat/composer/mobile-native-chat-send-classification'
+import type { PendingNativeChatImage } from './native-chat/composer/attachments/mobile-native-chat-image-attachment'
+import { classifyMobileNativeChatSend } from './native-chat/composer/delivery/mobile-native-chat-send-classification'
 import { routeMobileNativeChatSendThroughQueue } from './mobile-native-chat-queue-send'
 import type { MobileNativeChatQueueStackProps } from './MobileNativeChatTerminalQueuedMessages'
 import {

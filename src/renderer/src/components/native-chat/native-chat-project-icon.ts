@@ -7,8 +7,8 @@
 
 import { REPO_COLORS } from '../../../../shared/constants'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
-import type { RepoIcon } from '../../../../shared/repo-icon'
-import type { Repo } from '../../../../shared/repo-types'
+import type { RepoIcon } from '../../../../shared/repository/appearance/repo-icon'
+import type { Repo } from '../../../../shared/repository/repo-types'
 
 export type NativeChatProjectIconSource =
   | { kind: 'payload'; glyph: string }

@@ -3,7 +3,7 @@ import {
   NativeChatSlackImage,
   NativeChatSlackNames
 } from '../../../../../shared/rpc-contract/native-chat-slack-params'
-import { remoteRpcContentBudget } from '../../../../../shared/remote-rpc-content-budget'
+import { remoteRpcContentBudget } from '../../../../../shared/remote-runtime/rpc/remote-rpc-content-budget'
 import {
   readSlackCacheImage,
   SLACK_CACHE_IMAGE_MAX_FILE_BYTES

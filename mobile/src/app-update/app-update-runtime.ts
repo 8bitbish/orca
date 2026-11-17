@@ -2,6 +2,7 @@ import Constants from 'expo-constants'
 import * as Linking from 'expo-linking'
 import { useSyncExternalStore } from 'react'
 import { AppState, Platform } from 'react-native'
+import { OrcaPlayStorePresence } from '../../modules/orca-play-store-presence/src'
 import {
   loadAppUpdatePreferences,
   saveAppUpdateCheck,
@@ -11,13 +12,22 @@ import { appStoreUpdateSource } from './app-store-update-source'
 import { createAppUpdateChecker, type AppUpdateState } from './app-update-checker'
 import type { AppUpdateSource } from './app-update-source'
 import {
+  ANDROID_RELEASE_TAG_PREFIX,
   createGithubReleaseUpdateSource,
-  githubReleaseUpdateSource,
+  RETIRED_ANDROID_RELEASE_TAG_PREFIX,
   type GithubReleaseChannel
 } from './github-release-update-source'
 
 // expoConfig is embedded binary manifest because app does not use expo-updates; SDK 55 removed nativeAppVersion. Revisit version source if adopting OTA updates.
 export const installedAppVersion: string | null = Constants.expoConfig?.version ?? null
+
+/** The GitHub APK's package. Orca moved to Google Play as dev.orca.app, so this app gets no more updates. */
+export const isRetiredGithubAndroidApp =
+  Platform.OS === 'android' && Constants.expoConfig?.android?.package === 'com.stably.orca.mobile'
+
+/** Play delivers this install's updates and forbids other update channels. */
+export const isGooglePlayInstall =
+  Platform.OS === 'android' && (OrcaPlayStorePresence?.isInstalledByPlayStore() ?? false)
 
 function personalGithubChannel(value: unknown): GithubReleaseChannel | null {
   if (
@@ -35,11 +45,22 @@ function personalGithubChannel(value: unknown): GithubReleaseChannel | null {
 /** The channel that installed this binary. */
 function resolveAppUpdateSource(): AppUpdateSource | null {
   if (Platform.OS === 'android') {
+    if (isGooglePlayInstall) {
+      return null
+    }
     // A personal build (app.config.js) installs beside the official app, so it updates from its own feed.
     const channel = personalGithubChannel(Constants.expoConfig?.extra?.appUpdateGithub)
-    return channel
-      ? createGithubReleaseUpdateSource((input, init) => fetch(input, init), channel)
-      : githubReleaseUpdateSource
+    if (channel) {
+      return createGithubReleaseUpdateSource(
+        (input, init) => fetch(input, init),
+        channel.tagPrefix,
+        channel.repo
+      )
+    }
+    return createGithubReleaseUpdateSource(
+      (input, init) => fetch(input, init),
+      isRetiredGithubAndroidApp ? RETIRED_ANDROID_RELEASE_TAG_PREFIX : ANDROID_RELEASE_TAG_PREFIX
+    )
   }
   if (Platform.OS === 'ios') {
     return appStoreUpdateSource
@@ -47,8 +68,13 @@ function resolveAppUpdateSource(): AppUpdateSource | null {
   return null
 }
 
+const appUpdateSource = resolveAppUpdateSource()
+
+/** False where no channel can be asked, so there is nothing to check by hand. */
+export const canCheckForAppUpdates = appUpdateSource !== null
+
 export const appUpdateChecker = createAppUpdateChecker({
-  source: resolveAppUpdateSource(),
+  source: appUpdateSource,
   installedVersion: installedAppVersion,
   now: () => Date.now(),
   setTimer: (run, delayMs) => setTimeout(run, delayMs),

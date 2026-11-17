@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import {
   nativeChatPendingSendPlacement,
   type NativeChatPendingSend
-} from '../../../../src/shared/native-chat/transcript/native-chat-pending-sends'
+} from '../../../../src/shared/native-chat/transcript/pending-sends/native-chat-pending-sends'
 
 /** Marks each pending echo active or queued against the turn that was working when it was sent. */
 export function useMobileNativeChatPlacedPending<

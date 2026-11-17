@@ -4,10 +4,10 @@
 import type { Code } from 'mdast'
 import { isValidElement, type ReactNode } from 'react'
 import { MobileMarkupPreview } from './markup-preview/MobileMarkupPreview'
-import { MobileMarkdownCodeBlock } from './MobileMarkdownCodeBlock'
+import { MobileMarkdownCodeBlock } from './markdown/blocks/MobileMarkdownCodeBlock'
 import { mobileMarkupPreviewKind } from './markup-preview/mobile-markup-preview-kind'
-import { codeFenceClosed } from './mobile-markdown-code-nodes'
-import type { MarkdownBlockContext } from './mobile-markdown-blocks'
+import { codeFenceClosed } from './markdown/blocks/mobile-markdown-code-nodes'
+import type { MarkdownBlockContext } from './markdown/blocks/mobile-markdown-blocks'
 
 type MobileMarkdownAgentFenceContext = Pick<
   MarkdownBlockContext,

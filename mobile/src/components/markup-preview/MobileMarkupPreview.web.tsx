@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native'
-import { styles } from '../mobile-markdown-styles'
+import { styles } from '../markdown/mobile-markdown-styles'
 import type { MobileMarkupPreviewProps } from './MobileMarkupPreview'
 
 /** Web sibling: the page has no second content process to sandbox in, so it stays code. */

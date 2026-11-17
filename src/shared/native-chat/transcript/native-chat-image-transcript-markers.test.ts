@@ -2,16 +2,18 @@ import { describe, expect, it } from 'vitest'
 import type { NativeChatMessage } from '../native-chat-types'
 import { imageReferenceToken } from '../native-chat-image-reference'
 import {
-  imageReferencesToPromptMarkers,
   imageSourcePathFromText,
-  promptMarkersToImageReferences,
   isImageSourceUserTurn,
   normalizeImageTranscriptMessages,
-  normalizeNativeChatUserText,
+  normalizeNativeChatUserText
+} from './images/native-chat-image-transcript-markers'
+import {
+  imageReferencesToPromptMarkers,
+  promptMarkersToImageReferences,
   stripSentImagePromptMarkers,
   withoutSentImagePromptMarkers
-} from './native-chat-image-transcript-markers'
-import { formatNativeChatFileReference } from '../../agent-image-paste'
+} from './images/native-chat-sent-image-prompt-markers'
+import { formatNativeChatFileReference } from '../input/composer/agent-image-paste'
 
 function userText(id: string, text: string): NativeChatMessage {
   return {

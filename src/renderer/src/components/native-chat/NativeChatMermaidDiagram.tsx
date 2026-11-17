@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
-import MermaidBlock, { type RenderedMermaidDiagram } from '@/components/editor/MermaidBlock'
+import MermaidBlock, {
+  type RenderedMermaidDiagram
+} from '@/components/editor/diagrams/MermaidBlock'
 import { useAppStore } from '@/store'
 import { nativeChatMermaidThemeVariables } from './native-chat-mermaid-theme'
 import { useNativeChatThemeSnapshot } from './use-native-chat-theme-snapshot'

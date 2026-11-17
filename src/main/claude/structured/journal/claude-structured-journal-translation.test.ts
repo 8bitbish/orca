@@ -16,14 +16,13 @@ import {
   type StructuredAgentSessionEventSink
 } from '../../../native-chat/agent-session-wire/journal-ingress/structured-agent-session-event-sink'
 import type { ClaudePendingPrompt } from '../permissions/claude-prompt-registry'
-import { readAgentJournalTurn } from '../../../../shared/agent-session/lifecycle/agent-session-turn-record'
+import { readAgentJournalTurn } from '../../../../shared/agent-session/lifecycle/records/agent-session-turn-record'
 import { createClaudeJournalTranslator } from './claude-structured-journal-translation'
-import {
-  closeTestJournalHostDatabases,
-  openTestJournalHostDatabase
-} from '../../../native-chat/agent-session-journal/store-lifecycle/journal-host-database-test-support'
-import { testEventSinkLogging } from '../../../native-chat/agent-session-wire/host/testing/structured-agent-session-logger-test-support'
-import { claudeProviderHandle } from '../../../../shared/agent-session/lifecycle/agent-session-provider-handle-encoding'
+import { closeTestJournalHostDatabases } from '../../../native-chat/agent-session-journal/store-lifecycle/journal-host-database-test-support'
+import { readTestJournalItems } from '../../../native-chat/agent-session-journal/journal-observation.test-support'
+import { openTestAgentSessionDatabase } from '../../../runtime/agent-session/records/agent-session-record-store-test-harness'
+import { testEventSinkLogging } from '../../../native-chat/agent-session-wire/host/testing/structured-agent-session-logger.test-fixture'
+import { claudeProviderHandle } from '../../../../shared/agent-session/lifecycle/provider-handles/agent-session-provider-handle-encoding'
 
 // Claude Code 2.1.258 / SDK 0.3.251 capture: only message.id links partial and final frames.
 function sinkState() {
@@ -193,7 +192,7 @@ describe('Claude structured journal translation', () => {
   it('journals a count-to-200 stream as one assistant item carrying the complete reply', async () => {
     const journal = await openAgentSessionJournal({
       identity: JOURNAL_IDENTITY,
-      database: openTestJournalHostDatabase(journalRoot),
+      database: await openTestAgentSessionDatabase(journalRoot),
       now: () => 1_700_000_000_000,
       mintEpoch: () => 'epoch-1'
     })
@@ -238,7 +237,7 @@ describe('Claude structured journal translation', () => {
     }
     await deferred.drained()
 
-    const items: AgentJournalRenderItem[] = journal.snapshot().items
+    const items: AgentJournalRenderItem[] = await readTestJournalItems(journal)
     const assistant = assistantMessages(items)
     expect(assistant.map((item) => item.itemId)).toEqual([
       'claude:claude-session:block%3Amsg_count%3A0'
@@ -254,7 +253,7 @@ describe('Claude structured journal translation', () => {
   it('restores a cancelled prompt as terminal history after reopening the journal', async () => {
     const journal = await openAgentSessionJournal({
       identity: JOURNAL_IDENTITY,
-      database: openTestJournalHostDatabase(journalRoot),
+      database: await openTestAgentSessionDatabase(journalRoot),
       now: () => 1_700_000_000_000,
       mintEpoch: () => 'epoch-1'
     })
@@ -283,11 +282,11 @@ describe('Claude structured journal translation', () => {
 
     const reopened = await openAgentSessionJournal({
       identity: JOURNAL_IDENTITY,
-      database: openTestJournalHostDatabase(journalRoot),
+      database: await openTestAgentSessionDatabase(journalRoot),
       now: () => 1_700_000_000_000,
       mintEpoch: () => 'epoch-2'
     })
-    expect(reopened.snapshot().items).toEqual([
+    expect(await readTestJournalItems(reopened)).toEqual([
       expect.objectContaining({
         body: expect.objectContaining({
           kind: 'approval',

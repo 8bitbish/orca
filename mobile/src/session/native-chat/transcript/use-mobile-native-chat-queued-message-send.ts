@@ -2,11 +2,11 @@ import { useCallback } from 'react'
 import {
   useMobileNativeChatMessageSend,
   type MobileNativeChatMessageSend
-} from './use-mobile-native-chat-message-send'
-import { openMobileNativeChatSendBudget } from '../composer/mobile-native-chat-send'
-import { healMobileNativeChatStaleInput } from '../composer/mobile-native-chat-stale-input'
-import { classifyMobileNativeChatSend } from '../composer/mobile-native-chat-send-classification'
-import { readMobileNativeChatSkillOrigin } from '../composer/mobile-native-chat-draft-store'
+} from './sending/use-mobile-native-chat-message-send'
+import { openMobileNativeChatSendBudget } from '../composer/delivery/mobile-native-chat-send'
+import { healMobileNativeChatStaleInput } from '../composer/delivery/mobile-native-chat-stale-input'
+import { classifyMobileNativeChatSend } from '../composer/delivery/mobile-native-chat-send-classification'
+import { readMobileNativeChatSkillOrigin } from '../composer/drafts/mobile-native-chat-draft-store'
 import { useMobileNativeChatTerminalSendOrigin } from '../use-mobile-native-chat-terminal-send-origin'
 import {
   mobileNativeChatQueueOffer,

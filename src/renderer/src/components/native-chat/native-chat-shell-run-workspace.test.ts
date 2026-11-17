@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import { useAppStore } from '@/store'
 import { makeWorktree } from '../../store/slices/worktrees/worktree.test-fixture'
 import { resolveNativeChatShellRunWorkspace } from './native-chat-shell-run-workspace'

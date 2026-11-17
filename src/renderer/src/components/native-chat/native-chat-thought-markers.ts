@@ -4,10 +4,10 @@
 // where the host kept no timing of its own.
 
 import { createContext } from 'react'
-import type { NativeChatReasoningHeadline } from '../../../../shared/native-chat/transcript/native-chat-reasoning-row'
-import { nativeChatRowRendersContent } from '../../../../shared/native-chat/transcript/native-chat-row-content'
+import type { NativeChatReasoningHeadline } from '../../../../shared/native-chat/transcript/row-content/native-chat-reasoning-row'
+import { nativeChatRowRendersContent } from '../../../../shared/native-chat/transcript/row-content/native-chat-row-content'
 import { isNativeChatThoughtMarker } from '../../../../shared/native-chat-thought-marker'
-import { formatNativeChatDuration } from '../../../../shared/native-chat/transcript/native-chat-turn-status'
+import { formatNativeChatDuration } from '../../../../shared/native-chat/transcript/turns/native-chat-turn-status'
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 
 export type NativeChatThoughtTiming = {

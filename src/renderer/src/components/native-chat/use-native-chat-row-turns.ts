@@ -6,11 +6,11 @@ import type { NativeChatMessage } from '../../../../shared/native-chat/native-ch
 import {
   nativeChatHarnessTurns,
   nativeChatRowTurnKeys
-} from '../../../../shared/native-chat/transcript/native-chat-turn-grouping'
+} from '../../../../shared/native-chat/transcript/turns/native-chat-turn-grouping'
 import { withoutPullRequestEventRows } from '../../../../shared/native-chat/native-chat-pull-request-event'
 import { nativeChatShowsCiResultLines } from '../../../../shared/native-chat/native-chat-appearance-settings'
 import { nativeChatSessionThoughtSeconds } from '../../../../shared/native-chat-thought-duration'
-import { compareNativeChatDisplayMessages as compareMessages } from '../../../../shared/native-chat/transcript/native-chat-message-order'
+import { compareNativeChatDisplayMessages as compareMessages } from '../../../../shared/native-chat/transcript/messages/native-chat-message-order'
 import {
   nativeChatThoughtTiming,
   type NativeChatThoughtTiming

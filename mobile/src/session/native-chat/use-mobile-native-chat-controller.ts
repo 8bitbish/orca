@@ -2,22 +2,22 @@ import { asyncQuestionSourceScope } from '../../../../src/shared/native-chat/inp
 import { useLayoutEffect, useRef, type MutableRefObject } from 'react'
 import type { RpcClient } from '../../transport/rpc/rpc-client-contract'
 import type { ConnectionState } from '../../transport/connection/connection-state'
-import type { MobileNativeChatTab } from './mobile-native-chat-eligibility'
+import type { MobileNativeChatTab } from './conversation/mobile-native-chat-eligibility'
 import type { StructuredAgentSessionHostSupport } from './agent-session/mobile-structured-agent-session-host-support'
-import { useMobileNativeChatDrafts } from './composer/use-mobile-native-chat-drafts'
-import { useMobileNativeChatWorkspaceCatalog } from './composer/use-mobile-native-chat-workspace-catalog'
+import { useMobileNativeChatDrafts } from './composer/drafts/use-mobile-native-chat-drafts'
+import { useMobileNativeChatWorkspaceCatalog } from './composer/attachments/use-mobile-native-chat-workspace-catalog'
 import { useMobileNativeChatQueuedMessageSend } from './transcript/use-mobile-native-chat-queued-message-send'
-import { useMobileNativeChatSessionOptionController } from './input/use-mobile-native-chat-session-option-controller'
-import { useMobileNativeChatSessionLane } from './use-mobile-native-chat-session-lane'
-import { useMobileStructuredNativeChatSendBridge } from './composer/use-mobile-structured-native-chat-send-bridge'
+import { useMobileNativeChatSessionOptionController } from './input/session-options/use-mobile-native-chat-session-option-controller'
+import { useMobileNativeChatSessionLane } from './conversation/use-mobile-native-chat-session-lane'
+import { useMobileStructuredNativeChatSendBridge } from './composer/delivery/use-mobile-structured-native-chat-send-bridge'
 import { useMobileNativeChatTerminalLane } from '../use-mobile-native-chat-terminal-lane'
-import { useMobileNativeChatTerminalTurn } from './transcript/use-mobile-native-chat-terminal-turn'
+import { useMobileNativeChatTerminalTurn } from './transcript/ingestion/use-mobile-native-chat-terminal-turn'
 import type { MobileNativeChatController } from './mobile-native-chat-controller-contract'
-import { useMobileBridgeChatPromptWrites } from './input/use-mobile-bridge-chat-prompt-writes'
-import { useMobileNativeChatActiveResolution } from './use-mobile-native-chat-active-resolution'
-import { useMobileNativeChatPromptController } from './input/use-mobile-native-chat-prompt-controller'
+import { useMobileBridgeChatPromptWrites } from './input/prompts/use-mobile-bridge-chat-prompt-writes'
+import { useMobileNativeChatActiveResolution } from './conversation/use-mobile-native-chat-active-resolution'
+import { useMobileNativeChatPromptController } from './input/prompts/use-mobile-native-chat-prompt-controller'
 import { useMobileNativeChatPlacedPending } from './use-mobile-native-chat-placed-pending'
-import { mobileNativeChatScopeKey } from './mobile-native-chat-scope-key'
+import { mobileNativeChatScopeKey } from './conversation/mobile-native-chat-scope-key'
 import { useMobileNativeChatCiResultLines } from './preferences/use-mobile-native-chat-ci-result-lines'
 
 export function useMobileNativeChatController(args: {
@@ -299,6 +299,7 @@ export function useMobileNativeChatController(args: {
       ? structuredNativeChat.interruptedContinue
       : null,
     nativeChatThreadGoal: activeChatStructured ? structuredNativeChat.threadGoal : null,
+    nativeChatMcpPanel: activeChatStructured ? structuredNativeChat.mcpPanel : null,
     nativeChatRewind: activeChatStructured ? structuredNativeChat.rewind : undefined,
     ...workspaceCatalog,
     handleNativeChatSend: activeChatStructured

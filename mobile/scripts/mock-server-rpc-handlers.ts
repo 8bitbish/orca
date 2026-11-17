@@ -3,14 +3,15 @@ import type { WebSocket } from 'ws'
 import {
   DESKTOP_PROTOCOL_VERSION,
   MIN_COMPATIBLE_MOBILE_VERSION
-} from '../../src/shared/protocol-version'
+} from '../../src/shared/remote-runtime/protocol/protocol-version'
 import {
   applyTerminalQuickCommandMutation,
   type TerminalQuickCommandMutation
 } from '../../src/shared/terminal/quick-commands/terminal-quick-commands'
-import type { RuntimeWorktreePsSummary } from '../../src/shared/runtime-types'
+import type { RuntimeWorktreePsSummary } from '../../src/shared/worktree/catalog/runtime-worktree-contracts'
 import type { TerminalQuickCommand } from '../../src/shared/terminal/quick-commands/terminal-quick-command-types'
 import { handleMockFilePreviewRequest } from './mock-server-file-preview-data'
+import { handleMockForkedChatsRequest } from './mock-server-forked-chats-scenario'
 import { handleMockGitRequest } from './mock-server-git-state'
 import { handleMockAccountRequest } from './mock-server-account-rpc'
 import { handleMockNativeChatRequest } from './mock-server-native-chat-scenario'
@@ -152,6 +153,7 @@ export function handleRequest(
 
   // Each returns false for methods it does not own; first owner wins.
   if (
+    handleMockForkedChatsRequest(request, respond, success) ||
     handleMockGitRequest(request, respond, success) ||
     handleMockFilePreviewRequest(request, respond, success, error) ||
     handleMockAccountRequest(request, respond, success, error) ||
