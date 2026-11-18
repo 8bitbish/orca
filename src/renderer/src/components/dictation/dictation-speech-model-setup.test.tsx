@@ -5,7 +5,10 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import { getDefaultSettings, getDefaultVoiceSettings } from '../../../../shared/constants'
+import {
+  getDefaultSettings,
+  getDefaultVoiceSettings
+} from '../../../../shared/orca-profiles/constants'
 import type { SpeechModelManifest, SpeechModelState } from '../../../../shared/speech/speech-types'
 import { DictationController } from './DictationController'
 import { resetSpeechModelUpdateCheckForTests } from './speech-model-update-check'

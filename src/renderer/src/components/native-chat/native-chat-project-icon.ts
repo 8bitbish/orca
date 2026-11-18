@@ -5,8 +5,11 @@
 // files live on another host, and a same-named local path would be another
 // project's icon. Their persisted repo icon is still used.
 
-import { REPO_COLORS } from '../../../../shared/constants'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
+import { REPO_COLORS } from '../../../../shared/repository/appearance/repo-badge-color'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../../shared/execution-host/execution-host'
 import type { RepoIcon } from '../../../../shared/repository/appearance/repo-icon'
 import type { Repo } from '../../../../shared/repository/repo-types'
 

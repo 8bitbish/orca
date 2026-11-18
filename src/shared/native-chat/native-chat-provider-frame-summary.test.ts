@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isWordlessProviderFrame,
   type ProviderFrameRowText
-} from './native-chat-provider-frame-summary'
+} from './transcript/notices/native-chat-provider-frame-summary'
 
 function frameRow(provider: string, kind: string, extra: Partial<ProviderFrameRowText> = {}) {
   return { text: `${provider} · ${kind}`, providerFrame: { provider, kind }, ...extra }

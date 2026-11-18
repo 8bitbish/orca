@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deriveNativeChatStreamingText } from './native-chat-streaming'
+import { deriveNativeChatStreamingText } from './transcript/streaming/native-chat-streaming'
 import type { NativeChatMessage } from './native-chat-types'
 
 const assistant = (text: string): NativeChatMessage => ({

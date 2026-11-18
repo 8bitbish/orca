@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { AgentJournalRenderItem } from '../../../../../shared/agent-session/journal/agent-session-journal-types'
 import type { AgentSessionHistoryPage } from '../../../../../shared/agent-session/agent-session-wire'
 import type { NativeChatMessage } from '../../../../../shared/native-chat/native-chat-types'
-import { AGENT_SESSION_THOUGHT_MARKER_CAPABILITY } from '../../../../../shared/agent-session/agent-session-runtime-capabilities'
+import { AGENT_SESSION_THOUGHT_MARKER_CAPABILITY } from '../../../../../shared/agent-session/capabilities/agent-session-runtime-capabilities'
 import type { AgentSessionSubscribeInput } from '../../../../native-chat/agent-session-wire/publication/subscribers/agent-session-subscribe-input'
 import {
   call,

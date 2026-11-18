@@ -1,6 +1,9 @@
 import { ipcMain } from 'electron'
 import type { Store } from '../../persistence/loading-store/store'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../shared/execution-host/execution-host'
 import { getProjectAppIcon } from '../../project-app-icon'
 
 export function registerRepoAppIconHandler(store: Store): void {

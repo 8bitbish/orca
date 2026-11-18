@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { readNativeChatTranscript } from './transcript-reader'
-import { isNoiseMessage } from '../../shared/native-chat/native-chat-noise'
+import { isNoiseMessage } from '../../shared/native-chat/transcript/messages/native-chat-noise'
 
 let tempRoots: string[] = []
 

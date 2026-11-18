@@ -3,7 +3,7 @@
 // without this the prompt has no row and its optimistic echo never reconciles.
 
 import type { NativeChatBlock } from '../../../shared/native-chat/native-chat-types'
-import { isKnownHarnessInjectedUserTurnText } from '../../../shared/harness-injected-user-turns'
+import { isKnownHarnessInjectedUserTurnText } from '../../../shared/agent-session/journal/harness-injected-user-turns'
 import { asRecord } from '../../ai-vault/parsing/session-record-fields'
 import { claudeContentBlocks } from './transcript-record-blocks'
 

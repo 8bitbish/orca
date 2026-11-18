@@ -3,7 +3,7 @@ import type { NativeChatMessage } from './native-chat-types'
 import {
   nativeChatLatestTurnId,
   nativeChatTranscriptSettledTurns
-} from './native-chat-terminal-turn'
+} from './transcript/turns/native-chat-terminal-turn'
 
 function row(
   id: string,

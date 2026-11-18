@@ -9,7 +9,7 @@ import {
   recordingJournalSink,
   USER_MESSAGE
 } from '../claude-structured-session-test-support'
-import * as dispatchContent from '../claude-structured-dispatch-content'
+import * as dispatchContent from '../dispatch/claude-structured-dispatch-content'
 import { ClaudeControlRequestError } from '../../sdk-transport/claude-agent-sdk-control-requests'
 import { claudeStructuredPermissionOptions } from './claude-structured-launch-resolution'
 

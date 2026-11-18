@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { NativeChatMessage } from '../native-chat-types'
-import { imageReferenceToken } from '../native-chat-image-reference'
+import { imageReferenceToken } from '../attachments/native-chat-image-reference'
 import {
   imageSourcePathFromText,
   isImageSourceUserTurn,

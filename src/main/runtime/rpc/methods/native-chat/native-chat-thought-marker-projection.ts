@@ -18,7 +18,7 @@ import {
   isAgentJournalThoughtMarkerBody,
   isNativeChatThoughtMarker
 } from '../../../../../shared/native-chat-thought-marker'
-import { AGENT_SESSION_THOUGHT_MARKER_CAPABILITY } from '../../../../../shared/agent-session/agent-session-runtime-capabilities'
+import { AGENT_SESSION_THOUGHT_MARKER_CAPABILITY } from '../../../../../shared/agent-session/capabilities/agent-session-runtime-capabilities'
 import type { RpcContext } from '../../core'
 
 type ThoughtMarkerReader = Pick<RpcContext, 'clientKind' | 'clientCapabilities'>

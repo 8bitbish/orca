@@ -7,7 +7,10 @@ import {
   type NativeChatMessage
 } from '../native-chat-types'
 import { isKnownHarnessInjectedUserTurnText } from '../../agent-session/journal/harness-injected-user-turns'
-import { isHarnessTurnOpenerMessage, isNoiseMessage } from '../transcript/messages/native-chat-noise'
+import {
+  isHarnessTurnOpenerMessage,
+  isNoiseMessage
+} from '../transcript/messages/native-chat-noise'
 import {
   CODEX_PLAN_UPDATED_FRAME_KIND,
   isWordlessProviderFrameMessage

@@ -13,7 +13,7 @@ import type { DashboardAgentRow } from '@/components/dashboard/rows/dashboard-ag
 import {
   getRepoExecutionHostId,
   getSshTargetIdForExecutionHost
-} from '../../../../shared/execution-host'
+} from '../../../../shared/execution-host/execution-host'
 import type { NativeChatProjectTarget } from './native-chat-project-target'
 import {
   resolveNativeChatProjectStatus,
