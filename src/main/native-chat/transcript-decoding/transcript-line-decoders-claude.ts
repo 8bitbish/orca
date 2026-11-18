@@ -10,8 +10,12 @@ import { extractString } from '../../../shared/text/trimmed-string'
 import { parseJsonObject } from '../../ai-vault/parsing/session-json-object'
 import { timestampMs } from '../../ai-vault/parsing/session-record-time'
 import { imageSourcePathFromText } from '../../../shared/native-chat/transcript/images/native-chat-image-transcript-markers'
-import { isHarnessTurnOpenerText } from '../../../shared/harness-injected-user-turns'
+import {
+  isClaudeNoResponseFiller,
+  isHarnessTurnOpenerRecord
+} from './transcript-claude-harness-turn-records'
 import { claudeContentBlocks, claudeThinkingOnlyBlocks } from './transcript-record-blocks'
+import { isClaudeToolResultContent } from '../../../shared/agent-hook-listener/providers/claude/transcripts/claude-tool-content'
 import { isKnownRasterImageMimeType } from '../../../shared/file-preview/raster-image-preview-limits'
 import { unwrapClaudePastedContentBlock } from '../../../shared/agent-hook-listener/providers/claude/transcripts/claude-pasted-content'
 import { unwrapClaudeBashInputBlock } from '../../../shared/agent-hook-listener/providers/claude/transcripts/claude-bash-input'
@@ -21,8 +25,10 @@ import { claudeStopHookFeedbackRow } from '../../claude/structured/journal/claud
 import { structuredAgentSessionStatusBlock } from '../../../shared/agent-session/view/structured-agent-session-status-block'
 import {
   claudeMessageWithoutSyntheticText,
-  isClaudeInjectedUserMessage
+  isClaudeInjectedUserMessage,
+  isClaudeTaskNotificationTurnStart
 } from '../../claude/structured/journal/claude-internal-message-content'
+import { NATIVE_CHAT_PROVIDER_TURN_START_PRESENTATION } from '../../../shared/native-chat/transcript/turns/native-chat-provider-turn-start'
 
 const MAX_EDIT_PATCH_HUNKS = 40
 const MAX_EDIT_PATCH_HUNK_LINES = 400
@@ -172,27 +178,35 @@ export function decodeClaudeTranscriptLine(
   }
 }
 
-function isClaudeNoResponseFiller(message: Record<string, unknown> | null): boolean {
-  if (message?.model !== '<synthetic>') {
-    return false
+/** Chat reads keep where Claude resumed on its own, so journal-less turns split there as structured turns do. */
+export function decodeClaudeChatTranscriptLine(
+  line: string,
+  fallbackId: string
+): NativeChatMessage | null {
+  const record = line.includes('task-notification') ? parseJsonObject(line) : null
+  const content = asRecord(record?.message)?.content
+  // One row per record: a notification that also settles a waiting call keeps its results instead.
+  if (
+    !record ||
+    !isClaudeTaskNotificationTurnStart(record) ||
+    (Array.isArray(content) && content.some(isClaudeToolResultContent))
+  ) {
+    return decodeClaudeTranscriptLine(line, fallbackId)
   }
-  const content = message.content
-  const text =
-    typeof content === 'string'
-      ? content
-      : Array.isArray(content) && content.length === 1
-        ? asRecord(content[0])?.text
-        : undefined
-  return typeof text === 'string' && text.trim() === 'No response requested.'
-}
-
-function isHarnessTurnOpenerRecord(blocks: NativeChatBlock[]): boolean {
-  const first = blocks[0]
-  return (
-    first?.type === 'text' &&
-    blocks.every((block) => block.type === 'text') &&
-    isHarnessTurnOpenerText(first.text)
-  )
+  return {
+    id: extractString(record.uuid) ?? fallbackId,
+    role: 'system',
+    // Harness text: clients that predate the marker strip it as an injected turn.
+    blocks: [
+      {
+        type: 'text',
+        text: '<task-notification>',
+        presentation: NATIVE_CHAT_PROVIDER_TURN_START_PRESENTATION
+      }
+    ],
+    timestamp: parseTimestamp(record.timestamp),
+    source: 'transcript'
+  }
 }
 
 /** Mid-turn human prompts exist only as queued_command attachments; decode them to reconcile local echoes. */

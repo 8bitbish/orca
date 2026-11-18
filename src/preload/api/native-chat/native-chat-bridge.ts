@@ -9,7 +9,7 @@ import type { AgentType } from '../../../shared/agent-status/contracts/agent-sta
 import {
   NATIVE_CHAT_VISUAL_GUEST_THEME_PUBLISH,
   type NativeChatVisualTheme
-} from '../../../shared/native-chat/native-chat-visual-shell'
+} from '../../../shared/native-chat/visuals/native-chat-visual-shell'
 import type { NativeChatSlackImageRequest } from '../../../shared/native-chat-slack-image-contract'
 import type { NativeChatSlackNamesRequest } from '../../../shared/native-chat-slack-names-contract'
 import type { NativeChatLinkPreviewRequest } from '../../../shared/native-chat-link-preview-contract'

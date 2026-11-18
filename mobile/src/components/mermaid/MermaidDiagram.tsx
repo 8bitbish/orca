@@ -12,7 +12,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View, type HostInstance } from
 import { colors, radii, spacing, typography, pressedStyle } from '../../theme/mobile-theme'
 import { useMobileColorScheme } from '../../theme/use-mobile-color-scheme'
 import { themedStyleSheet } from '../../theme/themed-styles'
-import { readableMermaidFlowchartSvg } from '../../../../src/shared/mermaid-flowchart-contrast'
+import { readableMermaidFlowchartSvg } from '../../../../src/shared/document-preview/mermaid-flowchart-contrast'
 import {
   readSvgIntrinsicSize,
   svgMarkupDataUri

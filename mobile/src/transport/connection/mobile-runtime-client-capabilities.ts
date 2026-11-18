@@ -4,7 +4,7 @@ import {
   PI_STRUCTURED_DIALOGS_RUNTIME_CAPABILITY,
   STRUCTURED_AGENT_SESSION_HOLD_RUNTIME_CAPABILITY,
   STRUCTURED_AGENT_SESSION_REGISTERED_AGENTS_RUNTIME_CAPABILITY
-} from '../../../../src/shared/agent-session/structured-agent-session-surface-capabilities'
+} from '../../../../src/shared/agent-session/capabilities/structured-agent-session-surface-capabilities'
 import {
   AGENT_SESSION_QUEUED_IMAGE_CARDS_CLIENT_CAPABILITY,
   AGENT_SESSION_THOUGHT_MARKER_CAPABILITY,
@@ -12,7 +12,7 @@ import {
   AGENT_SESSION_TURN_ITEM_CAPABILITY,
   CLAUDE_STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY,
   STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY
-} from '../../../../src/shared/agent-session/agent-session-runtime-capabilities'
+} from '../../../../src/shared/agent-session/capabilities/agent-session-runtime-capabilities'
 import { AGENT_SESSION_CURRENT_REQUESTS_CLIENT_CAPABILITY } from '../../../../src/shared/agent-session/requests/agent-session-current-requests-capability'
 import '../../../../src/shared/remote-runtime/protocol/protocol-version'
 import {
@@ -26,7 +26,7 @@ import {
 } from '../../../../src/shared/agent-launch/contracts/agent-launch-runtime-capability'
 import { AGENT_SESSION_OPTIONAL_MODEL_CLIENT_CAPABILITY } from '../../../../src/shared/agent-session/options/protocol/agent-session-optional-model-capability'
 import { remoteRuntimeClientCapabilities } from '../../../../src/shared/remote-runtime/remote-runtime-client-capabilities'
-import { AGENT_SESSION_CREATE_MESSAGE_RUNTIME_CAPABILITY } from '../../../../src/shared/agent-session/agent-session-create-capabilities'
+import { AGENT_SESSION_CREATE_MESSAGE_RUNTIME_CAPABILITY } from '../../../../src/shared/agent-session/lifecycle/operations/agent-session-create-capabilities'
 import { COMPRESSED_FRAMES_CLIENT_CAPABILITY } from '../../../../src/shared/remote-runtime/e2ee/paired-e2ee-compressed-frame'
 
 export const MOBILE_RUNTIME_CLIENT_CAPABILITIES = remoteRuntimeClientCapabilities([

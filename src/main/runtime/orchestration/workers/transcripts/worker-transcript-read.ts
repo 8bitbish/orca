@@ -8,6 +8,7 @@ import {
   type NativeChatLineDecoder
 } from '../../../../native-chat/transcript-tail-reader'
 import { isNativeChatThoughtMarker } from '../../../../../shared/native-chat-thought-marker'
+import { decodeClaudeTranscriptLine } from '../../../../native-chat/transcript-decoding/transcript-line-decoders-claude'
 import {
   boundWorkerTranscriptMessages,
   clampWorkerTranscriptLimit
@@ -16,6 +17,11 @@ import {
   readForwardLocalWorkerTranscriptPage,
   readInitialLocalWorkerTranscriptPage
 } from './worker-transcript-local-read'
+import { readInitialWorkerTranscriptReusing } from './worker-transcript-initial-read-cache'
+import {
+  nativeChatTurnEvidenceObserverForAgent,
+  type NativeChatTurnEvidence
+} from '../../../../native-chat/transcript-decoding/transcript-turn-evidence'
 
 type WorkerTranscriptReadFailure = {
   ok: false
@@ -33,6 +39,9 @@ export type WorkerTranscriptReadSuccess = {
   limited: boolean
   clipping: string[]
   warnings: string[]
+  /** A first page's newest turn marker, decoded from the same bytes as its messages; cursor
+   *  pages carry none. */
+  turn?: NativeChatTurnEvidence
 }
 
 export type WorkerTranscriptReadResult = WorkerTranscriptReadFailure | WorkerTranscriptReadSuccess
@@ -59,8 +68,11 @@ export async function readWorkerTranscript(args: {
   if (!transcriptAgent) {
     return { ok: false, reason: 'provider_unsupported', warnings: [] }
   }
-  const agentDecode = nativeChatLineDecoderForAgent(args.agent)
-  // A worker read is evidence of what a worker said; a thought with no text says nothing.
+  // Workers read text; the chat's wordless turn markers and empty thoughts have none to give.
+  const agentDecode: NativeChatLineDecoder | null =
+    transcriptAgent === 'claude'
+      ? decodeClaudeTranscriptLine
+      : nativeChatLineDecoderForAgent(args.agent)
   const decode: NativeChatLineDecoder | null = agentDecode
     ? (line, fallbackId) => {
         const message = agentDecode(line, fallbackId)
@@ -83,10 +95,32 @@ export async function readWorkerTranscript(args: {
     return { ok: false, reason: 'transcript_missing', warnings: [] }
   }
   const limit = clampWorkerTranscriptLimit(args.limit)
+  const resolvedPath = filePath
+  const read = () => readResolvedWorkerTranscript(resolvedPath, decode, limit, args)
+  // A first read of an unchanged file serves its settled page; any other read scans.
+  return args.offset === undefined && args.expectedSourceFingerprint === undefined
+    ? readInitialWorkerTranscriptReusing(resolvedPath, [limit, decode], read)
+    : read()
+}
+
+async function readResolvedWorkerTranscript(
+  filePath: string,
+  decode: NativeChatLineDecoder,
+  limit: number,
+  args: Pick<
+    Parameters<typeof readWorkerTranscript>[0],
+    'agent' | 'offset' | 'expectedSourceFingerprint' | 'expectedBoundaryCheckpoint'
+  >
+): Promise<WorkerTranscriptReadResult> {
   try {
     const page =
       args.offset === undefined
-        ? await readInitialLocalWorkerTranscriptPage(filePath, limit, decode)
+        ? await readInitialLocalWorkerTranscriptPage(
+            filePath,
+            limit,
+            decode,
+            nativeChatTurnEvidenceObserverForAgent(args.agent)
+          )
         : await readForwardLocalWorkerTranscriptPage(
             filePath,
             args.offset,
@@ -104,6 +138,10 @@ export async function readWorkerTranscript(args: {
       return { ok: false, reason: 'source_changed', warnings: [] }
     }
     const bounded = boundWorkerTranscriptMessages(page.messages, filePath)
+    const turn =
+      page.turn?.state === 'completed' && !bounded.messages[page.turn.replyIndex ?? -1]
+        ? undefined
+        : page.turn
     return {
       ok: true,
       filePath,
@@ -116,7 +154,8 @@ export async function readWorkerTranscript(args: {
         ...(page.limited ? ['message_limit_or_scan_window'] : []),
         ...(bounded.limited ? ['transcript_payload'] : [])
       ],
-      warnings: [...page.warnings, ...bounded.warnings]
+      warnings: [...page.warnings, ...bounded.warnings],
+      ...(turn ? { turn } : {})
     }
   } catch (error) {
     const code = (error as NodeJS.ErrnoException | null)?.code
