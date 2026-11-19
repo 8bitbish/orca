@@ -60,7 +60,7 @@ import { useRecheckNativeChatFileLinksWhenTurnEnds } from './links/actions/use-n
 import { useNativeChatLocalCommandAnswer } from './session/options/terminal/use-native-chat-local-command-answer'
 import { useNativeChatImageRuntimeContext } from './media/images/native-chat-image-runtime-context'
 import { handleNativeChatPaneShortcut } from './pane/routing/native-chat-pane-shortcut'
-import { formatShortcutLabel } from '@/hooks/useShortcutLabel'
+import { formatShortcutLabel } from '@/lib/keyboard/useShortcutLabel'
 import { useNativeChatProjectReplyChannel } from './native-chat-project-reply-context'
 import { NativeChatReplyScope } from './NativeChatReplyScope'
 import { NativeChatQueuedMessages } from './NativeChatQueuedMessages'
