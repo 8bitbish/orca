@@ -69,6 +69,9 @@ The fix was written on 2026-08-18 against v1.4.184 and ported to v1.4.217:
   came to 10,548,031 bytes, 61 KB over upstream's 10 MiB, and the build stopped. Trimming personal
   page code was the alternative. The fence still sits well inside the phone contract (32 MiB total,
   10 MiB per asset). If upstream changes that line, keep its value plus 128 KiB.
+- 2026-11-19 (Jake): raised by another 128 KiB (10 MiB + 256 KiB = 10,747,904 bytes). v1.4.263
+  plus the personal page code came to 10,632,716 bytes, 15,884 over the 2026-11-15 limit. If
+  upstream changes that line, keep its value plus 256 KiB.
 
 ## Things specific to this Mac
 

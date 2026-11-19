@@ -34,8 +34,8 @@ export const MOBILE_WEB_APP_HOST_CATALOG_MAX_BYTES = 384 * 1024
 
 // Our own fence on the page's code, well inside the phone contract (32 MiB total, 10 MiB per asset in
 // manifest-contract.ts); it fails the build before the code weighs more than any one asset may.
-// Personal build: +128 KiB for personal page code (personal-build/DECISIONS.md, 2026-11-15).
-export const MOBILE_WEB_APP_BUNDLE_MAX_TOTAL_BYTES = 10 * 1024 * 1024 + 128 * 1024
+// Personal build: +256 KiB for personal page code (personal-build/DECISIONS.md, 2026-11-15, 2026-11-19).
+export const MOBILE_WEB_APP_BUNDLE_MAX_TOTAL_BYTES = 10 * 1024 * 1024 + 256 * 1024
 
 // Only these licensed terminal fonts have their own allowance; other fonts (KaTeX's) and code count.
 // The page fetches each only when the terminal draws with it, so none weighs on first open.
