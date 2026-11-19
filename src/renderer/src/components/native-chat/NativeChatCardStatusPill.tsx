@@ -1,4 +1,4 @@
-import { AgentStateDot } from '@/components/AgentStateDot'
+import { AgentStateDot } from '@/components/agent/status/AgentStateDot'
 import { cn } from '@/lib/class-names'
 import {
   nativeChatProjectStatusDot,

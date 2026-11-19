@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
-import { useNow } from '@/hooks/use-now'
+import { useNow } from '@/lib/window-activity/use-now'
 import { translate } from '@/i18n/i18n'
 import { formatCompactDuration } from '../../../../shared/agent-status/presentation/agent-row-decay-state'
 import { formatShortTimeAgo } from '@/lib/time-format/short-time-ago'

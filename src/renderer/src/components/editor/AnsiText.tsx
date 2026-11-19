@@ -5,7 +5,7 @@ import {
   DEFAULT_TERMINAL_THEME_LIGHT
 } from '../../../../shared/terminal-themes/terminal-theme-selection'
 import { parseAnsiSegments, type AnsiColor } from './notebook/outputs/ipynb-ansi'
-import { useDocumentDarkTheme } from '@/hooks/use-document-dark-theme'
+import { useDocumentDarkTheme } from '@/hooks/theme/use-document-dark-theme'
 
 const ANSI_PALETTE_KEYS = [
   'black',

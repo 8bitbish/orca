@@ -1,5 +1,5 @@
 import type React from 'react'
-import { AgentStateDot } from '@/components/AgentStateDot'
+import { AgentStateDot } from '@/components/agent/status/AgentStateDot'
 import { translate } from '@/i18n/i18n'
 import { NativeChatChipButton } from './NativeChatChipButton'
 import { NativeChatProjectIcon } from './NativeChatProjectIcon'

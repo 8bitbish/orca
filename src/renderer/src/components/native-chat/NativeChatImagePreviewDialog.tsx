@@ -1,5 +1,5 @@
 import { Image as ImageIcon, Minus, Plus, X } from 'lucide-react'
-import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'

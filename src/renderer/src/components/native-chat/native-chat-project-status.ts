@@ -3,7 +3,7 @@
 // contact is never evidence (docs/reference/ssh-execution-boundary.md): an SSH
 // project whose host is not connected reads `unverifiable`, never Idle or Done.
 
-import type { AgentDotState } from '@/components/AgentStateDot'
+import type { AgentDotState } from '@/components/agent/status/AgentStateDot'
 import type { WorktreeStatus } from '../../../../shared/worktree/row-display/worktree-status-rollup'
 import { translate } from '@/i18n/i18n'
 
