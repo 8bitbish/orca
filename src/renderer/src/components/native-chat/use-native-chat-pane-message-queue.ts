@@ -46,11 +46,11 @@ export function useNativeChatPaneMessageQueue(args: {
   )
   const onRestore = useCallback(
     (item: { id: string; text: string; imagePaths?: string[] }, orphan: boolean) => {
-      const composer = composerRef.current
-      if (!composer) {
+      const restoreDraft = composerRef.current?.restoreDraft
+      if (!restoreDraft) {
         return
       }
-      composer.restoreDraft(item.text, item.imagePaths ?? [])
+      restoreDraft(item.text, item.imagePaths ?? [])
       if (orphan) {
         dismissOrphan(item.id)
       } else {

@@ -23,7 +23,7 @@ export function useNativeChatProjectReplyChannel(
 ): NativeChatProjectReplyChannel {
   return useMemo(
     () => ({
-      send: (text: string) => composerRef.current?.sendReply(text) ?? false,
+      send: (text: string) => composerRef.current?.sendReply?.(text) ?? false,
       canSend,
       messages
     }),

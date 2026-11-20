@@ -14,6 +14,7 @@ import { MarkdownLinkHandlerContext } from './links/markdown-link-handler'
 import { useMobileMarkdownTree } from './parsing/use-mobile-markdown-tree'
 import { useMarkdownTextSetup } from '../use-markdown-text-setup'
 import { MobileMarkdownRenderersContext } from '../mobile-markdown-renderers'
+import { MobileMarkdownSlackPeopleContext } from './parsing/mobile-markdown-mentions'
 import {
   MobileMarkdownLinksContext,
   useNativeChatFileLinkExistsFrom
@@ -52,6 +53,8 @@ type Props = {
   chatMath?: boolean
   /** The surface under the text: `userMessage` inside your own message's bubble. */
   tone?: keyof typeof MARKDOWN_TONES
+  /** The content is a Slack message's drawn form: its mention links draw as mentions. */
+  slackMentions?: boolean
 }
 
 /** Without a surface's own image renderer, https images draw from the web (GitHub text). */
@@ -75,7 +78,8 @@ function MobileMarkdownContent({
   growing = false,
   streaming = false,
   chatMath = false,
-  tone: toneName = 'default'
+  tone: toneName = 'default',
+  slackMentions = false
 }: Props) {
   const renderers = useContext(MobileMarkdownRenderersContext)
   useMobileColorScheme()
@@ -83,18 +87,24 @@ function MobileMarkdownContent({
   const setup = useContext(MarkdownTextContext)
   const onOpenLink = useContext(MarkdownLinkHandlerContext)
   const links = useContext(MobileMarkdownLinksContext)
+  const slackPeople = useContext(MobileMarkdownSlackPeopleContext)
   const fileLinkExists = useNativeChatFileLinkExistsFrom(
     links?.fileLinks ?? null,
     onOpenFile !== undefined,
     streaming
   )
   const text = content?.trim() ?? ''
-  const { root, directives } = useMobileMarkdownTree(
+  const { root, directives, cards } = useMobileMarkdownTree(
     text,
     renderVisual !== undefined,
     growing,
     chatMath,
-    { fileLinkExists, githubRepo: links?.githubRepo }
+    {
+      fileLinkExists,
+      githubRepo: links?.githubRepo,
+      slackMentions,
+      slackPeople
+    }
   )
   if (!text) {
     return fallback ? (
@@ -128,6 +138,7 @@ function MobileMarkdownContent({
     ],
     rowLongPress: setup.androidTranscript ? setup.onLongPress : undefined,
     directives,
+    cards,
     renderVisual,
     renderImage: renderImage ?? renderRemoteImage,
     mermaidOccurrences: new Map(),

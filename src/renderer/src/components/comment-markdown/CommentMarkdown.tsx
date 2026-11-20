@@ -10,7 +10,10 @@ import {
   commentMarkdownAllowedTagNames,
   commentMarkdownUrlTransform
 } from './comment-markdown-sanitize'
-import { commentMarkdownRemarkPlugins as remarkPlugins } from './comment-markdown-remark-plugins'
+import {
+  commentMarkdownRemarkPlugins as remarkPlugins,
+  doubleTildeStrikethrough
+} from './comment-markdown-remark-plugins'
 import { remarkChatMath } from './chat-markdown-math'
 import { copyChatMathSelection } from './chat-markdown-math-selection'
 import rehypeRaw from 'rehype-raw'
@@ -127,6 +130,8 @@ type CommentMarkdownProps = React.ComponentPropsWithoutRef<'div'> & {
   extension?: CommentMarkdownExtension
   /** Show raw HTML that sanitize would strip as literal text instead of dropping its tags. */
   unknownHtmlAsText?: boolean
+  /** GitHub strikes ~single~ tildes; agent text turns this off so ranges like 1~2 stay literal. */
+  singleTildeStrikethrough?: boolean
 }
 
 // Why forwardRef + rest props: Radix's HoverCardTrigger asChild merges a ref
@@ -154,6 +159,7 @@ const CommentMarkdown = React.memo(
       extension,
       onCopy,
       unknownHtmlAsText = false,
+      singleTildeStrikethrough = true,
       ...rest
     },
     ref
@@ -188,14 +194,17 @@ const CommentMarkdown = React.memo(
       return renderChatLink && variant === 'document' ? withChatLinks(base) : base
     }, [allowFileUriLinks, renderChatLink, variant])
     const activeRemarkPlugins = React.useMemo(() => {
-      const basePlugins = unknownHtmlAsText ? unknownHtmlAsTextRemarkPlugins : remarkPlugins
+      const htmlPlugins = unknownHtmlAsText ? unknownHtmlAsTextRemarkPlugins : remarkPlugins
+      const basePlugins = singleTildeStrikethrough
+        ? htmlPlugins
+        : [...htmlPlugins, doubleTildeStrikethrough]
       const plugins = fileLinkExists
         ? [...basePlugins, remarkNativeChatFileLinks(fileLinkExists)]
         : basePlugins
       const withMath: RemarkPlugins = math ? [...plugins, remarkChatMath] : plugins
       const withExtension = extension ? [...withMath, ...extension.remarkPlugins] : withMath
       return githubRepo ? [...withExtension, remarkGitHubReferences(githubRepo)] : withExtension
-    }, [extension, fileLinkExists, githubRepo, math, unknownHtmlAsText])
+    }, [extension, fileLinkExists, githubRepo, math, singleTildeStrikethrough, unknownHtmlAsText])
     const blocks = useMarkdownBlocks(
       content,
       growing,

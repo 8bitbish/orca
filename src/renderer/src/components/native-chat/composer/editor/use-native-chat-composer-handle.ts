@@ -11,37 +11,26 @@ import {
   writeNativeChatComposerText,
   type NativeChatComposerInput
 } from './native-chat-composer-input'
+import { glowNativeChatComposer } from '../../native-chat-composer-glow'
 
 type UseNativeChatComposerHandleArgs = Parameters<typeof useNativeChatTypedInsertion>[0] &
-  Omit<UseNativeChatComposerPasteArgs, 'insertTypedText' | 'targetKey'> & {
-    paneKey: string | null | undefined
-    targetPtyId: string | null | undefined
+  Omit<UseNativeChatComposerPasteArgs, 'insertTypedText'> & {
     /** Intake only: captured with the paste action, never consulted during settlement. */
     resend?: NativeChatComposerHandle['resend']
     /** A structured chat's editor while it shows this scope, where a long paste saved as a file lands. */
     pastedTextEditor: (() => NativeChatComposerInput | null) | null
-    /** The draft a restored queued message is appended to. */
-    draft: string
-    sendPty: (reply?: string) => boolean
-    /** A card's reply goes straight out and leaves the draft. */
-    sendStructured: NativeChatStructuredComposerSend
-    structuredTransport: NativeChatStructuredComposerTransport | undefined
+    /** A chat composer's sends, for card replies and queued-message restore; other boxes take none. */
+    reply?: {
+      /** The draft a restored queued message is appended to. */
+      draft: string
+      sendPty: (reply?: string) => boolean
+      /** A card's reply goes straight out and leaves the draft. */
+      sendStructured: NativeChatStructuredComposerSend
+      structuredTransport: NativeChatStructuredComposerTransport | undefined
+    }
+    /** Text this long pastes as a "Pasted text" file; defaults to chat's. */
+    longPasteThreshold?: number
   }
-
-/** What a paste in flight belongs to; a different pane, PTY or session drops it. */
-function nativeChatComposerTargetKey(
-  paneKey: string | null | undefined,
-  targetPtyId: string | null | undefined,
-  transport: NativeChatStructuredComposerTransport | undefined
-): string {
-  return JSON.stringify([
-    paneKey,
-    targetPtyId,
-    transport?.sessionId,
-    transport?.worktreeId,
-    transport?.runtimeEnvironmentId
-  ])
-}
 
 /** Expose typed/pasted insertion, the project-card reply send and queued-message restore to pane
  *  routing, and return the paste handler. */
@@ -52,27 +41,50 @@ export function useNativeChatComposerHandle(
   const {
     textareaRef,
     isComposing,
-    draft,
     setDraft,
     setActiveSuggestion,
-    sendPty,
-    sendStructured,
-    structuredTransport,
+    reply,
     pastedTextEditor,
-    paneKey,
-    targetPtyId,
     resend,
     ...pasteArgs
   } = args
   const { disabled, attachResolvedPaths, setCaret } = pasteArgs
-  const { insertTypedText, appendText, acceptsText, insertPastedText, focus, contains } =
-    useNativeChatTypedInsertion({
-      textareaRef,
-      isComposing,
-      setDraft,
-      setCaret,
-      setActiveSuggestion
-    })
+  const {
+    insertTypedText,
+    appendText: appendPlainText,
+    acceptsText,
+    insertPastedText,
+    focus: focusInput,
+    contains
+  } = useNativeChatTypedInsertion({
+    textareaRef,
+    isComposing,
+    setDraft,
+    setCaret,
+    setActiveSuggestion
+  })
+
+  const { attachmentScopeKey } = args
+  const appendText = useCallback(
+    (text: string, options?: { glow?: boolean }): void => {
+      appendPlainText(text)
+      if (options?.glow && attachmentScopeKey) {
+        glowNativeChatComposer(attachmentScopeKey)
+      }
+    },
+    [appendPlainText, attachmentScopeKey]
+  )
+
+  const focus = useCallback(
+    (options?: { caretAtEnd?: boolean; glow?: boolean }): boolean => {
+      const focused = focusInput(options)
+      if (focused && options?.glow && attachmentScopeKey) {
+        glowNativeChatComposer(attachmentScopeKey)
+      }
+      return focused
+    },
+    [focusInput, attachmentScopeKey]
+  )
 
   const insertPastedTextOrFile = useNativeChatPastedTextFile({
     scopeKey: args.attachmentScopeKey ?? '',
@@ -80,30 +92,31 @@ export function useNativeChatComposerHandle(
     scopeEditor: args.attachmentScopeKey ? pastedTextEditor : null,
     resolveAttachmentOwner: args.resolveAttachmentOwner,
     insertTypedText: insertPastedText,
-    setNotice: args.setNotice
+    setNotice: args.setNotice,
+    longPasteThreshold: args.longPasteThreshold
   })
   const { handlePaste: handlePasteEvent, pasteFromClipboard } = useNativeChatComposerPaste({
     ...pasteArgs,
-    targetKey: nativeChatComposerTargetKey(paneKey, targetPtyId, structuredTransport),
     insertTypedText: insertPastedTextOrFile
   })
 
   // Sent like typed text through the same path as Enter, leaving the user's draft in place.
   const sendReply = useCallback(
     (text: string): boolean => {
-      if (!structuredTransport) {
-        return sendPty(text)
+      if (!reply?.structuredTransport) {
+        return reply?.sendPty(text) ?? false
       }
       if (disabled || text.trim() === '') {
         return false
       }
-      void sendStructured(text, [], undefined, { keepDraft: true })
+      void reply.sendStructured(text, [], undefined, { keepDraft: true })
       return true
     },
-    [disabled, sendPty, sendStructured, structuredTransport]
+    [disabled, reply]
   )
   const restoreDraft = useCallback(
     (text: string, imagePaths: readonly string[]) => {
+      const draft = reply?.draft ?? ''
       const next = draft.trim() === '' ? text : `${draft}\n${text}`
       setDraft(next)
       const textarea = textareaRef.current
@@ -116,7 +129,7 @@ export function useNativeChatComposerHandle(
       }
       focus()
     },
-    [attachResolvedPaths, draft, focus, isComposing, setCaret, setDraft, textareaRef]
+    [attachResolvedPaths, reply?.draft, focus, isComposing, setCaret, setDraft, textareaRef]
   )
 
   useImperativeHandle(

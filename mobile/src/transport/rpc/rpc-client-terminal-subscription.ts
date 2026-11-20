@@ -71,6 +71,15 @@ export function buildStreamUnsubscribe(
       ? { method: 'terminalMessageQueue.unsubscribe', params: { subscriptionId: requestId } }
       : null
   }
+  if (method === 'orchestration.workerApprovalsSubscribe') {
+    // The host names each approvals stream by the request that opened it.
+    return requestId
+      ? {
+          method: 'orchestration.workerApprovalsUnsubscribe',
+          params: { subscriptionId: requestId }
+        }
+      : null
+  }
   if (method === 'nativeChat.subscribe') {
     const subscriptionId = (params as { subscriptionId?: unknown }).subscriptionId
     if (typeof subscriptionId === 'string') {

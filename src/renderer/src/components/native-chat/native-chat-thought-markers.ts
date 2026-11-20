@@ -7,6 +7,7 @@ import { createContext } from 'react'
 import type { NativeChatReasoningHeadline } from '../../../../shared/native-chat/transcript/row-content/native-chat-reasoning-row'
 import { nativeChatRowRendersContent } from '../../../../shared/native-chat/transcript/row-content/native-chat-row-content'
 import { isNativeChatThoughtMarker } from '../../../../shared/native-chat-thought-marker'
+import { isNativeChatOrcaCard } from '../../../../shared/native-chat/native-chat-orca-card'
 import { formatNativeChatDuration } from '../../../../shared/native-chat/transcript/turns/native-chat-turn-status'
 import type { NativeChatMessage } from '../../../../shared/native-chat/native-chat-types'
 
@@ -81,4 +82,17 @@ export function nativeChatReasoningHeadlineWithFallback(
     return { kind: 'thoughtFor', duration: formatNativeChatDuration(fallbackSeconds) }
   }
   return isMarker ? { kind: 'thought' } : headline
+}
+
+/** A transcript row draws its content or Orca's card, or is a thought with no text that still
+ *  draws its one line (unless it merged into the thought before it). */
+export function nativeChatTranscriptRowDraws(
+  message: NativeChatMessage,
+  merged: ReadonlySet<string> | undefined
+): boolean {
+  return (
+    (message.mergedInto === undefined &&
+      (isNativeChatOrcaCard(message) || nativeChatRowRendersContent(message.blocks))) ||
+    (isNativeChatThoughtMarker(message) && merged?.has(message.id) !== true)
+  )
 }

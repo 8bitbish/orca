@@ -4,6 +4,8 @@ import type {
   NativeChatMessage,
   NativeChatSubagentEntry
 } from '../../../../../../shared/native-chat/native-chat-types'
+import { nativeChatAutomationTurnKeys } from '../../../../../../shared/native-chat/transcript/turns/native-chat-automation-turns'
+import { nativeChatActingTurnKeys } from '../../../../../../shared/native-chat/transcript/turns/native-chat-acting-turns'
 import type { NativeChatTurnStatus } from '../../../../../../shared/native-chat/transcript/turns/native-chat-turn-status'
 import { isNativeChatRowInLiveWorkingTurn } from '../../../../../../shared/native-chat/transcript/turns/native-chat-live-turn-membership'
 import { nativeChatTurnBarRows } from '../../../../../../shared/native-chat/transcript/turns/native-chat-turn-grouping'
@@ -11,9 +13,7 @@ import {
   nativeChatTurnFold,
   nativeChatTurnFoldRow
 } from '../../../../../../shared/native-chat/transcript/folding/native-chat-turn-fold'
-import { nativeChatRowRendersContent } from '../../../../../../shared/native-chat/transcript/row-content/native-chat-row-content'
-import { isNativeChatThoughtMarker } from '../../../../../../shared/native-chat-thought-marker'
-import { nativeChatGeneratedImageAnswers } from '../../../../../../shared/native-chat/transcript/images/native-chat-generated-image-answers'
+import { nativeChatTranscriptRowDraws } from '../../native-chat-thought-markers'
 import { nativeChatMarkdownImageSources } from '../../markdown/native-chat-markdown-image-sources'
 import {
   estimateNativeChatRowHeight,
@@ -31,6 +31,7 @@ import {
   nativeChatRowSpeaksOrActs
 } from '../../../../../../shared/native-chat/transcript/folding/native-chat-trailing-run'
 import { nativeChatTranscriptWorkRuns } from '../../tools/runs/native-chat-transcript-work-runs'
+import { nativeChatBotItemNoteClusters } from '../../bot-items/native-chat-bot-item-note-clusters'
 import {
   nativeChatAgentRowHasImages,
   nativeChatAgentRowWords
@@ -43,6 +44,7 @@ import {
   type NativeChatSideChatForkPoint
 } from '../../messages/actions/native-chat-side-chat-fork-point'
 import { markNativeChatResponseActionsHang } from './native-chat-response-actions-hang'
+import { nativeChatShownRows } from './native-chat-quiet-turn-rows'
 import type { Translate } from '../../../../i18n/use-translate'
 
 export type NativeChatTranscriptSlot = NativeChatMessageSlot | NativeChatSubagentHeadSlot
@@ -72,6 +74,8 @@ export type NativeChatMessageSlot = {
   status: NativeChatTurnStatus | undefined
   /** Provider-opened turns have no prompt; draw their bar at the turn position. */
   statusAbove?: boolean
+  /** In a quiet turn that just settled, what fades out and then goes: the row, or only its bar. */
+  leaving?: 'row' | 'bar'
   /** Fold prose/tools behind turn status while retaining work that outlives the turn. */
   folded: boolean
   /** False when only turn chrome draws: empty/folded rows or reasoning owned by the live line. */
@@ -80,6 +84,10 @@ export type NativeChatMessageSlot = {
   turnFolds: boolean
   /** The agent's next row in the same turn follows directly, so the two sit close. */
   continuesTurn?: boolean
+  /** Its turn opens with an automation's row, which stands for a quiet reply. */
+  inAutomationTurn?: boolean
+  /** Its turn did something others see, such as changing an item or posting. */
+  inActingTurn?: boolean
   /** In a turn: whether this row holds its response actions, even when tools or thoughts follow:
    *  the last drawn response with words, else the last with images. Absent outside a turn. */
   endsResponse?: boolean
@@ -96,19 +104,11 @@ export type NativeChatMessageSlot = {
   estimatedHeight: number
   /** Members of an unbroken work run, with message as its head. */
   workRun?: readonly NativeChatMessage[]
+  /** Consecutive quiet item notes drawn close together, with message as the first. */
+  itemNotes?: readonly NativeChatMessage[]
 }
 
 const NO_SUBAGENT_HEADS: readonly NativeChatSubagentHead[] = []
-const NO_MERGED_THOUGHTS: ReadonlySet<string> = new Set()
-
-/** A row draws its content, or is a thought with no text that still draws its one line. */
-function rowDraws(message: NativeChatMessage, merged: ReadonlySet<string>): boolean {
-  return (
-    message.agentStart === true ||
-    nativeChatRowRendersContent(message.blocks) ||
-    (isNativeChatThoughtMarker(message) && !merged.has(message.id))
-  )
-}
 
 export function buildNativeChatTranscriptSlots(
   input: NativeChatTranscriptSlotsInput,
@@ -124,9 +124,10 @@ export function buildNativeChatTranscript(
 ): {
   slots: NativeChatTranscriptSlot[]
   forkPoint: NativeChatSideChatForkPoint | null
+  /** Settled quiet turns, drawn or still fading out. */
+  quietTurnKeys: ReadonlySet<string>
 } {
   const {
-    messages: sourceMessages,
     imageSources = nativeChatMarkdownImageSources,
     unresolvedRowIds,
     typography,
@@ -141,7 +142,7 @@ export function buildNativeChatTranscript(
     lifecycleWorking,
     subagentHeads = NO_SUBAGENT_HEADS,
     liveReasoningId = null,
-    mergedThoughtIds = NO_MERGED_THOUGHTS,
+    mergedThoughtIds,
     forkOffer
   } = input
   const settledTurnKeys = new Set(
@@ -149,16 +150,11 @@ export function buildNativeChatTranscript(
       .filter(([, status]) => status.workedSeconds != null)
       .map(([turnKey]) => turnKey)
   )
-  const messages = nativeChatGeneratedImageAnswers(
-    sourceMessages,
-    turnKeys,
-    settledTurnKeys,
-    imageSources
-  )
+  const { quiet, leaving, messages } = nativeChatShownRows(input, settledTurnKeys, imageSources)
   // Share row rendering facts with fold selection so answer detection agrees with visible prose.
   const foldRows = messages.map((message, index) => ({
-    ...nativeChatTurnFoldRow(message, turnKeys[index], receipts.has(message.id)),
-    draws: receipts.has(message.id) || rowDraws(message, mergedThoughtIds)
+    ...nativeChatTurnFoldRow(message, turnKeys[index], receipts.get(message.id)),
+    draws: receipts.has(message.id) || nativeChatTranscriptRowDraws(message, mergedThoughtIds)
   }))
   // Liveness follows the turn frontier, not a call’s stale running flag.
   const trailingRunIndex = messages.findLastIndex((message) =>
@@ -170,6 +166,8 @@ export function buildNativeChatTranscript(
     expandedTurnKeys
   })
   const bars = nativeChatTurnBarRows(messages, turnKeys)
+  const automationTurns = nativeChatAutomationTurnKeys(messages, turnKeys)
+  const actingTurns = nativeChatActingTurnKeys(messages, turnKeys)
   // Turn rows can interleave with other prompts; emit one rollup after their last row.
   const lastRowByTurn = new Map<string, number>()
   turnKeys.forEach((turnKey, index) => {
@@ -196,13 +194,16 @@ export function buildNativeChatTranscript(
     }
   }
   for (const [index, message] of messages.entries()) {
+    if (quiet.rows.has(index)) {
+      continue
+    }
     pushHeadsBefore(message)
     const turnKey = turnKeys[index]
     const receipt = receipts.get(message.id)
     const bar = turnKey === undefined ? undefined : bars.get(turnKey)
     // A turn's bar draws at its first row, so a message folded into it (a steer) carries none.
     const status =
-      turnKey === undefined || bar?.index !== index
+      turnKey === undefined || bar?.index !== index || quiet.turns.has(turnKey)
         ? undefined
         : turnKey === liveTurnKey
           ? (turnStatuses.active ?? undefined)
@@ -220,7 +221,9 @@ export function buildNativeChatTranscript(
     )
     const drawsRow =
       receipt !== undefined ||
-      (!folded && rowDraws(message, mergedThoughtIds) && message.id !== liveReasoningId)
+      (!folded &&
+        nativeChatTranscriptRowDraws(message, mergedThoughtIds) &&
+        message.id !== liveReasoningId)
     if (
       drawsRow ||
       status !== undefined ||
@@ -236,9 +239,14 @@ export function buildNativeChatTranscript(
         receipt,
         status: status ?? undefined,
         statusAbove: bar?.above === true && status !== undefined,
+        ...(leaving.rows.has(index)
+          ? { leaving: 'row' as const }
+          : status !== undefined && leaving.turns.has(turnKey!) && { leaving: 'bar' as const }),
         folded,
         drawsMessage: drawsRow,
         turnFolds: turnKey !== undefined && foldableTurnKeys.has(turnKey),
+        ...(turnKey !== undefined && automationTurns.has(turnKey) && { inAutomationTurn: true }),
+        ...(turnKey !== undefined && actingTurns.has(turnKey) && { inActingTurn: true }),
         turnDiff,
         openedPullRequests,
         estimatedHeight: estimateNativeChatRowHeight(
@@ -248,7 +256,7 @@ export function buildNativeChatTranscript(
             hasStatus: status !== undefined,
             hasTurnDiff: turnDiff !== undefined,
             turnDiffFileCount: turnDiff?.files.length,
-            openedPullRequestCount: openedPullRequests?.length,
+            hasOpenedPullRequests: (openedPullRequests?.length ?? 0) > 0,
             folded
           },
           typography
@@ -257,7 +265,10 @@ export function buildNativeChatTranscript(
     }
   }
   pushHeadsBefore(undefined)
-  const drawn = nativeChatTranscriptWorkRuns(slots, typography)
+  const drawn = nativeChatBotItemNoteClusters(
+    nativeChatTranscriptWorkRuns(slots, typography),
+    typography
+  )
   // One action holder per turn: its last drawn response with words, else (when folding hid them)
   // its last drawn image response. Tools and thoughts never hold them.
   const lastWordsByTurn = new Map<string, NativeChatMessageSlot>()
@@ -316,7 +327,8 @@ export function buildNativeChatTranscript(
       next.turnKey === slot.turnKey &&
       // The agent's own next step, not a notice or task row that trails its answer.
       (next.message.role === 'assistant' || next.message.role === 'reasoning') &&
-      next.drawsMessage
+      next.drawsMessage &&
+      next.leaving !== 'row'
     ) {
       slot.continuesTurn = true
     }
@@ -324,6 +336,7 @@ export function buildNativeChatTranscript(
   markNativeChatResponseActionsHang(drawn, typography)
   return {
     slots: drawn,
+    quietTurnKeys: leaving.turns.size ? new Set([...quiet.turns, ...leaving.turns]) : quiet.turns,
     forkPoint: forkOffer
       ? nativeChatSideChatForkPoint(newestOffered, isWorking || lifecycleWorking)
       : null

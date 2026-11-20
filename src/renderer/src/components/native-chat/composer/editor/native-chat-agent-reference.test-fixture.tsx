@@ -6,7 +6,6 @@ import { NativeChatCrewPanel } from '../../../orchestration-crew/NativeChatCrewP
 import { TooltipProvider } from '../../../ui/tooltip'
 import type { NativeChatComposerInput } from './native-chat-composer-input'
 import type { NativeChatComposerHandle } from '../native-chat-composer-types'
-import { composerHandleReplyArgs } from './native-chat-composer-handle-reply.test-fixture'
 import { NativeChatPromptEditor } from './NativeChatPromptEditor'
 import { useNativeChatComposerHandle } from './use-native-chat-composer-handle'
 
@@ -38,8 +37,7 @@ export function mountedMention(
       setCaret: () => {},
       setActiveSuggestion: () => {},
       attachmentScopeKey: 'menu',
-      paneKey: 'menu',
-      ...composerHandleReplyArgs,
+      targetKey: 'menu',
       disabled: false,
       caret: 6,
       resolveAttachmentOwner: () => ({ kind: 'local' }),

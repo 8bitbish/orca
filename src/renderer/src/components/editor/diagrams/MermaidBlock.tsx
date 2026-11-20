@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Maximize2 } from 'lucide-react'
 import type mermaidNamespace from 'mermaid'
 import { readableMermaidFlowchartSvg } from '../../../../../shared/document-preview/mermaid-flowchart-contrast'
@@ -47,6 +47,15 @@ function enqueueRender(fn: () => Promise<void>): void {
   renderQueue = tail
 }
 
+// Mermaid deletes any document element with the render ID, so a diagram retained under Activity must never share one.
+// The uppercase letter keeps it out of the lowercase heading slugs the markdown preview renders as IDs.
+let renderSequence = 0
+
+function nextMermaidRenderId(): string {
+  renderSequence += 1
+  return `orcaMermaid${renderSequence}`
+}
+
 /** Render SVG with a source/error fallback so invalid syntax cannot break the preview. */
 export default function MermaidBlock({
   content,
@@ -59,7 +68,6 @@ export default function MermaidBlock({
   onExpand
 }: MermaidBlockProps): React.JSX.Element {
   const t = useTranslate()
-  const id = useId().replace(/:/g, '_')
   const [rendered, setRendered] = useState<{
     content: string
     result: RenderedMermaidDiagram | { error: string }
@@ -75,6 +83,7 @@ export default function MermaidBlock({
       return
     }
     let cancelled = false
+    const renderId = nextMermaidRenderId()
 
     const render = async (): Promise<void> => {
       try {
@@ -85,7 +94,7 @@ export default function MermaidBlock({
         // Initialize inside the serialized task because global Mermaid config can otherwise change between initialization and render.
         const colors = readMermaidThemeColors()
         mermaid.initialize(getMermaidConfig(isDark, isDark ? colors : undefined, themeVariables))
-        const { svg } = await mermaid.render(`mermaid-${id}`, content)
+        const { svg } = await mermaid.render(renderId, content)
         if (!cancelled) {
           // Sanitize explicitly against XSS even if Mermaid’s internal sanitization changes.
           const sanitized = sanitizeMermaidSvg(svg)
@@ -116,10 +125,9 @@ export default function MermaidBlock({
                     )
             }
           })
-          // Mermaid leaves an error element in the DOM on failure — clean it up.
-          const errorEl = document.getElementById(`d${`mermaid-${id}`}`)
-          errorEl?.remove()
         }
+        // Mermaid can leave its temporary container behind on failure, even for a cancelled render.
+        document.getElementById(`d${renderId}`)?.remove()
       }
     }
 
@@ -127,7 +135,7 @@ export default function MermaidBlock({
     return () => {
       cancelled = true
     }
-  }, [content, isDark, id, renderEnabled, themeVariables])
+  }, [content, isDark, renderEnabled, themeVariables])
 
   useLayoutEffect(() => {
     if (renderEnabled && rendered?.content === content) {
