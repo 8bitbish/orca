@@ -11,7 +11,7 @@ import {
 } from '../claude-structured-session-test-support'
 import * as dispatchContent from '../dispatch/claude-structured-dispatch-content'
 import { ClaudeControlRequestError } from '../../sdk-transport/claude-agent-sdk-control-requests'
-import { claudeStructuredPermissionOptions } from './claude-structured-launch-resolution'
+import { claudeStructuredPermissionOptions } from './claude-structured-permission-options'
 
 /** Claude ends a turn; a message sent before this joins the running turn on its choices. */
 const claudeTurnEnds = (connection: Parameters<typeof claudeFrame>[0]) =>
