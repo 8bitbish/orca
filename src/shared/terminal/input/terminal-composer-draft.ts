@@ -318,8 +318,17 @@ export function readTerminalComposerTypedText(
   return boxed ? boxed.text : (detectTerminalComposerPrompt(context, true)?.text ?? null)
 }
 
+/** True when a verified composer paints only a placeholder, suggestion or dim hint right of its cursor. */
 export function hasTerminalComposerPlaceholder(
   context: TerminalCursorContext | null | undefined
 ): boolean {
-  return detectTerminalComposerPrompt(context)?.placeholder === true
+  if (!context?.rawAfterCursor.trim()) {
+    return false
+  }
+  // Why: the IME overlay redraws the row from the cursor without cell attributes, so a dim tail turns white.
+  const onlyDimAfterCursor = !context.afterCursor.trim() || isCaretOverDimSuggestion(context)
+  return (
+    (onlyDimAfterCursor && readTerminalComposerTypedText(context) !== null) ||
+    detectTerminalComposerPrompt(context)?.placeholder === true
+  )
 }
