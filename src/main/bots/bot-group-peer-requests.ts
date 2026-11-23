@@ -72,7 +72,15 @@ export async function groupPeerScope(
   ) {
     throw new Error('The original human group request cannot be verified.')
   }
-  return { originalHumanInstruction: original.text, group, source, target, ...root }
+  return {
+    originalHumanInstruction: original.text,
+    group,
+    source,
+    target,
+    // The live turn: a mail turn has no send of its own, so its root row names an earlier turn.
+    operationId: (await liveGroupOperation(groups, sessionId)) ?? turn.operationId,
+    ...root
+  }
 }
 
 export function assertGroupPeerScope(groups: BotGroupRuntime, scope: GroupPeerScope): void {
@@ -279,8 +287,9 @@ export function reserveGroupMailTurn(
   groups.changed()
 }
 
-/** The group operation a member is running as it starts a worker, read from its live turn. */
-export async function captureGroupWorkerOperation(
+/** The group operation a member is running now (as it starts a worker or answers a peer), read
+ *  from its live turn. */
+export async function liveGroupOperation(
   groups: BotGroupRuntime,
   sessionId: string
 ): Promise<string | null> {

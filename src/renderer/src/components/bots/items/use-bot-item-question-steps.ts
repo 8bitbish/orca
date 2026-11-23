@@ -7,7 +7,11 @@ import { useCallback, useMemo, useState } from 'react'
 import { useLatestHandler } from '@/lib/use-latest-handler'
 import { botRefKey } from '@/lib/bot-hosts'
 import type { Bot } from '../../../../../shared/bot-types'
-import type { BotItem, BotItemEvent } from '../../../../../shared/bots/bot-items'
+import type {
+  BotItem,
+  BotItemCommentSkill,
+  BotItemEvent
+} from '../../../../../shared/bots/bot-items'
 import {
   botItemQuestionLine,
   type BotItemQuestionShape
@@ -18,11 +22,11 @@ import {
   botItemNamedAnswers
 } from '../../../../../shared/bots/bot-item-answer-lines'
 import {
-  botItemQuestionPairing,
+  botItemWaitingAsk,
   botItemWaitingLine,
-  type BotItemQuestionAnswers
+  type BotItemWaitingLine
 } from '../../../../../shared/bots/bot-item-question-answers'
-import type { BotItemPendingComment } from './use-bot-item-pending-comments'
+import type { BotItemPendingComment } from '../../../../../shared/bots/bot-item-pending-comments'
 import { useNativeChatDraft } from '../../native-chat/drafts/use-native-chat-draft'
 
 const NOT_COMPOSING = (): boolean => false
@@ -44,18 +48,6 @@ export function useBotItemHeldAnswers(
     [setDraft, shape]
   )
   return { held, hold }
-}
-
-function waitingAsk(
-  item: BotItem,
-  events: readonly BotItemEvent[]
-): ({ askId: string } & BotItemQuestionAnswers) | null {
-  for (const [askId, entry] of botItemQuestionPairing(item, events).questions) {
-    if (entry.waiting) {
-      return { askId, ...entry }
-    }
-  }
-  return null
 }
 
 export type BotItemQuestionSteps = {
@@ -91,23 +83,39 @@ export function useBotItemQuestionSteps(
   bot: Bot,
   item: BotItem,
   events: readonly BotItemEvent[],
-  send: (text: string, paths?: readonly string[]) => void,
+  /** `questionId`: the ask the text answers, so a reply that lands after a new question is refused;
+   *  `plain`: it answers none. */
+  send: (
+    text: string,
+    paths?: readonly string[],
+    questionId?: string,
+    plain?: boolean,
+    skills?: readonly BotItemCommentSkill[]
+  ) => void,
   pending: readonly BotItemPendingComment[]
 ): {
   steps: BotItemQuestionSteps | null
   sent: BotItemSentAnswers | null
   /** A quick reply of one question, posted at once as it always has. */
   quick: (text: string) => void
-  /** The comment box's send: "Replying to" a line of several questions, it answers that line. */
-  fromBox: (text: string, paths: readonly string[], replyingTo: string | null) => void
+  /** The comment box's send: it answers only the question its "Replying to" names; with none named
+   *  (its × closed), the comment answers nothing. */
+  fromBox: (
+    text: string,
+    paths: readonly string[],
+    replyingTo: string | null,
+    skills?: readonly BotItemCommentSkill[]
+  ) => void
   /** What the comment box replies to: with several questions, the line the step is on. */
-  waitingLine: { id: string; line: string; replies: boolean } | null
+  waitingLine: BotItemWaitingLine | null
 } {
   // As cheap as the box's own waiting-line read, on each render.
-  const asked = waitingAsk(item, events)
+  const asked = botItemWaitingAsk(item, events)
   const waiting = asked && asked.shape.decisions.length > 1 ? asked : null
   const askId = waiting?.askId ?? ''
   const shape = waiting?.shape ?? NO_ASK
+  // One question, or one in prose: the box names it until its × closes.
+  const oneLine = waiting ? null : botItemWaitingLine(item, events)
   const { held, hold } = useBotItemHeldAnswers(botItemHeldAnswersScope(bot, item.uid, askId), shape)
   const [chosen, setChosen] = useState<{ askId: string; index: number } | null>(null)
   const [sent, setSent] = useState<BotItemSentAnswers | null>(null)
@@ -120,33 +128,51 @@ export function useBotItemQuestionSteps(
     chosen && chosen.askId === askId && lines.includes(chosen.index) ? chosen.index : firstOpen
   // A line another client answered meanwhile keeps that answer; its held one is dropped.
   const kept = shape.decisions.map((_, at) => (lines.includes(at) ? (held[at] ?? null) : null))
-  const post = (answers: (string | null)[], text: string, paths: readonly string[]): void => {
+  const post = (
+    answers: (string | null)[],
+    text: string,
+    paths: readonly string[],
+    skills?: readonly BotItemCommentSkill[]
+  ): void => {
     hold([])
     setSent({ askId, text, answers })
-    send(text, paths)
+    send(text, paths, askId, undefined, skills)
   }
-  const answer = useLatestHandler((index: number, words: string, paths: readonly string[] = []) => {
-    const next = kept.map((held_, at) => (at === index ? words : held_))
-    setChosen(null)
-    // Files are not held on this device: an answer with them posts the answers so far at once.
-    if (paths.length > 0 || lines.every((at) => next[at])) {
-      post(next, botItemAnswersText(shape, next), paths)
-      return
+  const answer = useLatestHandler(
+    (
+      index: number,
+      words: string,
+      paths: readonly string[] = [],
+      skills: readonly BotItemCommentSkill[] = []
+    ) => {
+      const next = kept.map((held_, at) => (at === index ? words : held_))
+      setChosen(null)
+      // Files and skills are not held on this device: an answer with them posts the answers so far at once.
+      if (paths.length > 0 || skills.length > 0 || lines.every((at) => next[at])) {
+        post(next, botItemAnswersText(shape, next), paths, skills)
+        return
+      }
+      hold(next)
     }
-    hold(next)
-  })
+  )
   const fromBox = useLatestHandler(
-    (text: string, paths: readonly string[], replyingTo: string | null) => {
+    (
+      text: string,
+      paths: readonly string[],
+      replyingTo: string | null,
+      skills?: readonly BotItemCommentSkill[]
+    ) => {
       if (!waiting) {
-        send(text, paths)
+        send(text, paths, undefined, oneLine !== null && replyingTo === null, skills)
       } else if (replyingTo === `${askId}:${current}`) {
-        answer(current, text, paths)
+        answer(current, text, paths, skills)
       } else {
+        // Held answers name their lines; the comment rides along answering none.
         const answered = botItemAnswersText(shape, kept)
         if (answered) {
-          post(kept, `${answered}\n${text}`, paths)
+          post(kept, `${answered}\n${text}`, paths, skills)
         } else {
-          send(text, paths)
+          send(text, paths, undefined, true, skills)
         }
       }
     }
@@ -160,7 +186,7 @@ export function useBotItemQuestionSteps(
       const answers = own.decisions.map((_, index) => botItemAnswerWords(own, index, { text }))
       setSent({ askId: asked.askId, text, answers })
     }
-    send(text)
+    send(text, [], asked?.askId)
   })
   const stepLine = steps?.shape.decisions[steps.current]
   return {
@@ -175,9 +201,10 @@ export function useBotItemQuestionSteps(
     waitingLine: stepLine
       ? {
           id: `${askId}:${steps.current}`,
+          eventId: askId,
           line: botItemQuestionLine(stepLine.question),
           replies: stepLine.replies.length > 0
         }
-      : botItemWaitingLine(item, events)
+      : oneLine
   }
 }
