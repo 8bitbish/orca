@@ -205,6 +205,11 @@ export type RuntimeTerminalRowMetadata = {
   trailingSpaces: number
 }
 
+export type RuntimeTerminalProjection = RuntimeTerminalComposerRead & {
+  lines: string[]
+  tailRows?: RuntimeTerminalRowMetadata[]
+}
+
 export type RuntimeTerminalRead = RuntimeTerminalComposerRead & {
   handle: string
   status: RuntimeTerminalState

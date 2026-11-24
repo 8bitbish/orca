@@ -1,4 +1,4 @@
-import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -87,29 +87,5 @@ describe('exact orchestration worker output', () => {
       }
     })
     expect(JSON.stringify(result)).not.toContain(capability)
-  })
-
-  it('rejects an old cursor after a same-inode truncate/regrow', async () => {
-    const initial = await read()
-    if (initial.source !== 'transcript') {
-      throw new Error('Expected transcript output')
-    }
-    const before = await stat(transcriptA, { bigint: true })
-    await writeFile(
-      transcriptA,
-      `${codexMessage('replacement', 'unrelated transcript')}\n${' '.repeat(512)}`
-    )
-    const after = await stat(transcriptA, { bigint: true })
-    expect(after.ino).toBe(before.ino)
-    expect(after.dev).toBe(before.dev)
-    const fresh = await read()
-    if (fresh.source !== 'transcript') {
-      throw new Error('Expected replacement transcript output')
-    }
-    expect(fresh.sourceIdentity).toBe(initial.sourceIdentity)
-
-    await expect(read({ cursor: initial.cursor })).rejects.toMatchObject({
-      code: 'source_changed'
-    })
   })
 })

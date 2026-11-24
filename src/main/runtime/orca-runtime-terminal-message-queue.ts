@@ -1,6 +1,4 @@
-import { OrcaRuntimeWithAgentTransitions } from './construction/orca-runtime-agent-transitions'
-import { OrcaRuntimeWithSidebarTemporal } from './sidebar-inputs/orca-runtime-sidebar-temporal'
-import { ORCA_SIDEBAR_INPUTS_IS_MAIN } from '../../shared/sidebar-list/feed/sidebar-inputs-switch'
+import { OrcaRuntimeWithAgentQuestions } from './construction/orca-runtime-agent-questions'
 import {
   TerminalMessageQueueHost,
   type ResolvedTerminalMessageQueueTarget,
@@ -16,13 +14,8 @@ import { messageQueueStatusSourceFromHookServer } from '../terminal-message-queu
 import { watchTranscriptForInterrupts } from '../terminal-message-queue/terminal-message-queue-transcript-watch'
 import type { TerminalQueuedMessage } from '../../shared/terminal-message-queue-contract'
 
-// Switch point: a window-fed build keeps no sidebar facts layer.
-const OrcaRuntimeSidebarBase: typeof OrcaRuntimeWithAgentTransitions = ORCA_SIDEBAR_INPUTS_IS_MAIN
-  ? OrcaRuntimeWithSidebarTemporal
-  : OrcaRuntimeWithAgentTransitions
-
 /** Hosts the per-terminal message queue next to the PTYs it writes to. */
-export abstract class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeSidebarBase {
+export abstract class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeWithAgentQuestions {
   readonly terminalMessageQueue = new TerminalMessageQueueHost(
     {
       resolveTarget: (ref) => this.resolveTerminalMessageQueueTarget(ref),
@@ -59,15 +52,15 @@ export abstract class OrcaRuntimeWithTerminalMessageQueue extends OrcaRuntimeSid
   /** Both stores the hook server feeds: the queue's status source and the agent-status store. */
   attachAgentHookServer(
     server: Parameters<typeof messageQueueStatusSourceFromHookServer>[0] &
-      Parameters<OrcaRuntimeWithAgentTransitions['attachAgentStatusStore']>[0]
+      Parameters<OrcaRuntimeWithAgentQuestions['attachAgentStatusStore']>[0]
   ): () => void {
     this.attachTerminalMessageQueueHookServer(server)
     return this.attachAgentStatusStore(server)
   }
 
   override onPtyExit(
-    ...args: Parameters<InstanceType<typeof OrcaRuntimeSidebarBase>['onPtyExit']>
-  ): ReturnType<InstanceType<typeof OrcaRuntimeSidebarBase>['onPtyExit']> {
+    ...args: Parameters<InstanceType<typeof OrcaRuntimeWithAgentQuestions>['onPtyExit']>
+  ): ReturnType<InstanceType<typeof OrcaRuntimeWithAgentQuestions>['onPtyExit']> {
     const [ptyId, exitCode, exitIncarnationId, options] = args
     const pty = this.ptysById.get(ptyId)
     const staleIncarnation =
